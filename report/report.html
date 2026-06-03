@@ -121,7 +121,7 @@
   </div>
   <p class="muted" style="text-align:center;font-size:8.3pt;margin-top:-2pt;">Three real CLIs &rarr; two MCP servers &rarr; one TiDB database. The dashboard reads the same database live.</p>
 
-  <div class="callout good"><b>Proven on real TiDB.</b> Everything in this report - the graph, the writes from three tools, and the recursive-CTE traversals - ran against a live TiDB Cloud Serverless cluster (v8.5.3) over the MySQL protocol with TLS.</div>
+  <div class="callout good"><b>Proven on real TiDB - every screenshot below is from an actual run.</b> The graph, the writes from three real CLIs (Claude Code, Codex, Cursor), and the recursive-CTE traversals all ran against a live TiDB Cloud Serverless cluster (v8.5.3) over the MySQL protocol with TLS. The terminal captures are the unedited tool output.</div>
 </div>
 
 <!-- ───────────────── 2. THE PROBLEM ───────────────── -->
@@ -146,29 +146,41 @@
   <p class="lede">The task: production is complete, but <b>staging is missing its DNS and SSO layer</b>. Watch three different AI coding tools finish it - each picking up where the last left off, because they share one TiDB brain.</p>
 
   <figure>
-    <img src="img/live_1_gap.png" />
+    <img src="img-live/dash-gap.png" />
     <figcaption>Starting state. Left: the live activity feed (one row per query/write from any tool). Right: the knowledge graph and the staging-parity strip - four components are missing in staging (red ✗).</figcaption>
   </figure>
 
   <h3>Step 1 - Claude Code inspects, then builds the asset layer <span class="tag t-cc">claude-code</span></h3>
   <p>It first <b>queries</b> the graph (it does not assume), then scaffolds the missing static-assets bucket and its Cloudflare DNS record by composing the existing <span class="mono">S3Bucket</span> and <span class="mono">DnsRecord</span> libraries - never raw cloud resources - and <b>writes each one back</b>.</p>
   <figure>
-    <img src="img/live_2_claude.png" />
-    <figcaption>Two new components written by <span class="mono">claude-code</span> (green WRITE rows); two staging gaps close.</figcaption>
+    <img src="img-live/claude-terminal.png" />
+    <figcaption>Real Claude Code output. It recorded both components (IDs 25 &amp; 26) and reports the rules it followed: no raw <span class="mono">aws.*</span>, <span class="mono">proxied: true</span> library-enforced, all four required tags, <span class="mono">acme-&lt;env&gt;-&lt;name&gt;</span> naming, and KB writeback with dependency edges.</figcaption>
+  </figure>
+  <figure>
+    <img src="img-live/dash-claude.png" />
+    <figcaption>The dashboard after Claude Code: <span class="mono">claude-code</span> QUERY rows (it checked first) then two WRITE rows; the staging gap drops from 4 to 2.</figcaption>
   </figure>
 
   <h3>Step 2 - Codex picks up warm <span class="tag t-cx">codex</span></h3>
   <p>Codex opens with <b>zero local memory</b> of Claude Code's work. It reads the shared <span class="mono">session_log</span>, sees exactly what was just created, and continues with the admin-portal DNS record. No copy-pasting context between tools.</p>
   <figure>
-    <img src="img/live_3_codex.png" />
-    <figcaption>A <span class="mono">codex</span> QUERY reads the session log (blue), then a WRITE adds the admin DNS - continuing the same task seamlessly.</figcaption>
+    <img src="img-live/codex-terminal.png" />
+    <figcaption>Real Codex output: "The previous session most recently created <span class="mono">acme-staging-assets-dns</span>" - it read the shared log, then wrote <span class="mono">acme-staging-admin-dns</span> (id=27). A different tool, continuing seamlessly.</figcaption>
+  </figure>
+  <figure>
+    <img src="img-live/dash-codex.png" />
+    <figcaption>The dashboard now shows <span class="mono">codex</span> rows above the <span class="mono">claude-code</span> rows - two tools, one feed, one database. Gap down to 1.</figcaption>
   </figure>
 
   <h3>Step 3 - Cursor verifies with a recursive CTE, then finishes <span class="tag t-cr">cursor</span></h3>
   <p>Before writing the SSO application, Cursor runs a <b>recursive query</b> over the graph to confirm the dependency pattern (an SSO app must redirect to a DNS record), then scaffolds it correctly. Staging reaches parity.</p>
   <figure>
-    <img src="img/live_4_parity.png" />
-    <figcaption>All three tools' activity is visible in one feed. The parity strip is now fully green: staging matches production, built by three tools sharing one memory.</figcaption>
+    <img src="img-live/cursor-cte-terminal.png" />
+    <figcaption>Real Cursor output - the headline moment. It ran a recursive CTE returning the transitive closure <span class="mono">SsoApplication → acme-prod-admin-dns → DnsRecord</span> (depth 1 and 2), <i>proving</i> the SSO app must redirect to a DnsRecord before writing a line of code.</figcaption>
+  </figure>
+  <figure>
+    <img src="img-live/dash-cursor.png" />
+    <figcaption>All three tools' activity in one feed (cursor, codex, claude-code). Cursor's write completes the set - staging now matches production, built by three tools sharing one memory.</figcaption>
   </figure>
 </div>
 
@@ -178,8 +190,8 @@
   <p class="lede">The headline capability: <b>graph reachability</b>. "What breaks if I change this component?" requires traversing dependency edges to arbitrary depth. A recursive CTE does it in one query.</p>
 
   <figure>
-    <img src="img/cte_blast.png" />
-    <figcaption>Blast radius of the <span class="mono">S3Bucket</span> library, visualised as a depth-coloured subgraph. The traversal reaches the RDS databases <b>two hops away</b> - their backup buckets compose <span class="mono">S3Bucket</span> - a connection no text search could surface.</figcaption>
+    <img src="img-live/dash-cte.png" />
+    <figcaption>Blast radius of the <span class="mono">S3Bucket</span> library on the live dashboard, visualised as a depth-coloured subgraph with the exact SQL and result rows beside it. The traversal reaches the RDS databases <b>two hops away</b> - their backup buckets compose <span class="mono">S3Bucket</span> - a connection no text search could surface.</figcaption>
   </figure>
 
   <div class="sqlbox"><span class="cm">-- What breaks if S3Bucket changes? Runs unchanged on SQLite and TiDB.</span>
@@ -234,6 +246,12 @@
   <figure>
     <img src="img/scenarios.png" />
     <figcaption>In-product scenario cards. Each contrasts the failure without the graph against the corrected path with TiDB, and shows the exact query that answers it.</figcaption>
+  </figure>
+  <h3>The duplicate-bucket guardrail, caught live</h3>
+  <p>Asked to add a backup bucket for the staging database, a coding tool queried the graph first - and stopped itself:</p>
+  <figure>
+    <img src="img-live/guardrail-terminal.png" />
+    <figcaption>Real tool output: it found <span class="mono">PostgresDatabase --instantiates--&gt; S3Bucket</span> in the graph and concluded "Don't add a manual backup bucket - you'd end up with a duplicate, and the library's lifecycle rules/tags on the auto-created one would conflict with yours." The duplicate was never written.</figcaption>
   </figure>
   <div class="grid2">
     <div class="callout warn"><b>The duplicate backup bucket.</b> Asked to "add backups" for a database, a tool greps, finds nothing, and creates a raw duplicate. The graph shows <span class="mono">PostgresDatabase</span> already <i>instantiates</i> a backup bucket - so the right action is to write nothing.</div>
