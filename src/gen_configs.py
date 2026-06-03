@@ -35,6 +35,7 @@ def _env() -> dict:
 
 
 def _tidb_server(env: dict) -> dict:
+    cursor_dir = ROOT / ".cursor"
     return {
         "command": "uvx",
         "args": ["--from", "pytidb[mcp]", "tidb-mcp-server"],
@@ -44,6 +45,9 @@ def _tidb_server(env: dict) -> dict:
             "TIDB_USERNAME": env["TIDB_USERNAME"],
             "TIDB_PASSWORD": env["TIDB_PASSWORD"],
             "TIDB_DATABASE": env["TIDB_DATABASE"] or "infra_kb",
+            "UV_CACHE_DIR": str(cursor_dir / "uv-cache"),
+            "XDG_CACHE_HOME": str(cursor_dir / "xdg-cache"),
+            "XDG_DATA_HOME": str(cursor_dir / "xdg-data"),
         },
     }
 

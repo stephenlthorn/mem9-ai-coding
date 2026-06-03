@@ -22,14 +22,19 @@ except Exception:
     pass
 
 DB_PATH = Path(__file__).parent.parent / "kb.db"
+_TIDB_DISABLED_REASON: str | None = None
 
 
 def using_tidb() -> bool:
-    return bool(os.environ.get("TIDB_HOST"))
+    return bool(os.environ.get("TIDB_HOST")) and _TIDB_DISABLED_REASON is None
 
 
 def backend_name() -> str:
-    return "TiDB Cloud Serverless" if using_tidb() else "SQLite (local fallback)"
+    if using_tidb():
+        return "TiDB Cloud Serverless"
+    if _TIDB_DISABLED_REASON:
+        return f"SQLite (local fallback; TiDB unavailable: {_TIDB_DISABLED_REASON})"
+    return "SQLite (local fallback)"
 
 
 # ── Schema (per dialect) ─────────────────────────────────────────────────────
@@ -119,6 +124,12 @@ def _default_ca() -> str | None:
     return None
 
 
+def _disable_tidb(exc: Exception) -> None:
+    global _TIDB_DISABLED_REASON
+    if _TIDB_DISABLED_REASON is None:
+        _TIDB_DISABLED_REASON = str(exc)
+
+
 @contextmanager
 def _sqlite_conn():
     con = sqlite3.connect(str(DB_PATH))
@@ -167,30 +178,38 @@ def _lastrowid(con, cur) -> int:
 
 def init_db() -> None:
     if using_tidb():
-        with _tidb_conn() as con:
-            cur = con.cursor()
-            for stmt in _TIDB_SCHEMA:
-                cur.execute(stmt)
-    else:
-        with _sqlite_conn() as con:
-            con.executescript(_SQLITE_SCHEMA)
+        try:
+            with _tidb_conn() as con:
+                cur = con.cursor()
+                for stmt in _TIDB_SCHEMA:
+                    cur.execute(stmt)
+            return
+        except Exception as exc:
+            _disable_tidb(exc)
+
+    with _sqlite_conn() as con:
+        con.executescript(_SQLITE_SCHEMA)
 
 
 def reset_db() -> None:
     if using_tidb():
-        with _tidb_conn() as con:
-            cur = con.cursor()
-            for t in ("component_edges", "session_log", "infra_components"):
-                cur.execute(f"DROP TABLE IF EXISTS {t}")
-            for stmt in _TIDB_SCHEMA:
-                cur.execute(stmt)
-    else:
-        with _sqlite_conn() as con:
-            con.executescript(
-                "DROP TABLE IF EXISTS component_edges;"
-                "DROP TABLE IF EXISTS session_log;"
-                "DROP TABLE IF EXISTS infra_components;" + _SQLITE_SCHEMA
-            )
+        try:
+            with _tidb_conn() as con:
+                cur = con.cursor()
+                for t in ("component_edges", "session_log", "infra_components"):
+                    cur.execute(f"DROP TABLE IF EXISTS {t}")
+                for stmt in _TIDB_SCHEMA:
+                    cur.execute(stmt)
+            return
+        except Exception as exc:
+            _disable_tidb(exc)
+
+    with _sqlite_conn() as con:
+        con.executescript(
+            "DROP TABLE IF EXISTS component_edges;"
+            "DROP TABLE IF EXISTS session_log;"
+            "DROP TABLE IF EXISTS infra_components;" + _SQLITE_SCHEMA
+        )
 
 
 @contextmanager

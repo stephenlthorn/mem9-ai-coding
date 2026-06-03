@@ -1,5 +1,5 @@
 {
-  "_comment": "TEMPLATE. Run `python -m src.gen_configs` to write the real .cursor/mcp.json (with your TiDB creds). Two servers: official TiDB MCP + our convention MCP.",
+  "_comment": "TEMPLATE. Run `python -m src.gen_configs` to write the real .cursor/mcp.json (with your TiDB creds). Two servers: official TiDB MCP + our convention MCP. The generated config pins UV_CACHE_DIR into the repo to avoid Cursor reconnect loops caused by restricted ~/.cache/uv access.",
   "mcpServers": {
     "tidb": {
       "command": "uvx",

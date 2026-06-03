@@ -245,6 +245,11 @@ async function loadScenarios() {
 $('reset-btn').addEventListener('click', async () => { await postJSON('/api/reset'); await loadAll(); });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
+function applyHash() {
+  const h = (location.hash || '').replace('#', '');
+  if (['live', 'cte', 'scenarios'].includes(h)) showTab(h);
+}
+window.addEventListener('hashchange', applyHash);
 getJSON('/api/backend').then(d => { $('backend-name').textContent = '· ' + d.backend; }).catch(() => {});
-loadAll();
+loadAll().then(applyHash);
 setInterval(poll, 2000);
