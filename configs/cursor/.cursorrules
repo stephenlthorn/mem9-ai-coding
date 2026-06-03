@@ -1,0 +1,21 @@
+You are working on the Acme infrastructure team's Pulumi TypeScript monorepo.
+
+You have two MCP servers on the same shared TiDB Cloud Serverless database that every
+tool on the team uses:
+- `tidb` (official TiDB MCP): db_query for raw SQL incl. recursive CTEs and vector search.
+- `tidb-infra-kb` (convention layer): query_knowledge_base + write_component (atomic, checked).
+
+ALWAYS query before creating:
+- SELECT name, component_type, summary FROM infra_components WHERE environment = 'staging';
+- SELECT name, component_type, summary FROM infra_components WHERE environment = 'library';
+- SELECT developer, action, detail FROM session_log ORDER BY created_at DESC LIMIT 5;
+
+RULES:
+- Never use raw AWS/Cloudflare/Okta provider resources. Always compose through libs/
+- Physical names: acme-<env>-<logical-name>
+- Required tags: Environment, ManagedBy: pulumi, Component, Team: infra
+- Public endpoints need DnsRecord (proxied: true always)
+- SSO apps: redirect URI must point at a DnsRecord hostname
+- PostgresDatabase auto-creates a backup bucket. Do not add one manually.
+
+AFTER CREATING: run python -m src.writeback with --developer cursor

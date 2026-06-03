@@ -1,0 +1,19 @@
+# TEMPLATE for ~/.codex/config.toml
+# Run `python -m src.gen_configs` to produce configs/generated/codex-config.toml
+# with your real TiDB creds, then paste these blocks into ~/.codex/config.toml.
+# Two MCP servers: official TiDB MCP + our convention MCP.
+
+[mcp_servers.tidb]
+command = "uvx"
+args = ["--from", "pytidb[mcp]", "tidb-mcp-server"]
+[mcp_servers.tidb.env]
+TIDB_HOST = "${TIDB_HOST}"
+TIDB_PORT = "${TIDB_PORT}"
+TIDB_USERNAME = "${TIDB_USERNAME}"
+TIDB_PASSWORD = "${TIDB_PASSWORD}"
+TIDB_DATABASE = "${TIDB_DATABASE}"
+
+[mcp_servers.tidb-infra-kb]
+command = "/path/to/mem9-ai-coding/.venv/bin/python"
+args = ["-m", "src.mcp_server"]
+cwd = "/path/to/mem9-ai-coding"

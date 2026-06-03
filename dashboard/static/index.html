@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tidb-infra-kb · one brain for every coding tool</title>
+  <link rel="stylesheet" href="/static/styles.css?v=4" />
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo-group">
+          <span class="logo-badge">tidb</span>
+          <span class="header-title">Infra Knowledge Base</span>
+          <span class="header-dim" id="backend-name">·</span>
+        </div>
+        <div class="header-tools">
+          <span class="tool-pill tool-claude-code">Claude Code</span>
+          <span class="tool-pill tool-codex">Codex</span>
+          <span class="tool-pill tool-cursor">Cursor</span>
+          <span class="header-dim">→ one TiDB</span>
+        </div>
+        <div class="header-actions">
+          <button id="reset-btn" class="btn btn-ghost">Reset KB</button>
+        </div>
+      </div>
+      <nav class="tabs">
+        <button class="tab active" data-tab="live">Live</button>
+        <button class="tab" data-tab="cte">Dependency graph (CTE)</button>
+        <button class="tab" data-tab="scenarios">Why TiDB · scenarios</button>
+      </nav>
+    </header>
+
+    <main class="main">
+
+      <!-- ─────────────── LIVE (default) ─────────────── -->
+      <section class="view active" data-view="live">
+        <div class="live-split">
+
+          <!-- LEFT: what the tools are doing -->
+          <section class="feed-pane">
+            <div class="pane-head">
+              <span class="pane-title">3 tools → 1 TiDB</span>
+              <span class="live-dot" title="auto-refresh"></span>
+            </div>
+            <div class="pane-sub">Every query and write from Claude Code, Codex, and Cursor lands in the same TiDB database. Watch them collaborate.</div>
+            <div id="live-feed" class="live-feed"></div>
+          </section>
+
+          <!-- RIGHT: the shared brain -->
+          <section class="brain-pane">
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Shared knowledge graph</span>
+                <div class="env-filter">
+                  <button class="env-btn active" data-env="all">All</button>
+                  <button class="env-btn" data-env="library">Lib</button>
+                  <button class="env-btn" data-env="production">Prod</button>
+                  <button class="env-btn" data-env="staging">Staging</button>
+                </div>
+              </div>
+              <canvas id="live-canvas" width="640" height="360"></canvas>
+              <div class="legend">
+                <span class="leg lib">Library</span>
+                <span class="leg s3">S3</span>
+                <span class="leg rds">RDS</span>
+                <span class="leg cf">Cloudflare</span>
+                <span class="leg okta">Okta</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Staging parity vs production</span>
+                <span id="parity-stat" class="card-count">-</span>
+              </div>
+              <div id="parity" class="parity"></div>
+            </div>
+          </section>
+
+        </div>
+      </section>
+
+      <!-- ─────────────── CTE ─────────────── -->
+      <section class="view" data-view="cte">
+        <div class="cte-intro">
+          The question a flat repo or a vector store <b>can't answer</b>: what transitively
+          depends on this component? A recursive CTE traverses the dependency graph to any depth.
+          This exact SQL runs on the official <code>tidb</code> MCP that the CLIs use.
+        </div>
+        <div class="cte-controls">
+          <label>Component <select id="cte-node"></select></label>
+          <div class="cte-mode">
+            <button class="cte-btn active" data-mode="blast-radius">Blast radius (what breaks if this changes)</button>
+            <button class="cte-btn" data-mode="dependencies">Dependencies (what this needs)</button>
+          </div>
+          <button id="cte-run" class="btn btn-primary">Run recursive CTE</button>
+        </div>
+        <div class="cte-grid">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Traversal graph</span><span id="cte-summary" class="card-count">-</span></div>
+            <canvas id="cte-canvas" width="640" height="420"></canvas>
+            <div class="legend">
+              <span class="leg-depth d1">depth 1</span>
+              <span class="leg-depth d2">depth 2</span>
+              <span class="leg-depth d3">depth 3+</span>
+            </div>
+          </div>
+          <div class="col-side">
+            <div class="card">
+              <div class="card-header"><span class="card-title">The query (SQLite + TiDB)</span></div>
+              <pre id="cte-sql" class="sql-block"></pre>
+            </div>
+            <div class="card">
+              <div class="card-header"><span class="card-title">Result rows</span><span id="cte-rowcount" class="card-count">-</span></div>
+              <div id="cte-rows" class="cte-rows"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────── SCENARIOS ─────────────── -->
+      <section class="view" data-view="scenarios">
+        <div id="scenario-list" class="scenario-list"></div>
+      </section>
+
+    </main>
+  </div>
+  <script src="/static/app.js?v=4"></script>
+</body>
+</html>

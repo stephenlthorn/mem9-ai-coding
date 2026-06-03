@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+kb.db
+.DS_Store
+
+# generated MCP configs (contain TiDB secrets)
+/.mcp.json
+/.cursor/mcp.json
+/configs/generated/

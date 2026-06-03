@@ -1,0 +1,21 @@
+{
+  "_comment": "TEMPLATE. Run `python -m src.gen_configs` to write the real .cursor/mcp.json (with your TiDB creds). Two servers: official TiDB MCP + our convention MCP.",
+  "mcpServers": {
+    "tidb": {
+      "command": "uvx",
+      "args": ["--from", "pytidb[mcp]", "tidb-mcp-server"],
+      "env": {
+        "TIDB_HOST": "${TIDB_HOST}",
+        "TIDB_PORT": "${TIDB_PORT}",
+        "TIDB_USERNAME": "${TIDB_USERNAME}",
+        "TIDB_PASSWORD": "${TIDB_PASSWORD}",
+        "TIDB_DATABASE": "${TIDB_DATABASE}"
+      }
+    },
+    "tidb-infra-kb": {
+      "command": "/path/to/mem9-ai-coding/.venv/bin/python",
+      "args": ["-m", "src.mcp_server"],
+      "cwd": "/path/to/mem9-ai-coding"
+    }
+  }
+}
