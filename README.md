@@ -2,6 +2,8 @@
 
 A shared, TiDB-backed **infrastructure knowledge graph** that Claude Code, Codex, and Cursor all read from and write to through one MCP server. Every coding tool sees the same memory of every Pulumi component, dependency edge, and prior session.
 
+> **Demo report (PDF):** [`report/mem9-ai-coding-demo-report.pdf`](report/mem9-ai-coding-demo-report.pdf) - an illustrated, screenshot-by-screenshot walkthrough of the live demo on TiDB Cloud Serverless, plus the architecture and why TiDB. Start there.
+
 ```
 Claude Code ──┐
 Codex        ─┼── tidb-infra-kb (MCP) ── kb.db  (SQLite locally · TiDB Cloud in prod)
