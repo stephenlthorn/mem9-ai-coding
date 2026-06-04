@@ -248,22 +248,36 @@ async function runSearch() {
   }
   $('search-stat').textContent = `${data.results.length} results · ${data.mode}`;
   if (!data.results.length) { box.appendChild(el('div', 'feed-empty', 'No matches.')); return; }
+  const mode = data.mode;
   data.results.forEach((r, i) => {
-    const card = el('div', 'search-row');
+    const semanticOnly = r.in_vector && !r.in_fts;
+    const card = el('div', 'search-row' + (mode === 'hybrid' && semanticOnly ? ' semantic-only' : ''));
     const head = el('div', 'search-row-head');
     head.appendChild(el('span', 'search-rank', '#' + (i + 1)));
     head.appendChild(el('span', 'mem-name', r.name));
     head.appendChild(el('span', `type-badge type-${r.component_type}`, r.component_type));
     head.appendChild(el('span', `env-badge env-${r.environment}`, r.environment));
     const sig = el('span', 'search-sigs');
-    if (r.in_vector) {
-      const v = el('span', 'sig-chip sig-vec', r.distance != null ? `vector ${r.distance.toFixed(3)}` : 'vector');
-      sig.appendChild(v);
+    // Mode-specific chips so the three modes look genuinely different:
+    //  vector  -> only the cosine-distance chip (pure semantic ranking)
+    //  fts     -> only the keyword chip (pure full-text)
+    //  hybrid  -> both signals, with an explicit hit/miss so you can see
+    //             which rows the keyword index MISSED but vectors caught.
+    if (mode === 'vector') {
+      sig.appendChild(el('span', 'sig-chip sig-vec', r.distance != null ? `cosine ${r.distance.toFixed(3)}` : 'vector'));
+    } else if (mode === 'fts') {
+      sig.appendChild(el('span', 'sig-chip sig-fts', 'keyword match'));
+    } else {
+      sig.appendChild(el('span', 'sig-chip sig-vec', r.distance != null ? `vector ${r.distance.toFixed(3)}` : 'vector'));
+      sig.appendChild(el('span', r.in_fts ? 'sig-chip sig-fts' : 'sig-chip sig-miss',
+        r.in_fts ? 'FTS ✓' : 'FTS ✗'));
     }
-    if (r.in_fts) sig.appendChild(el('span', 'sig-chip sig-fts', 'FTS'));
     head.appendChild(sig);
     card.appendChild(head);
     card.appendChild(el('div', 'search-summary', r.summary || ''));
+    if (mode === 'hybrid' && semanticOnly) {
+      card.appendChild(el('div', 'semantic-note', '⚡ vector-only - keyword search missed this; semantics found it'));
+    }
     box.appendChild(card);
   });
 }

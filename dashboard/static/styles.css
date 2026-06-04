@@ -295,3 +295,8 @@ tr.row-new td { background: rgba(48,209,88,0.05); }
 .search-summary { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
 .search-legend { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--text-dim); }
 .search-legend .sig-chip { margin-right: 6px; }
+
+/* search v8: clearer signal states */
+.sig-miss { background: rgba(120,128,150,0.12); color: var(--text-faint); border: 1px dashed var(--text-faint); }
+.search-row.semantic-only { border-color: rgba(191,90,242,0.55); background: rgba(191,90,242,0.06); }
+.semantic-note { font-size: 11px; color: #BF5AF2; margin-top: 6px; font-weight: 600; }
