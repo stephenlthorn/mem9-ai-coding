@@ -124,6 +124,13 @@
   </div>
   <p class="muted" style="text-align:center;font-size:8.3pt;margin-top:-2pt;">Three real CLIs &rarr; two MCP servers &rarr; one TiDB database. The dashboard reads the same database live.</p>
 
+  <h3>What runs automatically (the system prompt)</h3>
+  <p>The behaviour is configuration, not code. Each tool loads a rules file (<span class="mono">CLAUDE.md</span> / <span class="mono">AGENTS.md</span> / <span class="mono">.cursorrules</span>) with one standing instruction, so on every session - before any task - the agent already knows to read and write the shared memory:</p>
+  <div class="sqlbox">Before writing any infrastructure code, query the tidb-infra-kb MCP first
+(what exists, how it connects, what previous sessions did). Never use raw
+aws.* / cloudflare.* resources - compose the library components. After you
+create anything, record it with write_component so the next session starts warm.</div>
+
   <div class="callout good"><b>Proven on real TiDB - every screenshot below is from an actual run.</b> The graph, the writes from three real CLIs (Claude Code, Codex, Cursor), and the recursive-CTE traversals all ran against a live TiDB Cloud cluster (v8.5.3) over the MySQL protocol with TLS. The terminal captures are the unedited tool output.</div>
 </div>
 
