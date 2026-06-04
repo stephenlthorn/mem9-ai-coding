@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>tidb-infra-kb · one brain for every coding tool</title>
-  <link rel="stylesheet" href="/static/styles.css?v=14" />
+  <link rel="stylesheet" href="/static/styles.css?v=15" />
 </head>
 <body>
   <div id="app">
@@ -157,7 +157,7 @@
       <!-- ─────────────── SYSTEM PROMPT ─────────────── -->
       <section class="view" data-view="sysprompt">
         <div class="talk">
-          <h4>System prompt - talking points</h4>
+          <h4>System prompt</h4>
           <ul class="talk-2col">
             <li>The behavior is <b>configuration, not code</b>.</li>
             <li>Each tool loads a rules file: <span class="mono">CLAUDE.md</span> / <span class="mono">AGENTS.md</span> / <span class="mono">.cursorrules</span>.</li>
@@ -199,7 +199,7 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
       <!-- ─────────────── LIVE ─────────────── -->
       <section class="view" data-view="live">
         <div class="talk">
-          <h4>Live - talking points</h4>
+          <h4>Live</h4>
           <ul class="talk-2col">
             <li>Left = every query/write from all 3 tools. Right = the shared graph + staging parity.</li>
             <li>Three tools close the staging gap, sharing one brain. Watch the parity strip go green.</li>
@@ -258,7 +258,7 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
       <!-- ─────────────── CTE ─────────────── -->
       <section class="view" data-view="cte">
         <div class="talk">
-          <h4>Dependency CTE - talking points</h4>
+          <h4>Dependency CTE</h4>
           <ul class="talk-2col">
             <li>The question a vector DB <b>can't</b> answer: what transitively depends on this?</li>
             <li>Pick a component → <b>Blast radius</b> (what breaks) or <b>Dependencies</b> (what it needs).</li>
@@ -301,7 +301,7 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
       <!-- ─────────────── SEARCH ─────────────── -->
       <section class="view" data-view="search">
         <div class="talk">
-          <h4>Vector + full-text - talking points</h4>
+          <h4>Vector + full-text</h4>
           <ul class="talk-2col">
             <li><b>Same table</b> as the graph also has a 1024-dim <span class="mono">VECTOR</span> + <span class="mono">FULLTEXT</span> index.</li>
             <li>Embeddings generated server-side by TiDB's <span class="mono">EMBED_TEXT</span> - no separate vector DB, no ETL.</li>
@@ -349,7 +349,7 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
       <!-- ─────────────── SCENARIOS ─────────────── -->
       <section class="view" data-view="scenarios">
         <div class="talk">
-          <h4>Why TiDB - talking points</h4>
+          <h4>Why TiDB</h4>
           <ul class="talk-2col">
             <li><b>One engine, every access pattern</b>: SQL + graph (CTE) + vector + full-text, no ETL.</li>
             <li><b>ACID for agent state</b>: component + edge + log in one transaction.</li>
@@ -363,6 +363,6 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
 
     </main>
   </div>
-  <script src="/static/app.js?v=14"></script>
+  <script src="/static/app.js?v=15"></script>
 </body>
 </html>
