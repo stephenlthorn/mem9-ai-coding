@@ -33,9 +33,9 @@
   /* Layout helpers */
   .section { page-break-before: always; padding-top: 2mm; }
   .lede { font-size: 11.5pt; color:#39435a; margin-bottom: 10pt; }
-  figure { margin: 8pt 0 4pt; page-break-inside: avoid; }
-  figure img { width: 100%; border: 1px solid #d3d9e4; border-radius: 5pt; }
-  figcaption { font-size: 8.3pt; color:#6b7689; margin-top: 4pt; font-style: italic; }
+  figure { margin: 7pt 0 3pt; break-inside: avoid; }
+  figure img { width: 100%; max-height: 150mm; object-fit: contain; border: 1px solid #d3d9e4; border-radius: 5pt; }
+  figcaption { font-size: 8.3pt; color:#6b7689; margin-top: 3pt; font-style: italic; }
   .grid2 { display: flex; gap: 10pt; }
   .grid2 > div { flex: 1; }
 
@@ -146,44 +146,31 @@
 <!-- ───────────────── 3. THE LIVE DEMO ───────────────── -->
 <div class="section">
   <h2>The live demo: three tools, one task</h2>
-  <p class="lede">The task: production is complete, but <b>staging is missing its DNS and SSO layer</b>. Watch three different AI coding tools finish it - each picking up where the last left off, because they share one TiDB brain.</p>
-
-  <figure>
-    <img src="img-live/dash-gap.png" />
-    <figcaption>Starting state. Left: the live activity feed (one row per query/write from any tool). Right: the knowledge graph and the staging-parity strip - four components are missing in staging (red ✗).</figcaption>
-  </figure>
+  <p class="lede">The task: production is complete, but <b>staging is missing its DNS and SSO layer</b> (four components). Watch three different AI coding tools finish it - each picking up where the last left off, because they share one TiDB brain. The terminal captures below are unedited tool output.</p>
 
   <h3>Step 1 - Claude Code inspects, then builds the asset layer <span class="tag t-cc">claude-code</span></h3>
   <p>It first <b>queries</b> the graph (it does not assume), then scaffolds the missing static-assets bucket and its Cloudflare DNS record by composing the existing <span class="mono">S3Bucket</span> and <span class="mono">DnsRecord</span> libraries - never raw cloud resources - and <b>writes each one back</b>.</p>
   <figure>
     <img src="img-live/claude-terminal.png" />
-    <figcaption>Real Claude Code output. It recorded both components (IDs 25 &amp; 26) and reports the rules it followed: no raw <span class="mono">aws.*</span>, <span class="mono">proxied: true</span> library-enforced, all four required tags, <span class="mono">acme-&lt;env&gt;-&lt;name&gt;</span> naming, and KB writeback with dependency edges.</figcaption>
-  </figure>
-  <figure>
-    <img src="img-live/dash-claude.png" />
-    <figcaption>The dashboard after Claude Code: <span class="mono">claude-code</span> QUERY rows (it checked first) then two WRITE rows; the staging gap drops from 4 to 2.</figcaption>
+    <figcaption>Real Claude Code output. It recorded both components (IDs 25 &amp; 26) and reports the rules it followed: no raw <span class="mono">aws.*</span>, <span class="mono">proxied: true</span> library-enforced, all four required tags, <span class="mono">acme-&lt;env&gt;-&lt;name&gt;</span> naming, KB writeback with dependency edges.</figcaption>
   </figure>
 
   <h3>Step 2 - Codex picks up warm <span class="tag t-cx">codex</span></h3>
-  <p>Codex opens with <b>zero local memory</b> of Claude Code's work. It reads the shared <span class="mono">session_log</span>, sees exactly what was just created, and continues with the admin-portal DNS record. No copy-pasting context between tools.</p>
+  <p>Codex opens with <b>zero local memory</b> of Claude Code's work. It reads the shared <span class="mono">session_log</span>, sees what was just created, and continues with the admin DNS record. No copy-pasting context between tools.</p>
   <figure>
     <img src="img-live/codex-terminal.png" />
-    <figcaption>Real Codex output: "The previous session most recently created <span class="mono">acme-staging-assets-dns</span>" - it read the shared log, then wrote <span class="mono">acme-staging-admin-dns</span> (id=27). A different tool, continuing seamlessly.</figcaption>
-  </figure>
-  <figure>
-    <img src="img-live/dash-codex.png" />
-    <figcaption>The dashboard now shows <span class="mono">codex</span> rows above the <span class="mono">claude-code</span> rows - two tools, one feed, one database. Gap down to 1.</figcaption>
+    <figcaption>Real Codex output: "The previous session most recently created <span class="mono">acme-staging-assets-dns</span>" - it read the shared log, then wrote <span class="mono">acme-staging-admin-dns</span> (id=27). A different vendor's tool, continuing seamlessly.</figcaption>
   </figure>
 
-  <h3>Step 3 - Cursor verifies with a recursive CTE, then finishes <span class="tag t-cr">cursor</span></h3>
-  <p>Before writing the SSO application, Cursor runs a <b>recursive query</b> over the graph to confirm the dependency pattern (an SSO app must redirect to a DNS record), then scaffolds it correctly. Staging reaches parity.</p>
+  <h3>Step 3 - Cursor verifies with a recursive query, then finishes <span class="tag t-cr">cursor</span></h3>
+  <p>Before writing the SSO application, Cursor runs a <b>recursive query</b> to confirm the dependency pattern (an SSO app must redirect to a DNS record), then scaffolds it correctly. Staging reaches parity.</p>
   <figure>
     <img src="img-live/cursor-cte-terminal.png" />
-    <figcaption>Real Cursor output - the headline moment. It ran a recursive CTE returning the transitive closure <span class="mono">SsoApplication → acme-prod-admin-dns → DnsRecord</span> (depth 1 and 2), <i>proving</i> the SSO app must redirect to a DnsRecord before writing a line of code.</figcaption>
+    <figcaption>Real Cursor output - the headline moment. The recursive query returns the chain <span class="mono">SsoApplication → acme-prod-admin-dns → DnsRecord</span>, <i>proving</i> the dependency before writing a line of code.</figcaption>
   </figure>
   <figure>
     <img src="img-live/dash-cursor.png" />
-    <figcaption>All three tools' activity in one feed (cursor, codex, claude-code). Cursor's write completes the set - staging now matches production, built by three tools sharing one memory.</figcaption>
+    <figcaption>The result, in the dashboard: all three tools' activity in one feed (cursor, codex, claude-code) and the staging-parity strip now fully green. Built by three tools sharing one memory.</figcaption>
   </figure>
 </div>
 
@@ -398,9 +385,30 @@ the KB: does PostgresDatabase already create one?</div>
 <span class="cm">-- hybrid = reciprocal rank fusion of the two result sets, same table.</span></div>
 </div>
 
-<!-- ───────────────── 9. HOW TO RUN ───────────────── -->
+<!-- ───────────────── 9. RUN IT ON YOUR REPO ───────────────── -->
 <div class="section">
-  <h2>How to run it</h2>
+  <h2>Running it on your own repo</h2>
+  <p class="lede">Everything you saw - query-before-build, convention checks, recursive dependency traversal, vector + full-text search, cross-tool handoff - is already general. The one piece to add for a real codebase is a small <b>ingestion job</b> that populates the graph from your source. Everything downstream is unchanged; it reads the same three tables.</p>
+
+  <h3>The ingestion job (runs in CI on every merge)</h3>
+  <ol class="steps">
+    <li><b>Read the resource graph.</b> Parse the Pulumi program (<span class="mono">pulumi stack export</span> / the resource tree, or the TypeScript AST) to enumerate every component and its parent-child and cross-references.</li>
+    <li><b>Upsert nodes + edges.</b> Each component becomes a row in <span class="mono">infra_components</span>; each relationship a row in <span class="mono">component_edges</span> (<span class="mono">instantiates</span>, <span class="mono">fronts</span>, <span class="mono">redirects_to</span>, ...).</li>
+    <li><b>Embed.</b> Call <span class="mono">EMBED_TEXT</span> on each summary so semantic search works the moment it lands - no embedding pipeline to run.</li>
+    <li><b>Log the scan</b> in <span class="mono">session_log</span> so tools can see "graph last synced at commit abc123."</li>
+  </ol>
+
+  <div class="sqlbox"><span class="cm"># ingest.py - run in CI; idempotent upserts keep the graph in sync with main</span>
+<span class="kw">for</span> resource <span class="kw">in</span> pulumi_resource_graph():
+    write_component(name=resource.urn_name, type=resource.kind, env=resource.stack,
+                    summary=resource.doc, depends_on=resource.parent)   <span class="cm"># embeds + edges, atomic</span></div>
+
+  <div class="callout good"><b>That is the whole gap between this demo and production.</b> The graph the tools query is the same shape; only its <i>source</i> changes from the seed script to your live repo. Query, CTE, search, convention-enforcement, and cross-tool memory all work as shown.</div>
+</div>
+
+<!-- ───────────────── 10. HOW TO RUN THE DEMO ───────────────── -->
+<div class="section">
+  <h2>How to run the demo</h2>
   <p class="lede">The repository ships everything: the TiDB-backed knowledge base, both MCP servers, per-tool configs, the dashboard, and a presenter's runbook.</p>
   <ol class="steps">
     <li><b>Configure TiDB.</b> <span class="mono">cp .env.example .env</span> and paste your TiDB Cloud credentials (Connect &rarr; General).</li>
