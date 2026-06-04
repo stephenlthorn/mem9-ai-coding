@@ -212,7 +212,37 @@
   <div class="callout warn"><b>Why a vector store can't do this.</b> Vector similarity finds <i>related-looking</i> text. It cannot compute a transitive closure over a dependency graph. This is reachability - exactly what SQL recursion is built for - and TiDB runs it as a distributed query alongside the same tables that hold the components, their tags, and (optionally) their vector embeddings.</div>
 </div>
 
-<!-- ───────────────── 5. WHY TIDB ───────────────── -->
+<!-- ───────────────── 5. ONE ENGINE: VECTOR + FTS + GRAPH ───────────────── -->
+<div class="section">
+  <h2>One engine: vector + full-text + graph, one table</h2>
+  <p class="lede">The same <span class="mono">infra_components</span> table that holds the graph also carries a 1024-dim <span class="mono">VECTOR</span> column - embedded server-side by TiDB's <span class="mono">EMBED_TEXT</span> - and a <span class="mono">FULLTEXT</span> index. Semantic, keyword, and hybrid search all run on it. No separate vector database, no ETL, no sync lag.</p>
+
+  <figure>
+    <img src="img-live/search-hybrid.png" />
+    <figcaption>Hybrid search for <i>"admin portal access control login"</i>. Reciprocal rank fusion over two queries on the same table. The top two rows match on <b>both</b> signals (<span class="mono">vector</span> + <span class="mono">FTS ✓</span>); the rest are <b>vector-only</b> - the keyword index missed them (<span class="mono">FTS ✗</span>) but the embedding caught them semantically.</figcaption>
+  </figure>
+
+  <div class="callout"><b>The headline:</b> full-text alone returns <b>2</b> results; the same query, same table, via embeddings returns <b>6</b> - including <span class="mono">SsoApplication</span> and the analytics database, which contain none of the query's keywords. Hybrid gives you both, ranked together.</div>
+
+  <div class="grid2">
+    <div>
+      <figure>
+        <img src="img-live/search-vector.png" />
+        <figcaption>Vector mode: pure semantic ranking by cosine distance (<span class="mono">VEC_COSINE_DISTANCE</span> over <span class="mono">EMBED_TEXT</span>). 6 results.</figcaption>
+      </figure>
+    </div>
+    <div>
+      <figure>
+        <img src="img-live/search-fts.png" />
+        <figcaption>Full-text mode: keyword ranking via <span class="mono">FTS_MATCH_WORD</span> on the FULLTEXT index. Only 2 results - keywords miss the rest.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="callout good"><b>Why it matters:</b> a coding agent searching its memory for "how do we do auth" needs <i>meaning</i>, not string matching. TiDB gives the agent vector recall, keyword precision, and graph reachability through one SQL endpoint - the same endpoint that already holds the structured state.</div>
+</div>
+
+<!-- ───────────────── 6. WHY TIDB ───────────────── -->
 <div class="section">
   <h2>Why TiDB is the right brain for agents</h2>
   <p class="lede">In the emerging pattern, the database is the agent's persistent memory, execution-state store, and shared knowledge base. That demands more than a vector index.</p>
