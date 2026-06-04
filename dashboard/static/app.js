@@ -368,12 +368,19 @@ async function loadScenarios() {
 }
 
 // ── Reset ─────────────────────────────────────────────────────────────────────
-$('reset-btn').addEventListener('click', async () => { await postJSON('/api/reset'); await loadAll(); });
+$('reset-btn').addEventListener('click', async () => {
+  if (!confirm('Reset the demo? This deletes everything the agents wrote and restores the clean baseline (4 staging components missing again).')) return;
+  $('reset-btn').textContent = 'Resetting…';
+  await postJSON('/api/reset');
+  await loadAll();
+  if (document.querySelector('.view[data-view="live"]').classList.contains('active')) liveGraph.set(filtered(), _edges, {});
+  $('reset-btn').textContent = 'Reset KB';
+});
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 function applyHash() {
   const h = (location.hash || '').replace('#', '');
-  if (['live', 'cte', 'search', 'scenarios'].includes(h)) showTab(h);
+  if (['scenario', 'architecture', 'sysprompt', 'live', 'cte', 'search', 'scenarios'].includes(h)) showTab(h);
 }
 window.addEventListener('hashchange', applyHash);
 getJSON('/api/backend').then(d => { $('backend-name').textContent = '· ' + d.backend; }).catch(() => {});

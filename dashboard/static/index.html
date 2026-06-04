@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>tidb-infra-kb · one brain for every coding tool</title>
-  <link rel="stylesheet" href="/static/styles.css?v=9" />
+  <link rel="stylesheet" href="/static/styles.css?v=10" />
 </head>
 <body>
   <div id="app">
@@ -26,17 +26,137 @@
         </div>
       </div>
       <nav class="tabs">
-        <button class="tab active" data-tab="live">Live</button>
-        <button class="tab" data-tab="cte">Dependency graph (CTE)</button>
-        <button class="tab" data-tab="search">Vector + full-text search</button>
-        <button class="tab" data-tab="scenarios">Why TiDB · scenarios</button>
+        <button class="tab active" data-tab="scenario">Scenario</button>
+        <button class="tab" data-tab="architecture">Architecture</button>
+        <button class="tab" data-tab="sysprompt">System prompt</button>
+        <button class="tab" data-tab="live">Live</button>
+        <button class="tab" data-tab="cte">Dependency CTE</button>
+        <button class="tab" data-tab="search">Vector + FTS</button>
+        <button class="tab" data-tab="scenarios">Why TiDB</button>
       </nav>
     </header>
 
     <main class="main">
 
-      <!-- ─────────────── LIVE (default) ─────────────── -->
-      <section class="view active" data-view="live">
+      <!-- ─────────────── SCENARIO (default) ─────────────── -->
+      <section class="view active" data-view="scenario">
+        <div class="scn-hero">
+          <h1 class="scn-title">One repo. Many AI agents. No shared memory.</h1>
+          <p class="scn-sub">The Acme platform team runs a <b>Pulumi GitHub repo</b> for infrastructure-as-code across AWS, Cloudflare, and Okta. Increasingly that code is written by <b>AI coding agents</b> - and each one works blind and alone.</p>
+        </div>
+
+        <div class="scn-grid">
+          <div class="scn-card">
+            <div class="scn-card-h">The codebase</div>
+            <p>A Pulumi (TypeScript) monorepo. Reusable component libraries (<span class="mono">S3Bucket</span>, <span class="mono">PostgresDatabase</span>, <span class="mono">DnsRecord</span>, <span class="mono">SsoApplication</span>) composed into <span class="mono">production</span> and <span class="mono">staging</span> environments.</p>
+          </div>
+          <div class="scn-card">
+            <div class="scn-card-h">The agents</div>
+            <p>Three <b>different</b> AI coding tools, used by different developers, all editing the same infra:</p>
+            <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+              <span class="tool-pill tool-claude-code">Claude Code</span>
+              <span class="tool-pill tool-codex">Codex</span>
+              <span class="tool-pill tool-cursor">Cursor</span>
+            </div>
+          </div>
+          <div class="scn-card">
+            <div class="scn-card-h">The task today</div>
+            <p><b>Production is complete. Staging has drifted</b> - it's missing its DNS and SSO layer (4 components). The job: bring staging to parity with production, using all three tools.</p>
+          </div>
+        </div>
+
+        <h3 class="scn-h3">Why each agent fails on its own</h3>
+        <div class="scn-fails">
+          <div class="scn-fail"><b>Duplication.</b> Can't see a component already exists → builds a second one.</div>
+          <div class="scn-fail"><b>Broken conventions.</b> Doesn't know the rules → writes a raw <span class="mono">aws.s3.Bucket</span> instead of the library wrapper.</div>
+          <div class="scn-fail"><b>Invisible blast radius.</b> Can't see how things connect → changes a shared library, breaks prod two hops away.</div>
+          <div class="scn-fail"><b>Cold starts.</b> The next tool/session re-derives everything and re-makes the same mistakes.</div>
+        </div>
+
+        <div class="scn-fix">The fix: a <b>shared, queryable memory</b> in TiDB Cloud that every agent reads before it builds and writes back when it's done. No agent starts cold; none repeats another's work.</div>
+      </section>
+
+      <!-- ─────────────── ARCHITECTURE ─────────────── -->
+      <section class="view" data-view="architecture">
+        <p class="cte-intro">Three real coding tools, each loading the same two MCP servers, all reading and writing <b>one TiDB Cloud database</b> over the MySQL protocol. The dashboard is just a live window onto that same database.</p>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Architecture</span></div>
+          <div class="arch-wrap">
+            <svg viewBox="0 0 780 320" xmlns="http://www.w3.org/2000/svg" class="arch-svg">
+              <defs>
+                <marker id="dah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7585a6"/></marker>
+                <linearGradient id="cyl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22305a"/><stop offset="1" stop-color="#141d36"/></linearGradient>
+              </defs>
+              <g font-family="-apple-system, sans-serif" font-size="15" text-anchor="middle">
+                <rect x="20" y="34" width="170" height="48" rx="9" fill="rgba(204,120,92,0.12)" stroke="#CC785C" stroke-width="1.5"/><text x="105" y="64" fill="#CC785C" font-weight="700">Claude Code</text>
+                <rect x="20" y="134" width="170" height="48" rx="9" fill="rgba(16,163,127,0.12)" stroke="#10A37F" stroke-width="1.5"/><text x="105" y="164" fill="#10A37F" font-weight="700">Codex</text>
+                <rect x="20" y="234" width="170" height="48" rx="9" fill="rgba(74,144,226,0.12)" stroke="#4A90E2" stroke-width="1.5"/><text x="105" y="264" fill="#4A90E2" font-weight="700">Cursor</text>
+                <rect x="300" y="120" width="150" height="76" rx="10" fill="#1a1e2a" stroke="#3a4a6e" stroke-width="1.5"/>
+                <text x="375" y="150" fill="#e8eaf0" font-weight="700">MCP</text>
+                <text x="375" y="170" fill="#8089a0" font-size="12">tidb</text>
+                <text x="375" y="186" fill="#8089a0" font-size="12">tidb-infra-kb</text>
+                <ellipse cx="640" cy="120" rx="78" ry="20" fill="#2a3a66"/>
+                <rect x="562" y="120" width="156" height="96" fill="url(#cyl)"/>
+                <ellipse cx="640" cy="216" rx="78" ry="20" fill="#141d36"/>
+                <ellipse cx="640" cy="120" rx="78" ry="20" fill="none" stroke="#3a4a6e"/>
+                <text x="640" y="160" fill="#fff" font-weight="700" font-size="17">TiDB Cloud</text>
+                <text x="640" y="182" fill="#aab6cf" font-size="12">shared memory</text>
+                <rect x="566" y="262" width="148" height="40" rx="8" fill="#13161e" stroke="#3a4a6e" stroke-width="1.5"/><text x="640" y="287" fill="#cdd8ef" font-weight="700" font-size="14">Dashboard</text>
+              </g>
+              <g stroke="#7585a6" stroke-width="2" fill="none">
+                <path d="M190,58 C250,58 245,150 298,150" marker-end="url(#dah)"/>
+                <path d="M190,158 L298,158" marker-end="url(#dah)"/>
+                <path d="M190,258 C250,258 245,176 298,168" marker-end="url(#dah)"/>
+                <path d="M450,158 L556,150" marker-end="url(#dah)"/>
+                <path d="M640,216 L640,260" marker-end="url(#dah)" stroke-dasharray="4,4"/>
+              </g>
+              <text x="505" y="143" fill="#7585a6" font-size="12" font-family="sans-serif">SQL</text>
+            </svg>
+          </div>
+        </div>
+        <div class="arch-points">
+          <div class="arch-point"><b>MCP = the standard plug.</b> Each tool loads two servers: the official <span class="mono">tidb</span> MCP (raw SQL, vector, recursive CTE) and <span class="mono">tidb-infra-kb</span> (convention-checked reads/writes). No custom glue per tool.</div>
+          <div class="arch-point"><b>One database, not four.</b> Relational state, the dependency graph, vector embeddings, and full-text - all in the same TiDB tables, with ACID across concurrent writes from all three agents.</div>
+          <div class="arch-point"><b>The dashboard reads the same DB.</b> It's an observability window, not the system. Everything you see is a live query against TiDB.</div>
+        </div>
+      </section>
+
+      <!-- ─────────────── SYSTEM PROMPT ─────────────── -->
+      <section class="view" data-view="sysprompt">
+        <p class="cte-intro">This is what makes it <b>automatic</b>. Each tool loads a rules file (<span class="mono">CLAUDE.md</span> / <span class="mono">AGENTS.md</span> / <span class="mono">.cursorrules</span>) containing a <b>standing instruction</b> - so on <i>every</i> session, before any task, the agent already knows to read and write the shared memory. Nothing is hard-coded; this is configuration a team owns.</p>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Standing instruction (loaded into every agent, every session)</span></div>
+          <pre class="sysprompt-block">Before writing any infrastructure code, query the tidb-infra-kb MCP first:
+  - what components already exist (don't duplicate)
+  - how they connect (dependency edges)
+  - what previous sessions did (session_log)
+
+Never use raw aws.* / cloudflare.* / okta.* resources - always compose the
+reusable library components in libs/. Follow the acme-&lt;env&gt;-&lt;name&gt; naming
+convention and apply the required tags (Environment, ManagedBy, Component, Team).
+
+After you create or change anything, record it with write_component so the next
+session - and the next tool - starts warm.</pre>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">The MCP servers each tool connects to</span></div>
+          <pre class="sysprompt-block">{
+  "mcpServers": {
+    "tidb":          { "command": "uvx", "args": ["--from","pytidb[mcp]","tidb-mcp-server"] },
+    "tidb-infra-kb": { "command": "python", "args": ["-m","src.mcp_server"] }
+  }
+}
+
+tidb           -> official PingCAP MCP: db_query, db_execute (raw SQL, vector, CTE)
+tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomic)</pre>
+        </div>
+        <div class="scn-fix">Because it lives in the rules file, the "read first, write back" behavior happens on every run - across all three tools - with no per-task reminder.</div>
+      </section>
+
+      <!-- ─────────────── LIVE ─────────────── -->
+      <section class="view" data-view="live">
         <div class="live-split">
 
           <!-- LEFT: what the tools are doing -->
@@ -173,6 +293,6 @@
 
     </main>
   </div>
-  <script src="/static/app.js?v=9"></script>
+  <script src="/static/app.js?v=10"></script>
 </body>
 </html>

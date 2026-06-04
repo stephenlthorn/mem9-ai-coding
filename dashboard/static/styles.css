@@ -58,7 +58,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); font
 .btn-ghost:hover { color: #fff; border-color: #4A90E2; }
 
 /* ── Tabs ── */
-.tabs { max-width: 1340px; margin: 0 auto; padding: 0 22px; display: flex; gap: 4px; }
+.tabs { max-width: 1340px; margin: 0 auto; padding: 0 22px; display: flex; gap: 4px; flex-wrap: wrap; }
 .tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-faint); cursor: pointer; font-size: 13px; font-weight: 600; padding: 10px 14px; transition: all 0.15s; }
 .tab:hover { color: var(--text-dim); }
 .tab.active { color: #fff; border-bottom-color: #4A90E2; }
@@ -303,3 +303,28 @@ tr.row-new td { background: rgba(48,209,88,0.05); }
 
 /* graph interaction hint */
 .leg-hint { font-size: 10px; color: var(--text-faint); margin-left: auto; font-style: italic; }
+
+/* ── Scenario / Architecture / System-prompt tabs (v10) ──────────────────── */
+.scn-hero { margin: 4px 0 18px; }
+.scn-title { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 8px; letter-spacing: -0.3px; }
+.scn-sub { font-size: 14px; color: var(--text-dim); max-width: 880px; line-height: 1.6; }
+.scn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+@media (max-width: 900px) { .scn-grid { grid-template-columns: 1fr; } }
+.scn-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.scn-card-h { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4A90E2; margin-bottom: 8px; }
+.scn-card p { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+.scn-h3 { font-size: 14px; font-weight: 600; margin: 6px 0 10px; }
+.scn-fails { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+@media (max-width: 760px) { .scn-fails { grid-template-columns: 1fr; } }
+.scn-fail { font-size: 13px; color: var(--text-dim); background: rgba(255,69,58,0.05); border-left: 3px solid #e0573f; border-radius: 0 8px 8px 0; padding: 10px 14px; }
+.scn-fail b { color: var(--text); }
+.scn-fix { font-size: 14px; color: var(--text); background: rgba(48,209,88,0.06); border-left: 3px solid var(--lib); border-radius: 0 8px 8px 0; padding: 14px 16px; }
+
+.arch-wrap { padding: 24px; background: radial-gradient(circle at 50% 40%, #11151d, #0b0d12); }
+.arch-svg { display: block; width: 100%; max-width: 820px; margin: 0 auto; height: auto; }
+.arch-points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; }
+@media (max-width: 900px) { .arch-points { grid-template-columns: 1fr; } }
+.arch-point { font-size: 12.5px; color: var(--text-dim); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 13px 15px; line-height: 1.55; }
+.arch-point b { color: var(--text); }
+
+.sysprompt-block { font-family: var(--mono); font-size: 12px; line-height: 1.6; color: #cdd6ea; background: #0d1018; padding: 16px 18px; white-space: pre-wrap; border-radius: 0 0 var(--radius) var(--radius); }
