@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>tidb-infra-kb · one brain for every coding tool</title>
-  <link rel="stylesheet" href="/static/styles.css?v=16" />
+  <link rel="stylesheet" href="/static/styles.css?v=17" />
 </head>
 <body>
   <div id="app">
@@ -264,7 +264,12 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
               <span class="rb-title">Inspect the gap, scaffold the asset layer</span>
             </div>
             <div class="rb-say">
-              <b>Say:</b> "Claude Code queries TiDB first - it doesn't assume. It finds staging is missing static-assets and assets-DNS. It composes the existing library components, writes both back to TiDB. Watch the parity strip flip from 4 missing to 2."
+              <ul>
+                <li>Claude Code queries TiDB first (doesn't assume)</li>
+                <li>It finds staging is missing static-assets and assets-DNS</li>
+                <li>It composes the existing library components and writes both back to TiDB</li>
+                <li>Parity goes from 4 missing to 2</li>
+              </ul>
             </div>
             <div class="rb-cmd-label">Paste into Claude Code pane:</div>
             <div class="rb-cmd-wrap">
@@ -280,7 +285,13 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
               <span class="rb-title">Open cold, pick up warm from TiDB session log</span>
             </div>
             <div class="rb-say">
-              <b>Say:</b> "Codex just opened. Zero memory of what Claude Code did. It reads the shared TiDB session log - sees exactly what was just created - and continues without any re-briefing. This is the part teams feel every day. Watch it add the admin-DNS and the parity strip drop to 1."
+              <ul>
+                <li>Codex just opened</li>
+                <li>Zero context of what Claude Code did</li>
+                <li>It reads the shared TiDB session log - sees exactly what was just created - and continues without any re-briefing</li>
+                <li>It adds the admin-DNS</li>
+                <li>Parity drops to 1 missing</li>
+              </ul>
             </div>
             <div class="rb-cmd-label">Paste into Codex pane:</div>
             <div class="rb-cmd-wrap">
@@ -296,7 +307,13 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
               <span class="rb-title">Run a recursive CTE to verify the pattern, then finish</span>
             </div>
             <div class="rb-say">
-              <b>Say:</b> "Cursor uses the official TiDB MCP to run a recursive query - it proves that an SSO app must redirect to a DNS record before writing a single line. That is graph reachability. A vector store cannot compute this. Then it builds the final component and staging reaches parity."
+              <ul>
+                <li>Cursor uses the official TiDB MCP to run a recursive query</li>
+                <li>SSO app must redirect to a DNS record before writing a single line</li>
+                <li>That is graph use benefit</li>
+                <li>A vector store cannot compute this</li>
+                <li>Then it builds the final component and staging reaches parity</li>
+              </ul>
             </div>
             <div class="rb-cmd-label">Paste into Cursor pane:</div>
             <div class="rb-cmd-wrap">
@@ -416,6 +433,6 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
 
     </main>
   </div>
-  <script src="/static/app.js?v=16"></script>
+  <script src="/static/app.js?v=17"></script>
 </body>
 </html>
