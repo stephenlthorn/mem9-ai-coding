@@ -292,7 +292,113 @@
   </div>
 </div>
 
-<!-- ───────────────── 7. HOW TO RUN ───────────────── -->
+<!-- ───────────────── 7. THE PROMPTS ───────────────── -->
+<div class="section">
+  <h2>How the tools are driven: the prompts</h2>
+  <p class="lede">The behaviour is prompt-driven. Two layers: a <b>standing instruction</b> in each tool's rules file (always read/write the shared memory), and the <b>per-task prompt</b> the developer types. Nothing is hard-coded - this is how a real team would configure it.</p>
+
+  <h3>Standing instruction (rules file: CLAUDE.md / AGENTS.md / .cursorrules)</h3>
+  <div class="sqlbox">Before writing any infrastructure code, query the tidb-infra-kb MCP first
+(what exists, how it connects, what previous sessions did). Never use raw
+aws.* / cloudflare.* resources - compose the library components. After you
+create anything, record it with write_component so the next session starts warm.</div>
+
+  <h3>Pane 1 - Claude Code</h3>
+  <div class="sqlbox">Use the tidb-infra-kb MCP. Query the knowledge base: what components exist in
+staging vs production, and what is staging missing? Then scaffold the missing
+staging static-assets bucket and its Cloudflare DNS record, composing the
+S3Bucket and DnsRecord libraries - never raw aws.* resources. Follow the
+acme-&lt;env&gt;-&lt;name&gt; naming and required tags. Record each new component with
+write_component.</div>
+
+  <h3>Pane 2 - Codex (opens cold, picks up warm)</h3>
+  <div class="sqlbox">Use the tidb-infra-kb MCP. Read the recent session_log - what did the previous
+session just create? Continue the staging build: add the admin-portal DNS record
+(acme-staging-admin-dns) matching the production pattern, composing DnsRecord.
+Record it with write_component.</div>
+
+  <h3>Pane 3 - Cursor (verify with a recursive CTE, then build)</h3>
+  <div class="sqlbox">Use the tidb MCP (db_query) to run a recursive CTE: what does the production
+acme-prod-admin-sso transitively depend on? Confirm an SSO app must redirect to a
+DnsRecord. Then scaffold acme-staging-admin-sso composing SsoApplication, with the
+redirect URI pointing at acme-staging-admin-dns. Record it with write_component.</div>
+
+  <h3>The guardrail prompt (duplicate-bucket scenario)</h3>
+  <div class="sqlbox">I'm about to add a backup S3 bucket for acme-staging-analytics-db. First query
+the KB: does PostgresDatabase already create one?</div>
+</div>
+
+<!-- ───────────────── 8. EVERY QUERY ───────────────── -->
+<div class="section">
+  <h2>Every query the demo runs</h2>
+  <p class="lede">Everything below executes on TiDB Cloud over the MySQL protocol - either through the official <span class="mono">tidb</span> MCP (<span class="mono">db_query</span> / <span class="mono">db_execute</span>) or the convention <span class="mono">tidb-infra-kb</span> MCP. Nothing is mocked.</p>
+
+  <h3>1. Inspect - what exists where (Claude Code)</h3>
+  <div class="sqlbox"><span class="kw">SELECT</span> environment, name, component_type
+<span class="kw">FROM</span> infra_components
+<span class="kw">WHERE</span> environment <span class="kw">IN</span> (<span style="color:#9ece6a">'staging'</span>, <span style="color:#9ece6a">'production'</span>)
+<span class="kw">ORDER BY</span> environment, component_type;</div>
+
+  <h3>2. Pick up warm - read the cross-session log (Codex)</h3>
+  <div class="sqlbox"><span class="kw">SELECT</span> developer, action, detail, created_at
+<span class="kw">FROM</span> session_log
+<span class="kw">ORDER BY</span> created_at <span class="kw">DESC</span> <span class="kw">LIMIT</span> 5;</div>
+
+  <h3>3. Prove a dependency pattern - recursive CTE (Cursor)</h3>
+  <div class="sqlbox"><span class="cm">-- what does acme-prod-admin-sso transitively depend on?</span>
+<span class="kw">WITH RECURSIVE</span> deps(from_id, to_id, relationship, depth) <span class="kw">AS</span> (
+    <span class="kw">SELECT</span> e.from_id, e.to_id, e.relationship, 1
+    <span class="kw">FROM</span> component_edges e <span class="kw">JOIN</span> infra_components c <span class="kw">ON</span> e.from_id = c.id
+    <span class="kw">WHERE</span> c.name = <span style="color:#9ece6a">'acme-prod-admin-sso'</span>
+  <span class="kw">UNION ALL</span>
+    <span class="kw">SELECT</span> e.from_id, e.to_id, e.relationship, d.depth + 1
+    <span class="kw">FROM</span> component_edges e <span class="kw">JOIN</span> deps d <span class="kw">ON</span> e.from_id = d.to_id
+    <span class="kw">WHERE</span> d.depth &lt; 10
+)
+<span class="kw">SELECT</span> d.depth, cf.name, d.relationship, ct.name
+<span class="kw">FROM</span> deps d <span class="kw">JOIN</span> infra_components cf <span class="kw">ON</span> d.from_id = cf.id
+        <span class="kw">JOIN</span> infra_components ct <span class="kw">ON</span> d.to_id = ct.id
+<span class="kw">ORDER BY</span> d.depth;</div>
+
+  <h3>4. The atomic write - what write_component actually does</h3>
+  <div class="sqlbox"><span class="cm">-- one transaction: component + dependency edge + audit log, all or nothing.</span>
+<span class="cm">-- the embedding is generated server-side by TiDB, no client model.</span>
+<span class="kw">INSERT INTO</span> infra_components (name, component_type, environment, summary, embedding)
+<span class="kw">VALUES</span> (<span style="color:#9ece6a">'acme-staging-admin-sso'</span>, <span style="color:#9ece6a">'Okta'</span>, <span style="color:#9ece6a">'staging'</span>, <span style="color:#9ece6a">'...'</span>,
+        <span class="fn">EMBED_TEXT</span>(<span style="color:#9ece6a">'tidbcloud_free/amazon/titan-embed-text-v2'</span>, <span style="color:#9ece6a">'...'</span>));
+<span class="kw">INSERT INTO</span> component_edges (from_id, to_id, relationship)
+<span class="kw">VALUES</span> (@sso_id, @dns_id, <span style="color:#9ece6a">'redirects_to'</span>);
+<span class="kw">INSERT INTO</span> session_log (developer, action, detail)
+<span class="kw">VALUES</span> (<span style="color:#9ece6a">'cursor'</span>, <span style="color:#9ece6a">'created'</span>, <span style="color:#9ece6a">'Created Okta component acme-staging-admin-sso'</span>);</div>
+
+  <h3>5. Blast radius - recursive CTE (Dependency-graph tab)</h3>
+  <div class="sqlbox"><span class="cm">-- what breaks if S3Bucket changes? walks dependents upward, any depth.</span>
+<span class="kw">WITH RECURSIVE</span> blast(from_id, to_id, relationship, depth) <span class="kw">AS</span> (
+    <span class="kw">SELECT</span> e.from_id, e.to_id, e.relationship, 1
+    <span class="kw">FROM</span> component_edges e <span class="kw">JOIN</span> infra_components c <span class="kw">ON</span> e.to_id = c.id
+    <span class="kw">WHERE</span> c.name = <span style="color:#9ece6a">'S3Bucket'</span>
+  <span class="kw">UNION ALL</span>
+    <span class="kw">SELECT</span> e.from_id, e.to_id, e.relationship, b.depth + 1
+    <span class="kw">FROM</span> component_edges e <span class="kw">JOIN</span> blast b <span class="kw">ON</span> e.to_id = b.from_id
+    <span class="kw">WHERE</span> b.depth &lt; 10
+)
+<span class="kw">SELECT</span> <span class="kw">DISTINCT</span> depth, from_id, relationship, to_id <span class="kw">FROM</span> blast <span class="kw">ORDER BY</span> depth;</div>
+
+  <h3>6. Search - vector, full-text, and hybrid (Search tab)</h3>
+  <div class="sqlbox"><span class="cm">-- semantic: TiDB embeds the query, ranks by cosine distance</span>
+<span class="kw">SELECT</span> name, <span class="fn">VEC_COSINE_DISTANCE</span>(embedding,
+         <span class="fn">EMBED_TEXT</span>(<span style="color:#9ece6a">'tidbcloud_free/amazon/titan-embed-text-v2'</span>, <span style="color:#9ece6a">'admin portal access control'</span>)) <span class="kw">AS</span> distance
+<span class="kw">FROM</span> infra_components <span class="kw">ORDER BY</span> distance <span class="kw">LIMIT</span> 6;
+
+<span class="cm">-- keyword: BM25 over the FULLTEXT index</span>
+<span class="kw">SELECT</span> name <span class="kw">FROM</span> infra_components
+<span class="kw">WHERE</span> <span class="fn">FTS_MATCH_WORD</span>(<span style="color:#9ece6a">'admin portal access control'</span>, summary)
+<span class="kw">ORDER BY</span> <span class="fn">FTS_MATCH_WORD</span>(<span style="color:#9ece6a">'admin portal access control'</span>, summary) <span class="kw">DESC</span> <span class="kw">LIMIT</span> 6;
+
+<span class="cm">-- hybrid = reciprocal rank fusion of the two result sets, same table.</span></div>
+</div>
+
+<!-- ───────────────── 9. HOW TO RUN ───────────────── -->
 <div class="section">
   <h2>How to run it</h2>
   <p class="lede">The repository ships everything: the TiDB-backed knowledge base, both MCP servers, per-tool configs, the dashboard, and a presenter's runbook.</p>

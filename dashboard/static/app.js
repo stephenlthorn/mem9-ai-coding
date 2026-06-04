@@ -15,8 +15,17 @@ const shortName = n => n.replace('acme-prod-', '').replace('acme-staging-', '');
 let _components = [], _edges = [], _activeEnv = 'all', _lastLogId = -1;
 
 // ── Graph engine (shared by Live + CTE) ──────────────────────────────────────
+// Force layout that SETTLES and stops (no perpetual jitter), with wheel-zoom,
+// drag-to-pan, and drag-a-node (pins it). Double-click resets the view.
 class GraphSim {
-  constructor(id) { this.canvas = $(id); this.raf = null; this.nodes = []; this.edges = []; this.opts = {}; }
+  constructor(id) {
+    this.canvas = $(id);
+    this.raf = null; this.nodes = []; this.edges = []; this.opts = {};
+    this.scale = 1; this.ox = 0; this.oy = 0;       // view transform
+    this.settleFrames = 0;
+    this.drag = null; this.pan = null;
+    this._wire();
+  }
   set(nodes, edges, opts = {}) {
     const W = this.canvas.width, H = this.canvas.height, cx = W / 2, cy = H / 2;
     const prev = Object.fromEntries(this.nodes.map(n => [n.name, n]));
@@ -25,35 +34,80 @@ class GraphSim {
       if (p) return Object.assign(p, c);
       const a = (i / nodes.length) * Math.PI * 2;
       const r = c.environment === 'library' ? 52 : c.environment === 'production' ? 150 : 100;
-      return { ...c, x: cx + r * Math.cos(a) + (Math.random() - 0.5) * 22, y: cy + r * Math.sin(a) + (Math.random() - 0.5) * 22, vx: 0, vy: 0 };
+      return { ...c, x: cx + r * Math.cos(a) + (Math.random() - 0.5) * 22, y: cy + r * Math.sin(a) + (Math.random() - 0.5) * 22, vx: 0, vy: 0, fixed: false };
     });
     const names = new Set(this.nodes.map(n => n.name));
     this.edges = edges.filter(e => names.has(e.from_name) && names.has(e.to_name));
     this.opts = opts;
-    if (!this.raf) this._loop();
+    this._wake();
   }
   stop() { if (this.raf) cancelAnimationFrame(this.raf); this.raf = null; }
+  _wake() { this.settleFrames = 0; if (!this.raf) this.raf = requestAnimationFrame(() => this._loop()); }
+
+  // screen (CSS) → canvas-internal → world coordinates
+  _toWorld(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const cxp = (e.clientX - rect.left) * (this.canvas.width / rect.width);
+    const cyp = (e.clientY - rect.top) * (this.canvas.height / rect.height);
+    return { cxp, cyp, x: (cxp - this.ox) / this.scale, y: (cyp - this.oy) / this.scale };
+  }
+  _wire() {
+    const c = this.canvas;
+    c.style.cursor = 'grab';
+    c.addEventListener('wheel', e => {
+      e.preventDefault();
+      const p = this._toWorld(e);
+      const k = Math.exp(-e.deltaY * 0.0015);
+      const ns = Math.max(0.4, Math.min(4, this.scale * k));
+      this.ox = p.cxp - p.x * ns; this.oy = p.cyp - p.y * ns; this.scale = ns;
+      this._wake();
+    }, { passive: false });
+    c.addEventListener('mousedown', e => {
+      const p = this._toWorld(e);
+      const hit = this.nodes.find(n => Math.hypot(p.x - n.x, p.y - n.y) < (n.environment === 'library' ? 22 : 17));
+      if (hit) { this.drag = hit; hit.fixed = true; c.style.cursor = 'grabbing'; }
+      else { this.pan = { x: p.cxp, y: p.cyp, ox: this.ox, oy: this.oy }; c.style.cursor = 'grabbing'; }
+      this._wake();
+    });
+    window.addEventListener('mousemove', e => {
+      if (this.drag) { const p = this._toWorld(e); this.drag.x = p.x; this.drag.y = p.y; this.drag.vx = this.drag.vy = 0; this._wake(); }
+      else if (this.pan) { const p = this._toWorld(e); this.ox = this.pan.ox + (p.cxp - this.pan.x); this.oy = this.pan.oy + (p.cyp - this.pan.y); this._wake(); }
+    });
+    window.addEventListener('mouseup', () => { if (this.drag || this.pan) c.style.cursor = 'grab'; this.drag = null; this.pan = null; });
+    c.addEventListener('dblclick', () => { this.scale = 1; this.ox = 0; this.oy = 0; this.nodes.forEach(n => n.fixed = false); this._wake(); });
+  }
   _loop() {
     const W = this.canvas.width, H = this.canvas.height, cx = W / 2, cy = H / 2;
     const N = this.nodes, byName = Object.fromEntries(N.map(n => [n.name, n]));
-    for (let i = 0; i < N.length; i++) for (let j = i + 1; j < N.length; j++) {
-      const a = N[i], b = N[j], dx = a.x - b.x, dy = a.y - b.y, f = 2300 / (dx * dx + dy * dy + 1);
-      a.vx += dx * f; a.vy += dy * f; b.vx -= dx * f; b.vy -= dy * f;
+    let energy = 0;
+    if (!this.drag) {  // pause physics while dragging a node
+      for (let i = 0; i < N.length; i++) for (let j = i + 1; j < N.length; j++) {
+        const a = N[i], b = N[j], dx = a.x - b.x, dy = a.y - b.y, f = 2300 / (dx * dx + dy * dy + 1);
+        a.vx += dx * f; a.vy += dy * f; b.vx -= dx * f; b.vy -= dy * f;
+      }
+      this.edges.forEach(e => {
+        const a = byName[e.from_name], b = byName[e.to_name]; if (!a || !b) return;
+        const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) + 0.001, f = (d - 112) * 0.024;
+        a.vx += dx / d * f; a.vy += dy / d * f; b.vx -= dx / d * f; b.vy -= dy / d * f;
+      });
+      N.forEach(n => {
+        if (n.fixed) { n.vx = n.vy = 0; return; }
+        n.vx += (cx - n.x) * 0.008; n.vy += (cy - n.y) * 0.008; n.vx *= 0.78; n.vy *= 0.78;
+        n.x = Math.max(44, Math.min(W - 44, n.x + n.vx)); n.y = Math.max(26, Math.min(H - 26, n.y + n.vy));
+        energy += n.vx * n.vx + n.vy * n.vy;
+      });
     }
-    this.edges.forEach(e => {
-      const a = byName[e.from_name], b = byName[e.to_name]; if (!a || !b) return;
-      const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) + 0.001, f = (d - 112) * 0.024;
-      a.vx += dx / d * f; a.vy += dy / d * f; b.vx -= dx / d * f; b.vy -= dy / d * f;
-    });
-    N.forEach(n => {
-      n.vx += (cx - n.x) * 0.008; n.vy += (cy - n.y) * 0.008; n.vx *= 0.78; n.vy *= 0.78;
-      n.x = Math.max(44, Math.min(W - 44, n.x + n.vx)); n.y = Math.max(26, Math.min(H - 26, n.y + n.vy));
-    });
-    this._draw(); this.raf = requestAnimationFrame(() => this._loop());
+    this._draw();
+    // settle: once motion is negligible and nothing is being dragged, stop.
+    if (!this.drag && !this.pan && energy < 0.05) this.settleFrames++; else this.settleFrames = 0;
+    if (this.settleFrames > 20) { this.raf = null; return; }
+    this.raf = requestAnimationFrame(() => this._loop());
   }
   _draw() {
     const ctx = this.canvas.getContext('2d'), W = this.canvas.width, H = this.canvas.height;
     ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    ctx.translate(this.ox, this.oy); ctx.scale(this.scale, this.scale);
     const byName = Object.fromEntries(this.nodes.map(n => [n.name, n]));
     const { highlight, depthMap, dim } = this.opts;
     this.edges.forEach(e => {
@@ -92,6 +146,7 @@ class GraphSim {
       ctx.fillText(shortName(n.name), n.x, n.y + r + 10);
       ctx.restore();
     });
+    ctx.restore();   // end view transform (zoom/pan)
   }
 }
 
@@ -115,9 +170,10 @@ function renderFeed(entries) {
   if (!entries.length) { c.appendChild(el('div', 'feed-empty', 'No activity yet. Launch a CLI and ask it to query the knowledge base.')); return; }
   entries.forEach(e => {
     const dev = (e.developer || 'unknown').replace(/[^a-z-]/gi, '');
+    const devLabel = e.developer === 'seed' ? 'baseline' : (e.developer || '?');
     const row = el('div', `feed-row ${e.action === 'created' ? 'is-write' : 'is-query'}`);
     const left = el('div', 'feed-left');
-    left.appendChild(el('span', `feed-dev dev-${dev}`, e.developer || '?'));
+    left.appendChild(el('span', `feed-dev dev-${dev}`, devLabel));
     left.appendChild(el('span', `feed-action act-${e.action}`, e.action === 'created' ? 'WRITE' : 'QUERY'));
     row.appendChild(left);
     row.appendChild(el('div', 'feed-detail', e.detail || ''));
@@ -167,12 +223,14 @@ async function poll() {
   const [log, comps, missing] = await Promise.all([
     getJSON('/api/session-log'), getJSON('/api/components'), getJSON('/api/missing'),
   ]);
-  renderFeed(log);
   const newest = log.length ? log[0].id : -1;
   const grew = comps.length !== _components.length;
+  // Only re-render when something actually changed (prevents the feed/graph
+  // from flickering every poll).
+  if (newest !== _lastLogId) renderFeed(log);
   if (grew || newest !== _lastLogId) {
     _components = comps; _edges = await getJSON('/api/edges');
-    if ($('live-canvas').offsetParent !== null) liveGraph.set(filtered(), _edges, {});
+    if (grew && $('live-canvas').offsetParent !== null) liveGraph.set(filtered(), _edges, {});
     renderParity(comps, missing);
     _lastLogId = newest;
   }

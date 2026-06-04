@@ -300,3 +300,6 @@ tr.row-new td { background: rgba(48,209,88,0.05); }
 .sig-miss { background: rgba(120,128,150,0.12); color: var(--text-faint); border: 1px dashed var(--text-faint); }
 .search-row.semantic-only { border-color: rgba(191,90,242,0.55); background: rgba(191,90,242,0.06); }
 .semantic-note { font-size: 11px; color: #BF5AF2; margin-top: 6px; font-weight: 600; }
+
+/* graph interaction hint */
+.leg-hint { font-size: 10px; color: var(--text-faint); margin-left: auto; font-style: italic; }
