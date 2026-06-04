@@ -328,3 +328,22 @@ tr.row-new td { background: rgba(48,209,88,0.05); }
 .arch-point b { color: var(--text); }
 
 .sysprompt-block { font-family: var(--mono); font-size: 12px; line-height: 1.6; color: #cdd6ea; background: #0d1018; padding: 16px 18px; white-space: pre-wrap; border-radius: 0 0 var(--radius) var(--radius); }
+
+/* ── On-screen talking points (v11) ──────────────────────────────────────── */
+.talk { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid #4A90E2; border-radius: 0 var(--radius) var(--radius) 0; padding: 12px 18px; margin-bottom: 14px; }
+.talk-title { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 9px; letter-spacing: -0.2px; }
+.talk h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #4A90E2; margin-bottom: 8px; }
+.talk ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.talk li { font-size: 14px; color: var(--text); line-height: 1.5; padding-left: 18px; position: relative; }
+.talk li::before { content: "▸"; position: absolute; left: 2px; color: #4A90E2; font-size: 11px; top: 2px; }
+.talk b { color: #fff; }
+.talk .mono { color: #e8eaf0; }
+.talk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px; }
+.talk-grid .talk { margin-bottom: 0; height: 100%; }
+.talk-2col { display: grid !important; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+.talk-pills { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.talk-fix { border-left-color: var(--lib); }
+.talk-fix h4 { color: var(--lib); }
+.talk-fix li::before { color: var(--lib); }
+.talk-hero { border-left-width: 4px; }
+@media (max-width: 900px) { .talk-grid { grid-template-columns: 1fr; } .talk-2col { grid-template-columns: 1fr; } }
