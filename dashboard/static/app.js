@@ -104,6 +104,7 @@ function showTab(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === name));
   if (name === 'live') liveGraph.set(filtered(), _edges, {});
   if (name === 'cte') initCte();
+  if (name === 'search') initSearch();
   if (name === 'scenarios') loadScenarios();
 }
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
@@ -214,6 +215,59 @@ async function runCte() {
   });
 }
 
+// ── Vector / full-text / hybrid search ───────────────────────────────────────
+let _searchMode = 'hybrid', _searchInit = false;
+
+function initSearch() {
+  if (_searchInit) return;
+  _searchInit = true;
+  document.querySelectorAll('[data-smode]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-smode]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active'); _searchMode = b.dataset.smode; runSearch();
+  }));
+  document.querySelectorAll('.preset-btn').forEach(b => b.addEventListener('click', () => {
+    $('search-input').value = b.dataset.q; runSearch();
+  }));
+  $('search-run').addEventListener('click', runSearch);
+  $('search-input').addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+  $('search-input').value = 'admin portal access control login';
+  runSearch();
+}
+
+async function runSearch() {
+  const q = ($('search-input').value || '').trim();
+  if (!q) return;
+  $('search-stat').textContent = 'searching...';
+  const data = await getJSON(`/api/search?mode=${_searchMode}&q=${encodeURIComponent(q)}`);
+  $('search-sql').textContent = data.sql || '';
+  const box = $('search-results'); clear(box);
+  if (!data.available) {
+    box.appendChild(el('div', 'feed-empty', data.note || 'Search requires the TiDB backend.'));
+    $('search-stat').textContent = 'unavailable';
+    return;
+  }
+  $('search-stat').textContent = `${data.results.length} results · ${data.mode}`;
+  if (!data.results.length) { box.appendChild(el('div', 'feed-empty', 'No matches.')); return; }
+  data.results.forEach((r, i) => {
+    const card = el('div', 'search-row');
+    const head = el('div', 'search-row-head');
+    head.appendChild(el('span', 'search-rank', '#' + (i + 1)));
+    head.appendChild(el('span', 'mem-name', r.name));
+    head.appendChild(el('span', `type-badge type-${r.component_type}`, r.component_type));
+    head.appendChild(el('span', `env-badge env-${r.environment}`, r.environment));
+    const sig = el('span', 'search-sigs');
+    if (r.in_vector) {
+      const v = el('span', 'sig-chip sig-vec', r.distance != null ? `vector ${r.distance.toFixed(3)}` : 'vector');
+      sig.appendChild(v);
+    }
+    if (r.in_fts) sig.appendChild(el('span', 'sig-chip sig-fts', 'FTS'));
+    head.appendChild(sig);
+    card.appendChild(head);
+    card.appendChild(el('div', 'search-summary', r.summary || ''));
+    box.appendChild(card);
+  });
+}
+
 // ── Scenarios ─────────────────────────────────────────────────────────────────
 async function loadScenarios() {
   const data = await getJSON('/api/scenarios');
@@ -247,7 +301,7 @@ $('reset-btn').addEventListener('click', async () => { await postJSON('/api/rese
 // ── Boot ──────────────────────────────────────────────────────────────────────
 function applyHash() {
   const h = (location.hash || '').replace('#', '');
-  if (['live', 'cte', 'scenarios'].includes(h)) showTab(h);
+  if (['live', 'cte', 'search', 'scenarios'].includes(h)) showTab(h);
 }
 window.addEventListener('hashchange', applyHash);
 getJSON('/api/backend').then(d => { $('backend-name').textContent = '· ' + d.backend; }).catch(() => {});

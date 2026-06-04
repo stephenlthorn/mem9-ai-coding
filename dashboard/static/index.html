@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>tidb-infra-kb · one brain for every coding tool</title>
-  <link rel="stylesheet" href="/static/styles.css?v=5" />
+  <link rel="stylesheet" href="/static/styles.css?v=6" />
 </head>
 <body>
   <div id="app">
@@ -28,6 +28,7 @@
       <nav class="tabs">
         <button class="tab active" data-tab="live">Live</button>
         <button class="tab" data-tab="cte">Dependency graph (CTE)</button>
+        <button class="tab" data-tab="search">Vector + full-text search</button>
         <button class="tab" data-tab="scenarios">Why TiDB · scenarios</button>
       </nav>
     </header>
@@ -119,6 +120,50 @@
         </div>
       </section>
 
+      <!-- ─────────────── SEARCH ─────────────── -->
+      <section class="view" data-view="search">
+        <div class="cte-intro">
+          The <b>same TiDB table</b> that holds the graph also carries a 1024-dim <code>VECTOR</code>
+          embedding (generated server-side by TiDB's <code>EMBED_TEXT</code>) and a <code>FULLTEXT</code>
+          index. One engine answers semantic, keyword, and hybrid queries - no separate vector DB, no ETL.
+        </div>
+        <div class="search-controls">
+          <input id="search-input" class="search-input" type="text"
+                 placeholder="Ask in plain language, e.g. 'where do database backups live'" />
+          <div class="cte-mode">
+            <button class="cte-btn active" data-smode="hybrid">Hybrid</button>
+            <button class="cte-btn" data-smode="vector">Vector</button>
+            <button class="cte-btn" data-smode="fts">Full-text</button>
+          </div>
+          <button id="search-run" class="btn btn-primary">Search</button>
+        </div>
+        <div class="search-presets">
+          <button class="preset-btn" data-q="admin portal access control login">admin portal access control</button>
+          <button class="preset-btn" data-q="where do database backups live">where do database backups live</button>
+          <button class="preset-btn" data-q="CDN for user-facing static files">CDN for user-facing static files</button>
+        </div>
+        <div class="cte-grid">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Results</span><span id="search-stat" class="card-count">-</span></div>
+            <div id="search-results" class="search-results"></div>
+          </div>
+          <div class="col-side">
+            <div class="card">
+              <div class="card-header"><span class="card-title">The query on TiDB</span></div>
+              <pre id="search-sql" class="sql-block"></pre>
+            </div>
+            <div class="card">
+              <div class="card-header"><span class="card-title">How to read it</span></div>
+              <div class="search-legend">
+                <div><span class="sig-chip sig-vec">vector</span> semantic match (cosine distance, lower = closer)</div>
+                <div><span class="sig-chip sig-fts">FTS</span> keyword match via the full-text index</div>
+                <div><span class="sig-chip sig-both">both</span> hybrid surfaces it on either signal (rank fusion)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ─────────────── SCENARIOS ─────────────── -->
       <section class="view" data-view="scenarios">
         <div id="scenario-list" class="scenario-list"></div>
@@ -126,6 +171,6 @@
 
     </main>
   </div>
-  <script src="/static/app.js?v=5"></script>
+  <script src="/static/app.js?v=6"></script>
 </body>
 </html>

@@ -111,6 +111,15 @@ def cte_blast_radius(name: str):
     return JSONResponse(db.cte_blast_radius(name))
 
 
+# ── Vector / full-text / hybrid search ───────────────────────────────────────
+
+@app.get("/api/search")
+def search(q: str, mode: str = "hybrid"):
+    if mode not in ("hybrid", "vector", "fts"):
+        mode = "hybrid"
+    return JSONResponse(db.search(q, mode=mode, k=6))
+
+
 # ── Scenarios ────────────────────────────────────────────────────────────────
 
 SCENARIOS = [

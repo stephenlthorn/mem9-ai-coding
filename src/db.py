@@ -63,9 +63,14 @@ CREATE TABLE IF NOT EXISTS session_log (
 );
 """
 
-# TiDB: add a VECTOR column so the official TiDB MCP can demo VEC_COSINE_DISTANCE.
+# Server-side embedding model available on TiDB Cloud (1024 dims).
+EMBED_MODEL = "tidbcloud_free/amazon/titan-embed-text-v2"
+EMBED_DIMS = 1024
+
+# TiDB: VECTOR column (HNSW index) + FULLTEXT index so one table serves
+# graph traversal, vector similarity, and full-text BM25 search at once.
 _TIDB_SCHEMA = [
-    """CREATE TABLE IF NOT EXISTS infra_components (
+    f"""CREATE TABLE IF NOT EXISTS infra_components (
         id             BIGINT PRIMARY KEY AUTO_INCREMENT,
         name           VARCHAR(191) UNIQUE NOT NULL,
         component_type VARCHAR(32) NOT NULL,
@@ -74,7 +79,10 @@ _TIDB_SCHEMA = [
         summary        TEXT,
         code_excerpt   TEXT,
         created_by     VARCHAR(64) DEFAULT 'seed',
-        created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        embedding      VECTOR({EMBED_DIMS}),
+        VECTOR INDEX ((VEC_COSINE_DISTANCE(embedding))),
+        FULLTEXT INDEX (summary) WITH PARSER MULTILINGUAL
     )""",
     """CREATE TABLE IF NOT EXISTS component_edges (
         id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -244,15 +252,17 @@ def write_component(
 ) -> int:
     with _conn() as con:
         if using_tidb():
+            # TiDB generates the embedding server-side via EMBED_TEXT (no client model).
+            embed_text = f"{name} - {type} in {env}. {summary}"
             cur = _run(con,
                 "INSERT INTO infra_components"
-                " (name, component_type, environment, repo_path, summary, code_excerpt, created_by)"
-                " VALUES (?,?,?,?,?,?,?)"
+                " (name, component_type, environment, repo_path, summary, code_excerpt, created_by, embedding)"
+                " VALUES (?,?,?,?,?,?,?, EMBED_TEXT(?, ?))"
                 " ON DUPLICATE KEY UPDATE component_type=VALUES(component_type),"
                 " environment=VALUES(environment), repo_path=VALUES(repo_path),"
                 " summary=VALUES(summary), code_excerpt=VALUES(code_excerpt),"
-                " created_by=VALUES(created_by)",
-                (name, type, env, repo_path, summary, code_excerpt, developer))
+                " created_by=VALUES(created_by), embedding=VALUES(embedding)",
+                (name, type, env, repo_path, summary, code_excerpt, developer, EMBED_MODEL, embed_text))
             row = _rows(_run(con, "SELECT id FROM infra_components WHERE name=?", (name,)))
             comp_id = row[0]["id"] if row else cur.lastrowid
         else:
@@ -362,3 +372,103 @@ def _nodes_in(rows: list[dict], root: str) -> list[str]:
     for r in rows:
         names.add(r["from_name"]); names.add(r["to_name"])
     return sorted(names)
+
+
+# ── Vector + full-text + hybrid search (TiDB only) ───────────────────────────
+
+def search_available() -> bool:
+    return using_tidb()
+
+
+def _vector_search(q: str, k: int) -> list[dict]:
+    """Semantic search: TiDB embeds the query with EMBED_TEXT, ranks by cosine distance."""
+    with _conn() as con:
+        cur = _run(con,
+            "SELECT name, component_type, environment, summary, "
+            " VEC_COSINE_DISTANCE(embedding, EMBED_TEXT(?, ?)) AS distance "
+            "FROM infra_components WHERE embedding IS NOT NULL "
+            "ORDER BY distance LIMIT ?",
+            (EMBED_MODEL, q, k))
+        return _rows(cur)
+
+
+def _fts_search(q: str, k: int) -> list[dict]:
+    """Full-text BM25 search via the FULLTEXT index (FTS_MATCH_WORD must stand alone)."""
+    with _conn() as con:
+        cur = _run(con,
+            "SELECT name, component_type, environment, summary "
+            "FROM infra_components WHERE FTS_MATCH_WORD(?, summary) "
+            "ORDER BY FTS_MATCH_WORD(?, summary) DESC LIMIT ?",
+            (q, q, k))
+        return _rows(cur)
+
+
+VECTOR_SQL = (
+    "SELECT name, component_type, environment,\n"
+    "       VEC_COSINE_DISTANCE(embedding, EMBED_TEXT('{model}', '{q}')) AS distance\n"
+    "FROM infra_components\n"
+    "ORDER BY distance\n"
+    "LIMIT {k};"
+)
+FTS_SQL = (
+    "SELECT name, component_type, environment\n"
+    "FROM infra_components\n"
+    "WHERE FTS_MATCH_WORD('{q}', summary)\n"
+    "ORDER BY FTS_MATCH_WORD('{q}', summary) DESC\n"
+    "LIMIT {k};"
+)
+
+
+def search(q: str, mode: str = "hybrid", k: int = 6) -> dict:
+    """Vector, full-text, or hybrid (reciprocal-rank-fusion) search over one TiDB table.
+
+    Returns {available, mode, sql, results:[{name,type,env,summary,distance,fts_rank,hybrid}]}.
+    """
+    if not using_tidb():
+        return {"available": False, "mode": mode, "sql": "", "results": [],
+                "note": "Vector + full-text search requires the TiDB Cloud backend."}
+
+    qsafe = q.replace("'", "")
+    pool = 10
+    vec = _vector_search(q, pool)
+    fts = _fts_search(q, pool)
+    vec_rank = {r["name"]: i for i, r in enumerate(vec)}
+    fts_rank = {r["name"]: i for i, r in enumerate(fts)}
+    by_name = {r["name"]: r for r in vec}
+    for r in fts:
+        by_name.setdefault(r["name"], r)
+
+    C = 60  # RRF constant
+    rows = []
+    for name, base in by_name.items():
+        vr = vec_rank.get(name)
+        fr = fts_rank.get(name)
+        rrf = (1.0 / (C + vr) if vr is not None else 0.0) + (1.0 / (C + fr) if fr is not None else 0.0)
+        rows.append({
+            "name": name,
+            "component_type": base["component_type"],
+            "environment": base["environment"],
+            "summary": base.get("summary", ""),
+            "distance": next((v["distance"] for v in vec if v["name"] == name), None),
+            "in_vector": vr is not None,
+            "in_fts": fr is not None,
+            "hybrid_score": round(rrf, 5),
+        })
+
+    if mode == "vector":
+        rows = [r for r in rows if r["in_vector"]]
+        rows.sort(key=lambda r: (r["distance"] if r["distance"] is not None else 9))
+        sql = VECTOR_SQL.format(model=EMBED_MODEL, q=qsafe, k=k)
+    elif mode == "fts":
+        rows = [r for r in rows if r["in_fts"]]
+        rows.sort(key=lambda r: fts_rank.get(r["name"], 999))
+        sql = FTS_SQL.format(q=qsafe, k=k)
+    else:  # hybrid
+        rows.sort(key=lambda r: -r["hybrid_score"])
+        sql = (
+            "-- Hybrid = reciprocal rank fusion of these two, over the SAME TiDB table:\n"
+            + VECTOR_SQL.format(model=EMBED_MODEL, q=qsafe, k=pool) + "\n\n"
+            + FTS_SQL.format(q=qsafe, k=pool)
+        )
+
+    return {"available": True, "mode": mode, "sql": sql, "results": rows[:k]}
