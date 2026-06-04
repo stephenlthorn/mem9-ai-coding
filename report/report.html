@@ -65,16 +65,19 @@
 
 <!-- ───────────────── COVER ───────────────── -->
 <div class="cover">
-  <span class="badge">TiDB Cloud Serverless</span>
-  <h1>One brain for every<br/>AI coding tool</h1>
-  <div class="sub">A shared, queryable infrastructure knowledge graph on TiDB that Claude Code, Codex, and Cursor all read and write through MCP - so AI-written infrastructure stops duplicating work, breaking conventions, and starting from zero.</div>
+  <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:8mm">
+    <path d="M24 4 L40 13 L40 31 L24 44 L8 31 L8 13 Z" fill="#EE3936" opacity="0.9"/>
+    <path d="M17 16 L31 16 L31 19 L25.5 19 L25.5 33 L22.5 33 L22.5 19 L17 19 Z" fill="#fff"/>
+  </svg>
+  <h1>TiDB as an agentic coding<br/>shared memory system</h1>
+  <div class="sub">Claude Code, Codex, and Cursor all reading and writing the same TiDB knowledge graph over MCP - so AI-written infrastructure stops duplicating work, breaking conventions, and starting from zero.</div>
   <div class="pills">
     <span class="pill">Claude Code</span><span class="pill">Codex</span><span class="pill">Cursor</span>
     <span class="pill">Model Context Protocol</span><span class="pill">Recursive CTE graph</span>
   </div>
   <div class="meta">
     <span>Technical demo report</span>
-    <span>Backed by a live TiDB Cloud Serverless cluster</span>
+    <span>Backed by a live TiDB Cloud cluster</span>
   </div>
 </div>
 
@@ -82,7 +85,7 @@
 <div class="section">
   <h2>What this is</h2>
   <p class="lede">Teams now write infrastructure with AI coding tools. But each tool works <b>blind and alone</b> - it cannot see what already exists, the team's conventions, or how components connect. The result is duplication, drift, broken conventions, and outages.</p>
-  <p>This demo puts the engineering knowledge where every tool can use it: a <b>knowledge graph in TiDB Cloud Serverless</b>. Every coding tool connects to it over the <b>Model Context Protocol (MCP)</b>, queries it before building, writes its work back, and traverses component relationships with <b>recursive SQL</b>. The example workload is an infrastructure-as-code monorepo (Pulumi / TypeScript) for a fictional company, <span class="mono">Acme</span>, spanning AWS, Cloudflare, and Okta.</p>
+  <p>This demo puts the engineering knowledge where every tool can use it: a <b>knowledge graph in TiDB Cloud</b>. Every coding tool connects to it over the <b>Model Context Protocol (MCP)</b>, queries it before building, writes its work back, and traverses component relationships with <b>recursive SQL</b>. The example workload is an infrastructure-as-code monorepo (Pulumi / TypeScript) for a fictional company, <span class="mono">Acme</span>, spanning AWS, Cloudflare, and Okta.</p>
 
   <div class="arch">
     <svg width="470" height="190" viewBox="0 0 470 190" xmlns="http://www.w3.org/2000/svg">
@@ -104,7 +107,7 @@
         <rect x="306" y="64" width="88" height="56" fill="#1d2d52"/>
         <ellipse cx="350" cy="120" rx="44" ry="11" fill="#15203a"/>
         <text x="350" y="92" fill="#fff" font-weight="bold" font-size="10">TiDB Cloud</text>
-        <text x="350" y="105" fill="#aab6cf" font-size="7.5">Serverless</text>
+        <text x="350" y="105" fill="#aab6cf" font-size="7.5">shared memory</text>
         <!-- dashboard -->
         <rect x="300" y="150" width="100" height="24" rx="5" fill="#eef2f8" stroke="#aab6cf"/><text x="350" y="166" fill="#41506b" font-weight="bold">Dashboard</text>
       </g>
@@ -121,7 +124,7 @@
   </div>
   <p class="muted" style="text-align:center;font-size:8.3pt;margin-top:-2pt;">Three real CLIs &rarr; two MCP servers &rarr; one TiDB database. The dashboard reads the same database live.</p>
 
-  <div class="callout good"><b>Proven on real TiDB - every screenshot below is from an actual run.</b> The graph, the writes from three real CLIs (Claude Code, Codex, Cursor), and the recursive-CTE traversals all ran against a live TiDB Cloud Serverless cluster (v8.5.3) over the MySQL protocol with TLS. The terminal captures are the unedited tool output.</div>
+  <div class="callout good"><b>Proven on real TiDB - every screenshot below is from an actual run.</b> The graph, the writes from three real CLIs (Claude Code, Codex, Cursor), and the recursive-CTE traversals all ran against a live TiDB Cloud cluster (v8.5.3) over the MySQL protocol with TLS. The terminal captures are the unedited tool output.</div>
 </div>
 
 <!-- ───────────────── 2. THE PROBLEM ───────────────── -->
@@ -224,7 +227,7 @@
     </div>
     <div>
       <h3>Built for agent scale</h3>
-      <p>Serverless, pay-per-request, scales to zero. Millisecond database branching gives each agent or workspace an isolated environment - the pattern behind production fleets running millions of agent databases on TiDB Cloud.</p>
+      <p>TiDB Cloud scales to zero with pay-per-request pricing. Millisecond database branching gives each agent or workspace an isolated environment - the pattern behind production fleets running millions of agent databases on TiDB Cloud.</p>
     </div>
   </div>
 
@@ -264,7 +267,7 @@
   <h2>How to run it</h2>
   <p class="lede">The repository ships everything: the TiDB-backed knowledge base, both MCP servers, per-tool configs, the dashboard, and a presenter's runbook.</p>
   <ol class="steps">
-    <li><b>Configure TiDB.</b> <span class="mono">cp .env.example .env</span> and paste your TiDB Cloud Serverless credentials (Connect &rarr; General).</li>
+    <li><b>Configure TiDB.</b> <span class="mono">cp .env.example .env</span> and paste your TiDB Cloud credentials (Connect &rarr; General).</li>
     <li><b>Set up.</b> <span class="mono">./setup.sh</span> - installs dependencies, creates the schema and seeds the graph on TiDB, and generates MCP configs for Claude Code, Codex, and Cursor.</li>
     <li><b>Launch the dashboard.</b> <span class="mono">./demo.sh</span> &rarr; open <span class="mono">http://localhost:7001</span> (the screen you narrate).</li>
     <li><b>Open three terminals.</b> In each, run <span class="mono">claude</span>, <span class="mono">codex</span>, and <span class="mono">cursor-agent</span> from the repo. All three load both MCP servers automatically.</li>
