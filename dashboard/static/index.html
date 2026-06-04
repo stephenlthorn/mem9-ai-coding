@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>tidb-infra-kb · one brain for every coding tool</title>
-  <link rel="stylesheet" href="/static/styles.css?v=12" />
+  <link rel="stylesheet" href="/static/styles.css?v=13" />
 </head>
 <body>
   <div id="app">
@@ -54,7 +54,14 @@
             <h4>The scenario</h4>
             <ul>
               <li>Pulumi monorepo</li>
-              <li>Reusable component libraries: <span class="mono">S3Bucket</span>, <span class="mono">PostgresDatabase</span>, <span class="mono">DnsRecord</span>, <span class="mono">SsoApplication</span></li>
+              <li>Reusable component libraries:
+                <ul class="talk-sub">
+                  <li><span class="mono">S3Bucket</span></li>
+                  <li><span class="mono">PostgresDatabase</span></li>
+                  <li><span class="mono">DnsRecord</span></li>
+                  <li><span class="mono">SsoApplication</span></li>
+                </ul>
+              </li>
               <li>PROD and staging environments</li>
             </ul>
           </div>
@@ -80,10 +87,10 @@
         <div class="talk">
           <h4>Why each agent fails on its own</h4>
           <ul class="talk-2col">
-            <li><b>Duplication</b> - can't see a component exists → builds a second one.</li>
-            <li><b>Broken conventions</b> - writes a raw <span class="mono">aws.s3.Bucket</span> instead of the library wrapper.</li>
-            <li><b>Invisible blast radius</b> - changes a shared library, breaks prod two hops away.</li>
-            <li><b>Cold starts</b> - the next session re-derives everything and re-makes mistakes.</li>
+            <li><b>Duplication</b> - can't see a component exists → builds a second one. TiDB holds what exists as queryable state.</li>
+            <li><b>Broken conventions</b> - writes raw <span class="mono">aws.s3.Bucket</span> instead of the library wrapper. TiDB stores the graph edge that says "use the library."</li>
+            <li><b>Invisible blast radius</b> - changes <span class="mono">S3Bucket</span>, also breaks all RDS databases (they use S3Bucket for backups, two hops away). A recursive CTE in TiDB reveals the full chain.</li>
+            <li><b>Cold starts</b> - the next session re-derives everything and re-makes mistakes. TiDB's session log hands off context warm.</li>
           </ul>
         </div>
 
@@ -96,12 +103,12 @@
       <!-- ─────────────── ARCHITECTURE ─────────────── -->
       <section class="view" data-view="architecture">
         <div class="talk">
-          <h4>Architecture - talking points</h4>
+          <h4>Architecture</h4>
           <ul class="talk-2col">
-            <li>3 real CLIs → MCP → <b>one TiDB Cloud database</b> (MySQL protocol).</li>
-            <li>MCP is the standard plug - no custom glue per tool.</li>
-            <li>Two servers: <span class="mono">tidb</span> (raw SQL, vector, CTE) + <span class="mono">tidb-infra-kb</span> (convention-checked writes).</li>
-            <li>One DB, not four: relational + graph + vector + full-text, ACID across concurrent writes.</li>
+            <li>Agent CLI → MCP process (local) → <b>TiDB Cloud</b> (remote, MySQL protocol). MCP is the adapter; agents never talk to TiDB directly.</li>
+            <li>MCP is an open standard - no custom glue per tool. All three CLIs load the same config.</li>
+            <li>Two MCP servers: <b>TiDB</b> (official PingCAP MCP - raw SQL, vector, CTE) + <b>tidb-infra-kb</b> (a thin custom MCP we wrote that adds convention guardrails; it talks to the same TiDB DB).</li>
+            <li>Unified TiDB DB: OLTP + OLAP + Graph + Vector + FTS, ACID across concurrent writes.</li>
             <li>The dashboard is a live window on the same DB - not the system.</li>
           </ul>
         </div>
@@ -356,6 +363,6 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
 
     </main>
   </div>
-  <script src="/static/app.js?v=12"></script>
+  <script src="/static/app.js?v=13"></script>
 </body>
 </html>

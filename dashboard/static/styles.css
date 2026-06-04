@@ -347,3 +347,8 @@ tr.row-new td { background: rgba(48,209,88,0.05); }
 .talk-fix li::before { color: var(--lib); }
 .talk-hero { border-left-width: 4px; }
 @media (max-width: 900px) { .talk-grid { grid-template-columns: 1fr; } .talk-2col { grid-template-columns: 1fr; } }
+
+/* sub-bullets inside talk cards */
+.talk-sub { margin: 4px 0 0 16px; gap: 3px !important; }
+.talk-sub li { font-size: 15px !important; color: var(--text-dim) !important; }
+.talk-sub li::before { content: "–" !important; color: var(--text-faint) !important; }
