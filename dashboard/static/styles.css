@@ -352,3 +352,18 @@ tr.row-new td { background: rgba(48,209,88,0.05); }
 .talk-sub { margin: 4px 0 0 16px; gap: 3px !important; }
 .talk-sub li { font-size: 15px !important; color: var(--text-dim) !important; }
 .talk-sub li::before { content: "–" !important; color: var(--text-faint) !important; }
+
+/* ── Live tab runbook (v16) ──────────────────────────────────────────────── */
+.runbook { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+.rb-step { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.rb-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.rb-num { width: 26px; height: 26px; border-radius: 50%; background: #4A90E2; color: #fff; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rb-tool { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 4px; }
+.rb-title { font-size: 15px; font-weight: 600; color: #fff; }
+.rb-say { font-size: 15px; color: var(--text); line-height: 1.6; padding: 12px 16px 8px; border-bottom: 1px solid var(--border); }
+.rb-say b { color: #4A90E2; }
+.rb-cmd-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-faint); padding: 10px 16px 4px; }
+.rb-cmd-wrap { position: relative; margin: 0 12px 12px; }
+.rb-cmd { font-family: var(--mono); font-size: 13px; line-height: 1.6; color: #cdd6ea; background: #0d1018; padding: 12px 48px 12px 14px; border-radius: 7px; white-space: pre-wrap; word-break: break-word; }
+.rb-copy { position: absolute; top: 8px; right: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; color: var(--text-dim); cursor: pointer; font-size: 11px; font-weight: 600; padding: 4px 10px; transition: all 0.15s; }
+.rb-copy:hover { border-color: #4A90E2; color: #fff; }

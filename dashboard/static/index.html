@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>tidb-infra-kb · one brain for every coding tool</title>
-  <link rel="stylesheet" href="/static/styles.css?v=15" />
+  <link rel="stylesheet" href="/static/styles.css?v=16" />
 </head>
 <body>
   <div id="app">
@@ -253,6 +253,59 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
           </section>
 
         </div>
+
+        <!-- ── 3-step runbook ───────────────────────────────────────────── -->
+        <div class="runbook">
+
+          <div class="rb-step">
+            <div class="rb-header">
+              <span class="rb-num">1</span>
+              <span class="rb-tool tool-claude-code">Claude Code</span>
+              <span class="rb-title">Inspect the gap, scaffold the asset layer</span>
+            </div>
+            <div class="rb-say">
+              <b>Say:</b> "Claude Code queries TiDB first - it doesn't assume. It finds staging is missing static-assets and assets-DNS. It composes the existing library components, writes both back to TiDB. Watch the parity strip flip from 4 missing to 2."
+            </div>
+            <div class="rb-cmd-label">Paste into Claude Code pane:</div>
+            <div class="rb-cmd-wrap">
+              <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
+              <pre class="rb-cmd">Use the tidb-infra-kb MCP. Query the knowledge base: what components exist in staging vs production, and what is staging missing? Then scaffold the missing staging static-assets bucket and its Cloudflare DNS record, composing the S3Bucket and DnsRecord libraries - never raw aws.* resources. Follow the acme-&lt;env&gt;-&lt;name&gt; naming and required tags. Record each new component with write_component.</pre>
+            </div>
+          </div>
+
+          <div class="rb-step">
+            <div class="rb-header">
+              <span class="rb-num">2</span>
+              <span class="rb-tool tool-codex">Codex</span>
+              <span class="rb-title">Open cold, pick up warm from TiDB session log</span>
+            </div>
+            <div class="rb-say">
+              <b>Say:</b> "Codex just opened. Zero memory of what Claude Code did. It reads the shared TiDB session log - sees exactly what was just created - and continues without any re-briefing. This is the part teams feel every day. Watch it add the admin-DNS and the parity strip drop to 1."
+            </div>
+            <div class="rb-cmd-label">Paste into Codex pane:</div>
+            <div class="rb-cmd-wrap">
+              <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
+              <pre class="rb-cmd">Use the tidb-infra-kb MCP. Read the recent session_log - what did the previous session just create? Continue the staging build: add the admin-portal DNS record (acme-staging-admin-dns) matching the production pattern, composing DnsRecord. Record it with write_component.</pre>
+            </div>
+          </div>
+
+          <div class="rb-step">
+            <div class="rb-header">
+              <span class="rb-num">3</span>
+              <span class="rb-tool tool-cursor">Cursor</span>
+              <span class="rb-title">Run a recursive CTE to verify the pattern, then finish</span>
+            </div>
+            <div class="rb-say">
+              <b>Say:</b> "Cursor uses the official TiDB MCP to run a recursive query - it proves that an SSO app must redirect to a DNS record before writing a single line. That is graph reachability. A vector store cannot compute this. Then it builds the final component and staging reaches parity."
+            </div>
+            <div class="rb-cmd-label">Paste into Cursor pane:</div>
+            <div class="rb-cmd-wrap">
+              <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
+              <pre class="rb-cmd">Use the tidb MCP (db_query) to run a recursive CTE: what does the production acme-prod-admin-sso transitively depend on? Confirm an SSO app must redirect to a DnsRecord. Then scaffold acme-staging-admin-sso composing SsoApplication, with the redirect URI pointing at acme-staging-admin-dns. Record it with write_component.</pre>
+            </div>
+          </div>
+
+        </div>
       </section>
 
       <!-- ─────────────── CTE ─────────────── -->
@@ -363,6 +416,6 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
 
     </main>
   </div>
-  <script src="/static/app.js?v=15"></script>
+  <script src="/static/app.js?v=16"></script>
 </body>
 </html>
