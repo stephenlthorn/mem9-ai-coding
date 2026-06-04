@@ -1,7 +1,7 @@
 """Infrastructure knowledge base.
 
 Backend is chosen at runtime:
-  - TiDB Cloud Serverless (MySQL protocol, TLS) when TIDB_HOST is configured
+  - TiDB Cloud (MySQL protocol, TLS) when TIDB_HOST is configured
   - SQLite fallback otherwise, so the dashboard still runs with no network
 
 Every recursive-CTE traversal is ANSI SQL that runs unchanged on both engines.
@@ -31,7 +31,7 @@ def using_tidb() -> bool:
 
 def backend_name() -> str:
     if using_tidb():
-        return "TiDB Cloud Serverless"
+        return "TiDB Cloud"
     if _TIDB_DISABLED_REASON:
         return f"SQLite (local fallback; TiDB unavailable: {_TIDB_DISABLED_REASON})"
     return "SQLite (local fallback)"

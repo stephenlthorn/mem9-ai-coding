@@ -4,7 +4,7 @@ You are assisting the Acme infrastructure team on a Pulumi TypeScript monorepo.
 
 ## Shared memory (two MCP servers, one TiDB database)
 
-Both MCP servers hit the same TiDB Cloud Serverless DB that Claude Code and Cursor also use:
+Both MCP servers hit the same TiDB Cloud DB that Claude Code and Cursor also use:
 - **`tidb`** - official TiDB MCP: `db_query` (raw SQL, recursive CTEs, vector search), `db_execute`.
 - **`tidb-infra-kb`** - convention layer: `query_knowledge_base`, `write_component` (atomic, checked).
 

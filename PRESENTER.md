@@ -29,7 +29,7 @@ Acme runs a Pulumi TypeScript monorepo. Developers now use AI coding tools
 
 ```
    Claude Code ─┐
-   Codex       ─┼──►  MCP  ──►  TiDB Cloud Serverless  ◄── the one shared brain
+   Codex       ─┼──►  MCP  ──►  TiDB Cloud  ◄── the one shared brain
    Cursor      ─┘                 (components, edges, session log)
                                         │
                                   Dashboard  ◄── what you narrate
@@ -40,7 +40,7 @@ Acme runs a Pulumi TypeScript monorepo. Developers now use AI coding tools
 ## 1. Before you start (pre-flight, 1 min)
 
 - [ ] `./demo.sh` running → dashboard open at **http://localhost:7001**
-- [ ] Header says **"TiDB Cloud Serverless"** (proof it's the real product, not a toy)
+- [ ] Header says **"TiDB Cloud"** (proof it's the real product, not a toy)
 - [ ] Dashboard on the **Live** tab, showing the staging gap
 - [ ] 3 iTerm panes open side by side, each `cd`'d into the repo:
       `claude` · `codex` · `cursor-agent`
@@ -142,8 +142,8 @@ bucket, and writes **nothing**. The graph just prevented a duplicate, untagged,
 drift-causing resource - the #1 thing that goes wrong with AI-written infra."
 
 ### C. It's real TiDB
-Point at the header: **"TiDB Cloud Serverless."** "Everything you saw - the graph,
-the recursive CTE, the writes from three tools - ran on a real TiDB Serverless
+Point at the header: **"TiDB Cloud."** "Everything you saw - the graph,
+the recursive CTE, the writes from three tools - ran on a real TiDB Cloud
 cluster over MySQL protocol. Same database that scales to your production workload."
 
 ---
@@ -171,7 +171,7 @@ memory across tools." Pulumi infra is the example; it works for any codebase gra
 official PingCAP `tidb` server (raw SQL + vector) and a thin `tidb-infra-kb` server
 that enforces conventions. Configs are generated per tool from your `.env`.
 
-**"Does it scale?"** It's TiDB Cloud Serverless - the same distributed SQL engine
+**"Does it scale?"** It's TiDB Cloud - the same distributed SQL engine
 behind large production workloads. The demo cluster and a production cluster are the
 same product.
 

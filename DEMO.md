@@ -1,7 +1,7 @@
 # Live demo runbook - 3 real CLIs, one TiDB brain
 
 Three coding tools (Claude Code, Codex, Cursor) connect to the **same TiDB Cloud
-Serverless** database through MCP and collaborate on the Acme Pulumi monorepo.
+TiDB Cloud** database through MCP and collaborate on the Acme Pulumi monorepo.
 Each starts cold; each reads the shared memory and continues where the last left off.
 
 ## One-time setup

@@ -305,5 +305,6 @@ function applyHash() {
 }
 window.addEventListener('hashchange', applyHash);
 getJSON('/api/backend').then(d => { $('backend-name').textContent = '· ' + d.backend; }).catch(() => {});
+applyHash();           // deep-link to the right tab immediately (don't wait on data)
 loadAll().then(applyHash);
 setInterval(poll, 2000);

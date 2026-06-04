@@ -4,7 +4,7 @@ You are assisting the Acme infrastructure team. This is a Pulumi TypeScript mono
 
 ## Your persistent memory (two MCP servers, one TiDB database)
 
-You have two MCP servers, both backed by the same TiDB Cloud Serverless database
+You have two MCP servers, both backed by the same TiDB Cloud database
 that every tool on the team (Codex, Cursor) shares:
 
 - **`tidb`** - PingCAP's official TiDB MCP. Use `db_query` for any read-only SQL

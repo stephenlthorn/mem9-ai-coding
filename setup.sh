@@ -17,7 +17,7 @@ set -a; . ./.env; set +a
 if [ -z "${TIDB_HOST:-}" ]; then
   echo "WARNING: TIDB_HOST not set in .env - will seed the local SQLite fallback instead of TiDB." >&2
 else
-  echo "==> Target: TiDB Cloud Serverless ($TIDB_HOST)"
+  echo "==> Target: TiDB Cloud ($TIDB_HOST)"
 fi
 
 echo "==> Verifying official TiDB MCP server is fetchable (uvx pytidb[mcp])"
