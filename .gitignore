@@ -14,3 +14,4 @@ kb.db
 package.json
 package-lock.json
 environments/
+.minimax/

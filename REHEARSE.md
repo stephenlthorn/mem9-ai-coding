@@ -21,6 +21,8 @@ Do NOT read the script at him. Let him say it, then react. Start by asking him t
 
 Stephen will be presenting at a screen showing a local web dashboard at http://localhost:7001. He has 3 terminal windows open (Claude Code, Codex, Cursor). A TiDB Cloud database is running live in the background.
 
+> Operator note: the "Codex" pane is launched with the MiniMax CLI (`cd ~/GitHub/mem9-ai-coding && minimax`, model MiniMax-M3) instead of the Codex CLI - the OpenAI/Codex path is unavailable. It connects to the exact same `tidb-infra-kb` MCP server and TiDB database and writes to `session_log` as `developer='codex'`, so the dashboard, the audience-facing label, and the script all stay "Codex." Nothing in the narration below changes.
+
 ---
 
 ### SECTION 1: The opening frame (30 seconds)
