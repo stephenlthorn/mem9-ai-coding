@@ -274,7 +274,7 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
             <div class="rb-cmd-label">Paste into Claude Code pane:</div>
             <div class="rb-cmd-wrap">
               <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
-              <pre class="rb-cmd">Use the tidb-infra-kb MCP. Query the knowledge base: what components exist in staging vs production, and what is staging missing? Then scaffold the missing staging static-assets bucket and its Cloudflare DNS record, composing the S3Bucket and DnsRecord libraries - never raw aws.* resources. Follow the acme-&lt;env&gt;-&lt;name&gt; naming and required tags. Record each new component with write_component.</pre>
+              <pre class="rb-cmd">Use the tidb-infra-kb MCP. Query the knowledge base: what components exist in staging vs production, and what is staging missing? Then scaffold the missing staging static-assets bucket and its Cloudflare DNS record, composing the S3Bucket and DnsRecord libraries - never raw aws.* resources. Follow the acme-&lt;env&gt;-&lt;name&gt; naming and required tags. Record each new component with write_component. Pass developer='claude-code' on every tidb-infra-kb call so the activity feed attributes the work.</pre>
             </div>
           </div>
 
@@ -301,7 +301,7 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
             <div class="rb-cmd-label">Paste into Codex pane:</div>
             <div class="rb-cmd-wrap">
               <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
-              <pre class="rb-cmd">Use the tidb-infra-kb MCP. Read the recent session_log - what did the previous session just create? Continue the staging build: add the admin-portal DNS record (acme-staging-admin-dns) matching the production pattern, composing DnsRecord. Record it with write_component.</pre>
+              <pre class="rb-cmd">Use the tidb-infra-kb MCP. Read the recent session_log - what did the previous session just create? Continue the staging build: add the admin-portal DNS record (acme-staging-admin-dns) matching the production pattern, composing DnsRecord. Record it with write_component. Pass developer='codex' on every tidb-infra-kb call so the activity feed attributes the work.</pre>
             </div>
           </div>
 
@@ -323,7 +323,7 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
             <div class="rb-cmd-label">Paste into Cursor pane:</div>
             <div class="rb-cmd-wrap">
               <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
-              <pre class="rb-cmd">Use the tidb MCP (db_query) to run a recursive CTE: what does the production acme-prod-admin-sso transitively depend on? Confirm an SSO app must redirect to a DnsRecord. Then scaffold acme-staging-admin-sso composing SsoApplication, with the redirect URI pointing at acme-staging-admin-dns. Record it with write_component.</pre>
+              <pre class="rb-cmd">Use the tidb MCP (db_query) to run a recursive CTE: what does the production acme-prod-admin-sso transitively depend on? Confirm an SSO app must redirect to a DnsRecord. Then scaffold acme-staging-admin-sso composing SsoApplication, with the redirect URI pointing at acme-staging-admin-dns. Record it with write_component (developer='cursor') so the activity feed attributes the work.</pre>
             </div>
           </div>
 
