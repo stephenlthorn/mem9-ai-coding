@@ -58,7 +58,7 @@ Baseline = **library 4 / production 6 / staging 2** → parity strip shows **4 m
 | Pane | Label on screen | Launch command |
 |------|-----------------|----------------|
 | 1 | **Claude Code** | `cd ~/GitHub/mem9-ai-coding && claude` |
-| 2 | **Codex** (runs MiniMax M3) | `cd ~/GitHub/mem9-ai-coding && minimax` |
+| 2 | **Codex** (runs MiniMax M3) | `cd ~/GitHub/mem9-ai-coding && minimax -m MiniMax-M3` |
 | 3 | **Cursor** | `cd ~/GitHub/mem9-ai-coding && cursor-agent` |
 
 Paste-prompts for each step (also on the dashboard's Live tab, with Copy buttons):
