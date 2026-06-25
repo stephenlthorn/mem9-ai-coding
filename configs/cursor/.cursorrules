@@ -1,21 +1,33 @@
-You are working on the Acme infrastructure team's Pulumi TypeScript monorepo.
+You are working on Acme's infrastructure with mem9 - a memory the database holds.
+Components, dependency edges, and prior sessions live in TiDB and are shared across
+Claude Code, Codex, and Cursor. Use it; never start cold or duplicate work.
 
-You have two MCP servers on the same shared TiDB Cloud database that every
-tool on the team uses:
-- `tidb` (official TiDB MCP): db_query for raw SQL incl. recursive CTEs and vector search.
-- `tidb-infra-kb` (convention layer): query_knowledge_base + write_component (atomic, checked).
+ORGANIZATION
+- Team = cluster (you are on team acme; your credentials unlock only this team's databases).
+- Repo = database: acme_pulumi_kb (Pulumi infra), acme_lza_kb (AWS Landing Zone Accelerator).
 
-ALWAYS query before creating:
-- SELECT name, component_type, summary FROM infra_components WHERE environment = 'staging';
-- SELECT name, component_type, summary FROM infra_components WHERE environment = 'library';
-- SELECT developer, action, detail FROM session_log ORDER BY created_at DESC LIMIT 5;
+MCP SERVERS (routing is explicit - YOU choose the named entry; the server never guesses)
+- infra-kb-pulumi / infra-kb-lza: query_knowledge_base + write_component (atomic, checked).
+- tidb-pulumi / tidb-lza: official TiDB MCP db_query for raw SQL, recursive CTEs, vector search.
+  Cross-database JOINs (acme_pulumi_kb.x JOIN acme_lza_kb.y) work over one team connection.
 
-RULES:
-- Never use raw AWS/Cloudflare/Okta provider resources. Always compose through libs/
-- Physical names: acme-<env>-<logical-name>
-- Required tags: Environment, ManagedBy: pulumi, Component, Team: infra
-- Public endpoints need DnsRecord (proxied: true always)
-- SSO apps: redirect URI must point at a DnsRecord hostname
-- PostgresDatabase auto-creates a backup bucket. Do not add one manually.
+LIFECYCLE: query before acting; persist after acting
+- Query the KB before writing code (what exists, conventions, recent session_log).
+- After scaffolding, CALL write_component. Persist is instruction-driven, not automatic.
+- Eventual consistency: full-text/columnar indexes lag writes by seconds; for read-your-write
+  use a point lookup by name (unique key), not full-text.
 
-AFTER CREATING: run python -m src.writeback with --developer cursor
+QUERY FIRST
+- SELECT name, component_type, environment FROM acme_pulumi_kb.infra_components WHERE environment='staging';
+- SELECT developer, action, detail FROM acme_pulumi_kb.session_log ORDER BY created_at DESC LIMIT 5;
+
+RULES
+- Never raw AWS/Cloudflare/Okta resources - compose libraries in libs/.
+- Names acme-<env>-<logical>; tags Environment, ManagedBy: pulumi, Component, Team.
+- Public endpoints need DnsRecord (proxied: true). SSO redirect URI points at a DnsRecord hostname.
+- PostgresDatabase auto-creates a backup bucket - do not add one.
+- Set account_ref (prod/sandbox) on new Pulumi resources for cross-repo JOINs.
+
+AFTER CREATING
+python -m src.writeback --repo pulumi --name <name> --type <type> --env <env> \
+  --summary "<summary>" --depends-on <library> --account-ref <prod|sandbox> --developer cursor
