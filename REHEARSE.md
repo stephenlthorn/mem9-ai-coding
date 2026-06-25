@@ -19,7 +19,7 @@ Do NOT read the script at him. Let him say it, then react. Start by asking him t
 
 ### THE SETUP (before Stephen speaks)
 
-Stephen will be presenting at a screen showing a local web dashboard at http://localhost:7001. He has 3 terminal windows open (Claude Code, Codex, Cursor). A TiDB Cloud database is running live in the background.
+Stephen will be presenting at a screen showing a local web dashboard at http://localhost:7001. He has 3 terminal windows open (Claude Code, Codex, Cursor). The team's mem9.ai cluster (TiDB Cloud) is live, with two repo databases: acme_pulumi_kb and acme_lza_kb.
 
 > Operator note: the "Codex" pane is launched with the MiniMax CLI (`cd ~/GitHub/mem9-ai-coding && minimax -m MiniMax-M3`) instead of the Codex CLI - the OpenAI/Codex path is unavailable. It connects to the exact same `tidb-infra-kb` MCP server and TiDB database and writes to `session_log` as `developer='codex'`, so the dashboard, the audience-facing label, and the script all stay "Codex." Nothing in the narration below changes.
 
@@ -33,7 +33,7 @@ Stephen will be presenting at a screen showing a local web dashboard at http://l
 
 The problem: each tool works completely blind and alone. It can't see what already exists, it doesn't know the team's conventions, it can't see how components connect. And every new session starts from zero.
 
-The fix we're showing today: put that knowledge in TiDB. Connect every tool to it over MCP. One shared brain."
+The fix we're showing today: put that knowledge in mem9 - a memory the database holds. Connect every tool over MCP. Organized as team = cluster, repo = database."
 
 **Rescue line if stuck:** "Three AI tools, one codebase, no shared memory - TiDB fixes that."
 
@@ -48,7 +48,7 @@ The fix we're showing today: put that knowledge in TiDB. Connect every tool to i
 
 **What Stephen should say:**
 
-"This is the dashboard. It reads directly from TiDB - everything you see is a live query.
+"This is the dashboard. It reads directly from mem9.ai - everything you see is a live query.
 
 Left side: every query and write the three tools make, as they happen. Right side: the shared knowledge graph - the components, how they connect, and a parity strip showing what staging is missing versus production.
 
@@ -137,13 +137,33 @@ Parity strip: all green. Done."
 
 ---
 
+### SECTION 5b: Cross-repo and isolation (45 seconds)
+
+**What Stephen should say:**
+
+"Now the two new moments.
+
+First, cross-repo. We have two databases - `acme_pulumi_kb` for Pulumi and `acme_lza_kb` for LZA. An agent writes an AWS account in LZA, writes the matching S3 bucket in Pulumi, and then we run a single cross-database JOIN that proves the bucket maps to its account. One team connection. No second login.
+
+Second, isolation. Run `python -m src.isolation_check`. Team = cluster. The acme agent has zero query path to team globex. Credentials bound the blast radius."
+
+Run: `python -m src.cross_repo_demo` and `python -m src.isolation_check`.
+
+**Rescue line if stuck:** "Two repos, one query - and another team's data is out of reach by design."
+
+**What you're listening for:**
+- Does he explain that two databases join in one query with no second auth?
+- Does he land "credentials bound the blast radius"?
+
+---
+
 ### SECTION 6: The close (15 seconds)
 
 **What Stephen should say:**
 
 "Three AI coding tools. The exact ones your engineers use today. All sharing one TiDB brain. They query before they build, follow the conventions, see the blast radius of a change, and hand off warm to the next tool.
 
-That's TiDB as the memory layer for agentic engineering."
+That's mem9 - the memory the database holds - for agentic engineering."
 
 **Rescue line if stuck:** "One database. Three tools. No cold starts, no duplicates, no broken dependencies."
 
@@ -189,8 +209,9 @@ No. The pattern is: shared, queryable memory across independent AI tools. Pulumi
 | Claude Code step | 60 sec |
 | Codex step | 60 sec |
 | Cursor step | 60 sec |
+| Cross-repo + isolation | 45 sec |
 | Close | 15 sec |
-| **Total** | **~4:30** |
+| **Total** | **~5:15** |
 
 ---
 

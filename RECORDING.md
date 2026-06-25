@@ -19,9 +19,12 @@ which claude cursor-agent
 # 3. TiDB reachable + MCP server healthy
 set -a; source .env; set +a
 .venv/bin/python -c "from src import db; print('backend:', db.backend_name())"
+
+# 4. Bootstrap both repo databases (explicit setup before recording)
+.venv/bin/python -m src.ingest --reset
 ```
 
-Expected: `minimax` resolves, `claude` + `cursor-agent` resolve, backend prints `TiDB Cloud`.
+Expected: `minimax` resolves, `claude` + `cursor-agent` resolve, backend prints `mem9.ai (TiDB Cloud)`.
 
 ---
 
@@ -65,17 +68,17 @@ Paste-prompts for each step (also on the dashboard's Live tab, with Copy buttons
 
 **Pane 1 - Claude Code:**
 ```
-Use the tidb-infra-kb MCP. Query the knowledge base: what components exist in staging vs production, and what is staging missing? Then scaffold the missing staging static-assets bucket and its Cloudflare DNS record, composing the S3Bucket and DnsRecord libraries - never raw aws.* resources. Follow the acme-<env>-<name> naming and required tags. Record each new component with write_component. Pass developer='claude-code' on every tidb-infra-kb call so the activity feed attributes the work.
+Use infra-kb-pulumi. Query the knowledge base: what components exist in staging vs production in acme_pulumi_kb, and what is staging missing? Then scaffold the missing staging static-assets bucket and its Cloudflare DNS record, composing the S3Bucket and DnsRecord libraries - never raw aws.* resources. Follow the acme-<env>-<name> naming and required tags. Set account_ref='sandbox'. Record each new component with write_component. Pass developer='claude-code' on every infra-kb-pulumi call so the activity feed attributes the work.
 ```
 
 **Pane 2 - "Codex" (MiniMax):**
 ```
-Use the tidb-infra-kb MCP. Read the recent session_log - what did the previous session just create? Continue the staging build: add the admin-portal DNS record (acme-staging-admin-dns) matching the production pattern, composing DnsRecord. Record it with write_component. Pass developer='codex' on every tidb-infra-kb call so the activity feed attributes the work.
+Use infra-kb-pulumi. Read the recent session_log in acme_pulumi_kb - what did the previous session just create? Continue the staging build: add the admin-portal DNS record (acme-staging-admin-dns) matching the production pattern, composing DnsRecord. Set account_ref='sandbox'. Record it with write_component. Pass developer='codex' on every infra-kb-pulumi call so the activity feed attributes the work.
 ```
 
 **Pane 3 - Cursor:**
 ```
-Use the tidb MCP (db_query) to run a recursive CTE: what does the production acme-prod-admin-sso transitively depend on? Confirm an SSO app must redirect to a DnsRecord. Then scaffold acme-staging-admin-sso composing SsoApplication, with the redirect URI pointing at acme-staging-admin-dns. Record it with write_component (developer='cursor') so the activity feed attributes the work.
+Use tidb-pulumi (db_query) to run a recursive CTE: what does the production acme_pulumi_kb's acme-prod-admin-sso transitively depend on? Confirm an SSO app must redirect to a DnsRecord. Then scaffold acme-staging-admin-sso composing SsoApplication, with the redirect URI pointing at acme-staging-admin-dns, account_ref='sandbox'. Record it with write_component (developer='cursor') so the activity feed attributes the work.
 ```
 
 After each paste, watch the dashboard: QUERY rows then WRITE rows appear, and the parity strip drops 4 → 2 → 1 → 0.
@@ -85,8 +88,8 @@ After each paste, watch the dashboard: QUERY rows then WRITE rows appear, and th
 ## E. Narration script (talk over the video)
 
 ### 0. Open (~20s) - dashboard on screen, nothing running yet
-> "This is a live window onto a TiDB Cloud database. Every row you see is a real query.
-> On the right is a shared knowledge graph of an infrastructure codebase - a Pulumi monorepo.
+> "This is a live window onto a mem9.ai memory layer (TiDB Cloud). Every row you see is a real query.
+> On the right is a shared memory the database holds of an infrastructure codebase - a Pulumi monorepo.
 > Production is complete. Staging has drifted: it's missing its DNS records and its SSO app - four components.
 > The job: bring staging to parity. And I'm going to do it with three *different* AI coding tools - Claude Code, Codex, and Cursor - that have never talked to each other. Their only shared memory is TiDB."
 
@@ -109,9 +112,14 @@ After each paste, watch the dashboard: QUERY rows then WRITE rows appear, and th
 > That's graph reachability - plain SQL on TiDB. You can't grep for it, and embeddings can't compute it.
 > Now Cursor knows the exact pattern, builds the staging SSO app correctly, pointing at the DNS record the previous tool just created. Parity strip - all green. Done."
 
+### 3b. Cross-repo + isolation (optional, ~30s)
+> "Two repos, two databases - `acme_pulumi_kb` and `acme_lza_kb` - connected with a single cross-database JOIN over one team connection. No second login, no second cluster.
+> And if you try to read another team's KB? Access denied. Team = cluster; credentials bound the blast radius.
+> Run `python -m src.cross_repo_demo` for the JOIN, `python -m src.isolation_check` for the proof."
+
 ### 4. Close (~15s)
 > "Three AI coding tools, three different vendors, one TiDB brain. They queried before they built, followed the conventions, saw the blast radius of a change, and handed off warm to each other.
-> That's TiDB as the shared memory layer for agentic engineering."
+> That's mem9 - the memory the database holds - for agentic engineering."
 
 ---
 

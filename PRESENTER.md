@@ -7,10 +7,7 @@
 
 ## 0. The idea in one sentence
 
-> "Your infrastructure knowledge - what components exist, how they connect, and
-> the rules for building them - lives in **TiDB** as a shared brain that **every
-> AI coding tool reads and writes**, so the tools stop duplicating work, stop
-> breaking conventions, and never start from zero."
+> "Your existing coding tools - Claude Code, Codex, Cursor - plus a memory the database holds (mem9). What components exist, how they connect, and the rules for building them live in TiDB Cloud (mem9.ai) as a shared memory every tool reads and writes - organized as team = cluster, repo = database."
 
 ## The problem you're solving (say this first)
 
@@ -29,8 +26,8 @@ Acme runs a Pulumi TypeScript monorepo. Developers now use AI coding tools
 
 ```
    Claude Code ─┐
-   Codex       ─┼──►  MCP  ──►  TiDB Cloud  ◄── the one shared brain
-   Cursor      ─┘                 (components, edges, session log)
+   Codex       ─┼──►  MCP  ──►  mem9.ai (TiDB Cloud)  ◄── the memory the database holds
+   Cursor      ─┘                 (team = cluster · repo = database)
                                         │
                                   Dashboard  ◄── what you narrate
 ```
@@ -40,11 +37,12 @@ Acme runs a Pulumi TypeScript monorepo. Developers now use AI coding tools
 ## 1. Before you start (pre-flight, 1 min)
 
 - [ ] `./demo.sh` running → dashboard open at **http://localhost:7001**
-- [ ] Header says **"TiDB Cloud"** (proof it's the real product, not a toy)
+- [ ] Header says **"mem9.ai (TiDB Cloud)"**
 - [ ] Dashboard on the **Live** tab, showing the staging gap
 - [ ] 3 iTerm panes open side by side, each `cd`'d into the repo:
       `claude` · `codex` · `cursor-agent`
 - [ ] Reset to a clean slate: click **Reset KB** (top-right) once
+- [ ] Bootstrap has been run (`./setup.sh` -> `python -m src.ingest --reset`) so both `acme_pulumi_kb` and `acme_lza_kb` are populated.
 
 Arrange the screen: **iTerm panes on top/left, dashboard visible** so the audience
 sees the tools AND the brain at the same time.
@@ -74,8 +72,8 @@ Point at the dashboard, left to right:
 ### Pane 1 - Claude Code (inspect + build the asset layer)
 
 **Paste:**
-> Use the tidb-infra-kb MCP. Query the knowledge base: what components exist in
-> `staging` vs `production`, and what is staging missing? Then scaffold the missing
+> Use `infra-kb-pulumi`. Query the knowledge base: what components exist in
+> `staging` vs `production` in `acme_pulumi_kb`, and what is staging missing? Then scaffold the missing
 > staging static-assets bucket and its Cloudflare DNS record, composing the
 > `S3Bucket` and `DnsRecord` libraries - never raw `aws.*` resources. Follow the
 > `acme-<env>-<name>` naming and required tags. Record each new component with
@@ -90,7 +88,7 @@ libraries, not raw cloud resources. And it **writes its work back** to TiDB."
 ### Pane 2 - Codex (pick up warm - the shared-memory moment)
 
 **Paste:**
-> Use the tidb-infra-kb MCP. Read the recent `session_log` - what did the previous
+> Use `infra-kb-pulumi`. Read the recent `session_log` in `acme_pulumi_kb` - what did the previous
 > session just create? Continue the staging build: add the admin-portal DNS record
 > (`acme-staging-admin-dns`) matching the production pattern, composing `DnsRecord`.
 > Record it with `write_component`.
@@ -105,8 +103,8 @@ feel every day."
 ### Pane 3 - Cursor (prove a dependency with a recursive CTE, then finish)
 
 **Paste:**
-> Use the **tidb** MCP (`db_query`) to run a recursive CTE: what does the production
-> `acme-prod-admin-sso` transitively depend on? Confirm an SSO app must redirect to a
+> Use `tidb-pulumi` (`db_query`) to run a recursive CTE: what does the production
+> `acme_pulumi_kb`'s `acme-prod-admin-sso` transitively depend on? Confirm an SSO app must redirect to a
 > `DnsRecord`. Then scaffold `acme-staging-admin-sso` composing `SsoApplication`, with
 > the redirect URI pointing at `acme-staging-admin-dns`. Record it with `write_component`.
 
@@ -117,6 +115,15 @@ finishes the job."
 **Audience sees:** the last node appears; **parity strip goes all ✓ - "at parity"**.
 "Three different tools. One TiDB brain. Staging is now a faithful copy of production,
 built to convention, with full history of who did what."
+
+### Cross-repo + isolation (the new money moments)
+
+**Cross-repo (B):** run `python -m src.cross_repo_demo` (or the prompts in DEMO.md). One
+team connection writes acme_lza_kb AND acme_pulumi_kb, then a cross-database JOIN ties the
+bucket to its LZA account. Say: "Two repos, two databases, one query - no second login."
+
+**Isolation (C):** run `python -m src.isolation_check`. Say: "Team = cluster. An agent on
+team acme has no path to team globex. Credentials bound the blast radius."
 
 ---
 
@@ -142,7 +149,7 @@ bucket, and writes **nothing**. The graph just prevented a duplicate, untagged,
 drift-causing resource - the #1 thing that goes wrong with AI-written infra."
 
 ### C. It's real TiDB
-Point at the header: **"TiDB Cloud."** "Everything you saw - the graph,
+Point at the header: **"mem9.ai - TiDB Cloud."** "Everything you saw - the graph,
 the recursive CTE, the writes from three tools - ran on a real TiDB Cloud
 cluster over MySQL protocol. Same database that scales to your production workload."
 
@@ -152,8 +159,7 @@ cluster over MySQL protocol. Same database that scales to your production worklo
 
 > "Three AI coding tools, the exact ones your team uses, all sharing one TiDB brain.
 > They query before they build, follow your conventions, see the blast radius of a
-> change, and hand off warm to the next tool. That's TiDB as the memory layer for
-> agentic engineering."
+> change, and hand off warm to the next tool. That's mem9 - the memory the database holds - for agentic engineering."
 
 ---
 
