@@ -10,6 +10,7 @@ The runbook (DEMO.md) shows the GRANT setup; this script verifies the denial.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -47,6 +48,18 @@ def main() -> None:
     print(f"Target: {db.backend_name()}")
     print(f"Cross-team probe: {report['cross_sql']}")
     print(("PASS - " if report["isolated"] else "FAIL - ") + report["detail"])
+    if not report["isolated"] and report["target"] != "sqlite":
+        user = os.environ.get("TIDB_USERNAME", "")
+        if "root" in user.lower():
+            print(
+                "\nNOTE: you are connected as an admin/root user, which can read every "
+                "team's databases on this cluster. To demonstrate isolation on a single "
+                "mem9.ai cluster, create a team-scoped user first (see DEMO.md, Scenario C):\n"
+                "  CREATE USER 'acme_agent'@'%' IDENTIFIED BY '<pw>';\n"
+                "  GRANT SELECT, INSERT, UPDATE ON `acme\\_%`.* TO 'acme_agent'@'%';\n"
+                "then re-run with TIDB_USERNAME=acme_agent (in production each team is its "
+                "own cluster, so this is enforced by the cluster boundary itself)."
+            )
 
 
 if __name__ == "__main__":

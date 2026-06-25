@@ -397,7 +397,8 @@ def _cte_blast_radius_sql(db_name: str, name: str) -> str:
 
 
 def _resolve(name: str) -> str:
-    return name.replace("'", "").strip()
+    allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-.")
+    return "".join(ch for ch in name if ch in allowed).strip()
 
 
 def cte_dependencies(repo: str, name: str, team_name: str | None = None) -> dict:
