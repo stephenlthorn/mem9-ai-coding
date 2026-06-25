@@ -309,7 +309,7 @@ def write_component(
         base = (name, type, env, repo, account_ref, repo_path, summary, code_excerpt, developer)
         if target() == "cloud":
             embed_text = f"{name} - {type} in {env}. {summary}"
-            cur = _run(con, sql, base + (embed_text, EMBED_MODEL))
+            cur = _run(con, sql, base + (EMBED_MODEL, embed_text))
         elif target() == "local":
             embed_text = f"{name} - {type} in {env}. {summary}"
             literal = _embed.to_literal(_embed.encode_one(embed_text))
