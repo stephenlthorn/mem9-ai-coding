@@ -24,7 +24,12 @@ from src import seed as seeder
 
 STATIC_DIR = Path(__file__).parent / "static"
 
-db.init_db()
+REPO = "pulumi"
+C = db.tref(REPO, "infra_components")
+E = db.tref(REPO, "component_edges")
+L = db.tref(REPO, "session_log")
+
+db.init_db(repos=[REPO])
 
 app = FastAPI(title="tidb-infra-kb dashboard", docs_url=None, redoc_url=None)
 
@@ -44,38 +49,37 @@ def backend():
 @app.get("/api/components")
 def components():
     return JSONResponse(db.query(
-        "SELECT id, name, component_type, environment, repo_path, summary, "
-        "code_excerpt, created_by, created_at "
-        "FROM infra_components ORDER BY environment, component_type, name"
-    ))
+        f"SELECT id, name, component_type, environment, repo, account_ref, repo_path, summary, "
+        f"code_excerpt, created_by, created_at FROM {C} ORDER BY environment, component_type, name",
+        repos=[REPO]))
 
 
 @app.get("/api/edges")
 def edges():
     return JSONResponse(db.query(
-        "SELECT e.id, e.relationship, e.note, "
-        "c1.name AS from_name, c1.component_type AS from_type, c1.environment AS from_env, "
-        "c2.name AS to_name, c2.component_type AS to_type, c2.environment AS to_env "
-        "FROM component_edges e "
-        "JOIN infra_components c1 ON e.from_id = c1.id "
-        "JOIN infra_components c2 ON e.to_id = c2.id"
-    ))
+        f"SELECT e.id, e.relationship, e.note, "
+        f"c1.name AS from_name, c1.component_type AS from_type, c1.environment AS from_env, "
+        f"c2.name AS to_name, c2.component_type AS to_type, c2.environment AS to_env "
+        f"FROM {E} e "
+        f"JOIN {C} c1 ON e.from_id = c1.id "
+        f"JOIN {C} c2 ON e.to_id = c2.id",
+        repos=[REPO]))
 
 
 @app.get("/api/session-log")
 def session_log():
     return JSONResponse(db.query(
-        "SELECT id, developer, action, detail, created_at "
-        "FROM session_log ORDER BY created_at DESC, id DESC LIMIT 60"
-    ))
+        f"SELECT id, developer, action, detail, created_at "
+        f"FROM {L} ORDER BY created_at DESC, id DESC LIMIT 60",
+        repos=[REPO]))
 
 
 @app.get("/api/missing")
 def missing():
     prod = {r["name"].replace("acme-prod-", ""): r
-            for r in db.query("SELECT * FROM infra_components WHERE environment='production'")}
+            for r in db.query(f"SELECT * FROM {C} WHERE environment='production'", repos=[REPO])}
     staging = {r["name"].replace("acme-staging-", "")
-               for r in db.query("SELECT name FROM infra_components WHERE environment='staging'")}
+               for r in db.query(f"SELECT name FROM {C} WHERE environment='staging'", repos=[REPO])}
     out = [
         {"production_name": comp["name"],
          "expected_staging_name": f"acme-staging-{key}",
@@ -90,9 +94,9 @@ def missing():
 @app.get("/api/memory")
 def memory():
     rows = db.query(
-        "SELECT name, component_type, environment, summary, created_by, created_at "
-        "FROM infra_components ORDER BY created_at, id"
-    )
+        f"SELECT name, component_type, environment, summary, created_by, created_at "
+        f"FROM {C} ORDER BY created_at, id",
+        repos=[REPO])
     before = [r for r in rows if r["created_by"] == "seed"]
     after = rows
     new = [r for r in rows if r["created_by"] != "seed"]
@@ -103,12 +107,12 @@ def memory():
 
 @app.get("/api/cte/dependencies")
 def cte_dependencies(name: str):
-    return JSONResponse(db.cte_dependencies(name))
+    return JSONResponse(db.cte_dependencies(REPO, name))
 
 
 @app.get("/api/cte/blast-radius")
 def cte_blast_radius(name: str):
-    return JSONResponse(db.cte_blast_radius(name))
+    return JSONResponse(db.cte_blast_radius(REPO, name))
 
 
 # ── Vector / full-text / hybrid search ───────────────────────────────────────
@@ -117,7 +121,7 @@ def cte_blast_radius(name: str):
 def search(q: str, mode: str = "hybrid"):
     if mode not in ("hybrid", "vector", "fts"):
         mode = "hybrid"
-    return JSONResponse(db.search(q, mode=mode, k=6))
+    return JSONResponse(db.search(REPO, q, mode=mode, k=6))
 
 
 # ── Scenarios ────────────────────────────────────────────────────────────────
@@ -137,10 +141,10 @@ SCENARIOS = [
             "Drift, double storage cost, and an untagged bucket nobody owns.",
         ],
         "query": (
-            "SELECT c2.name, e.relationship, e.note\n"
-            "FROM component_edges e\n"
-            "JOIN infra_components c1 ON e.from_id = c1.id\n"
-            "JOIN infra_components c2 ON e.to_id = c2.id\n"
+            f"SELECT c2.name, e.relationship, e.note\n"
+            f"FROM {E} e\n"
+            f"JOIN {C} c1 ON e.from_id = c1.id\n"
+            f"JOIN {C} c2 ON e.to_id = c2.id\n"
             "WHERE c1.name = 'PostgresDatabase';"
         ),
         "result": "PostgresDatabase --instantiates--> S3Bucket  (backup bucket, automatic)",
@@ -166,7 +170,7 @@ SCENARIOS = [
             "Ships the change, CI is green, prod static-assets + both analytics DBs break.",
             "The RDS breakage is the surprise - backups compose S3Bucket two hops away.",
         ],
-        "query": db.CTE_BLAST_RADIUS_SQL.format(name="S3Bucket"),
+        "query": db._cte_blast_radius_sql(db.database_for(REPO), "S3Bucket"),
         "result": (
             "depth 1: PostgresDatabase, acme-prod-data-exports, acme-prod-static-assets, "
             "acme-staging-data-exports\n"
@@ -195,7 +199,7 @@ SCENARIOS = [
             "Conventions drift: someone forgets proxied:true, someone hand-rolls the SSO redirect.",
         ],
         "query": (
-            "SELECT developer, action, detail FROM session_log\n"
+            f"SELECT developer, action, detail FROM {L}\n"
             "ORDER BY created_at DESC LIMIT 5;"
         ),
         "result": "claude-code created acme-staging-static-assets, acme-staging-assets-dns ...",
@@ -222,7 +226,7 @@ def scenarios():
 
 def _m_static_assets():
     db.write_component(
-        name="acme-staging-static-assets", type="S3", env="staging",
+        repo="pulumi", name="acme-staging-static-assets", type="S3", env="staging",
         repo_path="environments/staging/storage.ts",
         summary="Staging static assets bucket. Composes S3Bucket; fronted by acme-staging-assets-dns.",
         developer="claude-code", depends_on="S3Bucket",
@@ -231,18 +235,18 @@ def _m_static_assets():
 
 def _m_assets_dns():
     db.write_component(
-        name="acme-staging-assets-dns", type="Cloudflare", env="staging",
+        repo="pulumi", name="acme-staging-assets-dns", type="Cloudflare", env="staging",
         repo_path="environments/staging/dns.ts",
         summary="Cloudflare DNS fronting acme-staging-static-assets. Proxied: true.",
         developer="claude-code", depends_on="DnsRecord",
     )
-    db.write_edge("acme-staging-assets-dns", "acme-staging-static-assets", "fronts",
+    db.write_edge("pulumi", "acme-staging-assets-dns", "acme-staging-static-assets", "fronts",
                   "CDN DNS record proxies to the staging static assets bucket")
 
 
 def _m_admin_dns():
     db.write_component(
-        name="acme-staging-admin-dns", type="Cloudflare", env="staging",
+        repo="pulumi", name="acme-staging-admin-dns", type="Cloudflare", env="staging",
         repo_path="environments/staging/dns.ts",
         summary="Cloudflare DNS for the staging admin portal. acme-staging-admin-sso redirects here.",
         developer="codex", depends_on="DnsRecord",
@@ -251,12 +255,12 @@ def _m_admin_dns():
 
 def _m_admin_sso():
     db.write_component(
-        name="acme-staging-admin-sso", type="Okta", env="staging",
+        repo="pulumi", name="acme-staging-admin-sso", type="Okta", env="staging",
         repo_path="environments/staging/sso.ts",
         summary="Okta SSO for staging admin portal. Redirect URI points at acme-staging-admin-dns.",
         developer="cursor", depends_on="SsoApplication",
     )
-    db.write_edge("acme-staging-admin-sso", "acme-staging-admin-dns", "redirects_to",
+    db.write_edge("pulumi", "acme-staging-admin-sso", "acme-staging-admin-dns", "redirects_to",
                   "Okta redirect URI points at the staging admin DNS hostname")
 
 
@@ -265,11 +269,11 @@ DEMO_STEPS = [
     {
         "tool": "claude-code", "title": "Inspect the gap",
         "prompt": "What infra exists in staging vs production?",
-        "sql": "SELECT environment, name, component_type FROM infra_components\nWHERE environment IN ('staging','production') ORDER BY environment;",
+        "sql": f"SELECT environment, name, component_type FROM {C}\nWHERE environment IN ('staging','production') ORDER BY environment;",
         "output": [
             "production: 6 components (RDS, S3 x2, Cloudflare x2, Okta)",
             "staging:    2 components (RDS, S3)",
-            "→ staging is missing the DNS + SSO layer.",
+            "-> staging is missing the DNS + SSO layer.",
         ],
         "mutate": None,
     },
@@ -280,7 +284,7 @@ DEMO_STEPS = [
         "output": [
             "edit environments/staging/storage.ts",
             "  + new S3Bucket('acme-staging-static-assets', { env: 'staging' })",
-            "✓ write_component → acme-staging-static-assets (S3, composes S3Bucket)",
+            "write_component -> acme-staging-static-assets (S3, composes S3Bucket)",
         ],
         "mutate": _m_static_assets,
     },
@@ -291,18 +295,18 @@ DEMO_STEPS = [
         "output": [
             "edit environments/staging/dns.ts",
             "  + new DnsRecord('acme-staging-assets-dns', { proxied: true })",
-            "✓ write_component → acme-staging-assets-dns  (fronts acme-staging-static-assets)",
+            "write_component -> acme-staging-assets-dns  (fronts acme-staging-static-assets)",
         ],
         "mutate": _m_assets_dns,
     },
     {
         "tool": "codex", "title": "Pick up warm context",
         "prompt": "I'm continuing the staging work. What did the last session create?",
-        "sql": "SELECT developer, action, detail FROM session_log\nORDER BY created_at DESC LIMIT 4;",
+        "sql": f"SELECT developer, action, detail FROM {L}\nORDER BY created_at DESC LIMIT 4;",
         "output": [
-            "claude-code · created · acme-staging-assets-dns",
-            "claude-code · created · acme-staging-static-assets",
-            "→ continuing from where Claude Code left off. No re-briefing needed.",
+            "claude-code - created - acme-staging-assets-dns",
+            "claude-code - created - acme-staging-static-assets",
+            "-> continuing from where Claude Code left off. No re-briefing needed.",
         ],
         "mutate": None,
     },
@@ -313,32 +317,32 @@ DEMO_STEPS = [
         "output": [
             "edit environments/staging/dns.ts",
             "  + new DnsRecord('acme-staging-admin-dns', { proxied: true })",
-            "✓ write_component → acme-staging-admin-dns",
+            "write_component -> acme-staging-admin-dns",
         ],
         "mutate": _m_admin_dns,
     },
     {
         "tool": "cursor", "title": "Trace dependencies (recursive CTE)",
         "prompt": "Before I add the SSO app: what does prod's admin-sso depend on? Trace it.",
-        "sql": db.CTE_DEPENDENCIES_SQL.format(name="acme-prod-admin-sso"),
+        "sql": db._cte_dependencies_sql(db.database_for(REPO), "acme-prod-admin-sso"),
         "output": [
             "depth 1: acme-prod-admin-sso --uses--> SsoApplication",
             "depth 1: acme-prod-admin-sso --redirects_to--> acme-prod-admin-dns",
             "depth 2: acme-prod-admin-dns --uses--> DnsRecord",
-            "→ the SSO redirect URI must point at the admin DnsRecord.",
+            "-> the SSO redirect URI must point at the admin DnsRecord.",
         ],
         "mutate": None,
     },
     {
         "tool": "cursor", "title": "Scaffold admin SSO",
-        "prompt": "Create the staging Okta SSO app, redirect URI → acme-staging-admin-dns.",
+        "prompt": "Create the staging Okta SSO app, redirect URI -> acme-staging-admin-dns.",
         "sql": None,
         "output": [
             "edit environments/staging/sso.ts",
             "  + new SsoApplication('acme-staging-admin-sso', {",
             "      redirectUris: [pmStagingAdminDns.hostname] })",
-            "✓ write_component → acme-staging-admin-sso  (redirects_to acme-staging-admin-dns)",
-            "✓ staging is now at parity with production.",
+            "write_component -> acme-staging-admin-sso  (redirects_to acme-staging-admin-dns)",
+            "staging is now at parity with production.",
         ],
         "mutate": _m_admin_sso,
     },
@@ -365,7 +369,7 @@ def demo_apply(body: ApplyBody):
     if step["mutate"]:
         step["mutate"]()
     elif step.get("sql"):
-        db.log_query(step["tool"], step["sql"].replace("\n", " ")[:120])
+        db.log_query(REPO, step["tool"], step["sql"].replace("\n", " ")[:120])
     return JSONResponse({"ok": True, "applied": body.index, "mutated": step["mutate"] is not None})
 
 
