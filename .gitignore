@@ -4,6 +4,7 @@ __pycache__/
 *.py[cod]
 .env
 kb.db
+data/
 .DS_Store
 
 # generated MCP configs (contain TiDB secrets)
@@ -14,4 +15,5 @@ kb.db
 package.json
 package-lock.json
 environments/
+lza/
 .minimax/

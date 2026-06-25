@@ -1,9 +1,15 @@
 [project]
 name = "mem9-ai-coding"
-version = "0.2.0"
-description = "Shared infrastructure knowledge base for multi-tool AI coding (Claude Code, Codex, Cursor)"
+version = "0.3.0"
+description = "mem9 - a database-held memory layer that Claude Code, Codex, and Cursor share across repos and teams"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.110.0",
     "uvicorn[standard]>=0.29.0",
+    "PyMySQL>=1.1.0",
+    "python-dotenv>=1.0.1",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
