@@ -1,21 +1,35 @@
 {
-  "_comment": "TEMPLATE. Run `python -m src.gen_configs` to write the real .mcp.json (with your TiDB creds) into the repo root. Two servers: official TiDB MCP + our convention MCP.",
+  "_comment": "TEMPLATE. Run `python -m src.gen_configs` to write the real .mcp.json (with your mem9.ai creds). One named entry per repo database; all scoped to one team cluster. The agent picks the destination explicitly - routing is never inferred.",
   "mcpServers": {
-    "tidb": {
+    "tidb-pulumi": {
       "command": "uvx",
       "args": ["--from", "pytidb[mcp]", "tidb-mcp-server"],
       "env": {
-        "TIDB_HOST": "${TIDB_HOST}",
-        "TIDB_PORT": "${TIDB_PORT}",
-        "TIDB_USERNAME": "${TIDB_USERNAME}",
-        "TIDB_PASSWORD": "${TIDB_PASSWORD}",
-        "TIDB_DATABASE": "${TIDB_DATABASE}"
+        "TIDB_HOST": "${TIDB_HOST}", "TIDB_PORT": "${TIDB_PORT}",
+        "TIDB_USERNAME": "${TIDB_USERNAME}", "TIDB_PASSWORD": "${TIDB_PASSWORD}",
+        "TIDB_DATABASE": "acme_pulumi_kb"
       }
     },
-    "tidb-infra-kb": {
+    "tidb-lza": {
+      "command": "uvx",
+      "args": ["--from", "pytidb[mcp]", "tidb-mcp-server"],
+      "env": {
+        "TIDB_HOST": "${TIDB_HOST}", "TIDB_PORT": "${TIDB_PORT}",
+        "TIDB_USERNAME": "${TIDB_USERNAME}", "TIDB_PASSWORD": "${TIDB_PASSWORD}",
+        "TIDB_DATABASE": "acme_lza_kb"
+      }
+    },
+    "infra-kb-pulumi": {
       "command": "/path/to/mem9-ai-coding/.venv/bin/python",
       "args": ["-m", "src.mcp_server"],
-      "cwd": "/path/to/mem9-ai-coding"
+      "cwd": "/path/to/mem9-ai-coding",
+      "env": {"MEM9_REPO": "pulumi", "MEM9_TEAM": "acme"}
+    },
+    "infra-kb-lza": {
+      "command": "/path/to/mem9-ai-coding/.venv/bin/python",
+      "args": ["-m", "src.mcp_server"],
+      "cwd": "/path/to/mem9-ai-coding",
+      "env": {"MEM9_REPO": "lza", "MEM9_TEAM": "acme"}
     }
   }
 }

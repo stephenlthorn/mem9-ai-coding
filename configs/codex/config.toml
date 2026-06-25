@@ -1,19 +1,41 @@
 # TEMPLATE for ~/.codex/config.toml
 # Run `python -m src.gen_configs` to produce configs/generated/codex-config.toml
-# with your real TiDB creds, then paste these blocks into ~/.codex/config.toml.
-# Two MCP servers: official TiDB MCP + our convention MCP.
+# with your real mem9.ai creds, then paste these blocks into ~/.codex/config.toml.
+# One named MCP entry per repo database; all scoped to one team cluster.
+# Routing is explicit: the agent calls tidb-pulumi vs tidb-lza vs infra-kb-* itself.
 
-[mcp_servers.tidb]
+[mcp_servers.tidb-pulumi]
 command = "uvx"
 args = ["--from", "pytidb[mcp]", "tidb-mcp-server"]
-[mcp_servers.tidb.env]
+[mcp_servers.tidb-pulumi.env]
 TIDB_HOST = "${TIDB_HOST}"
 TIDB_PORT = "${TIDB_PORT}"
 TIDB_USERNAME = "${TIDB_USERNAME}"
 TIDB_PASSWORD = "${TIDB_PASSWORD}"
-TIDB_DATABASE = "${TIDB_DATABASE}"
+TIDB_DATABASE = "acme_pulumi_kb"
 
-[mcp_servers.tidb-infra-kb]
+[mcp_servers.tidb-lza]
+command = "uvx"
+args = ["--from", "pytidb[mcp]", "tidb-mcp-server"]
+[mcp_servers.tidb-lza.env]
+TIDB_HOST = "${TIDB_HOST}"
+TIDB_PORT = "${TIDB_PORT}"
+TIDB_USERNAME = "${TIDB_USERNAME}"
+TIDB_PASSWORD = "${TIDB_PASSWORD}"
+TIDB_DATABASE = "acme_lza_kb"
+
+[mcp_servers.infra-kb-pulumi]
 command = "/path/to/mem9-ai-coding/.venv/bin/python"
 args = ["-m", "src.mcp_server"]
 cwd = "/path/to/mem9-ai-coding"
+[mcp_servers.infra-kb-pulumi.env]
+MEM9_REPO = "pulumi"
+MEM9_TEAM = "acme"
+
+[mcp_servers.infra-kb-lza]
+command = "/path/to/mem9-ai-coding/.venv/bin/python"
+args = ["-m", "src.mcp_server"]
+cwd = "/path/to/mem9-ai-coding"
+[mcp_servers.infra-kb-lza.env]
+MEM9_REPO = "lza"
+MEM9_TEAM = "acme"

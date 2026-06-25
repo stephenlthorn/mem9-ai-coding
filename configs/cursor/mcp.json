@@ -1,21 +1,35 @@
 {
-  "_comment": "TEMPLATE. Run `python -m src.gen_configs` to write the real .cursor/mcp.json (with your TiDB creds). Two servers: official TiDB MCP + our convention MCP. The generated config pins UV_CACHE_DIR into the repo to avoid Cursor reconnect loops caused by restricted ~/.cache/uv access.",
+  "_comment": "TEMPLATE. Run `python -m src.gen_configs` to write the real .cursor/mcp.json. One named entry per repo database, scoped to one team cluster. The generated config pins UV_CACHE_DIR into the repo to avoid Cursor reconnect loops. Routing is explicit - the agent chooses tidb-pulumi vs tidb-lza vs infra-kb-* itself.",
   "mcpServers": {
-    "tidb": {
+    "tidb-pulumi": {
       "command": "uvx",
       "args": ["--from", "pytidb[mcp]", "tidb-mcp-server"],
       "env": {
-        "TIDB_HOST": "${TIDB_HOST}",
-        "TIDB_PORT": "${TIDB_PORT}",
-        "TIDB_USERNAME": "${TIDB_USERNAME}",
-        "TIDB_PASSWORD": "${TIDB_PASSWORD}",
-        "TIDB_DATABASE": "${TIDB_DATABASE}"
+        "TIDB_HOST": "${TIDB_HOST}", "TIDB_PORT": "${TIDB_PORT}",
+        "TIDB_USERNAME": "${TIDB_USERNAME}", "TIDB_PASSWORD": "${TIDB_PASSWORD}",
+        "TIDB_DATABASE": "acme_pulumi_kb"
       }
     },
-    "tidb-infra-kb": {
+    "tidb-lza": {
+      "command": "uvx",
+      "args": ["--from", "pytidb[mcp]", "tidb-mcp-server"],
+      "env": {
+        "TIDB_HOST": "${TIDB_HOST}", "TIDB_PORT": "${TIDB_PORT}",
+        "TIDB_USERNAME": "${TIDB_USERNAME}", "TIDB_PASSWORD": "${TIDB_PASSWORD}",
+        "TIDB_DATABASE": "acme_lza_kb"
+      }
+    },
+    "infra-kb-pulumi": {
       "command": "/path/to/mem9-ai-coding/.venv/bin/python",
       "args": ["-m", "src.mcp_server"],
-      "cwd": "/path/to/mem9-ai-coding"
+      "cwd": "/path/to/mem9-ai-coding",
+      "env": {"MEM9_REPO": "pulumi", "MEM9_TEAM": "acme"}
+    },
+    "infra-kb-lza": {
+      "command": "/path/to/mem9-ai-coding/.venv/bin/python",
+      "args": ["-m", "src.mcp_server"],
+      "cwd": "/path/to/mem9-ai-coding",
+      "env": {"MEM9_REPO": "lza", "MEM9_TEAM": "acme"}
     }
   }
 }
