@@ -23,7 +23,9 @@ fi
 echo "==> Verifying official TiDB MCP server is fetchable (uvx pytidb[mcp])"
 command -v uvx >/dev/null || { echo "ERROR: uvx not found. Install uv: https://docs.astral.sh/uv/" >&2; exit 1; }
 
-echo "==> Creating schema + seeding the knowledge base"
+echo "==> Bootstrapping both repo databases from source (acme_pulumi_kb + acme_lza_kb)"
+python3 -m src.ingest --reset
+echo "==> Seeding the second team (globex) for the isolation demo"
 python3 -m src.seed --reset
 
 echo "==> Generating MCP configs for Claude Code / Codex / Cursor"
@@ -39,6 +41,6 @@ Next:
 
 Then open 3 iTerm panes (all: cd into this repo) and launch:
   claude   ·   codex   ·   cursor-agent
-
-Follow DEMO.md for the copy-paste prompts.
+Each tool sees one named MCP entry per repo database (tidb-pulumi/-lza, infra-kb-pulumi/-lza).
+Follow DEMO.md for the copy-paste prompts (Scenario A single-repo, B cross-repo, C isolation).
 EOF

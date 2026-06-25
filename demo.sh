@@ -26,7 +26,7 @@ done
 echo ""
 echo "Dashboard: http://localhost:$PORT"
 echo "Open 3 iTerm panes in this repo and launch:  claude · codex · cursor-agent"
-echo "Prompts: see DEMO.md"
+echo "Named MCP servers per repo: tidb-pulumi/-lza, infra-kb-pulumi/-lza. Prompts: DEMO.md"
 echo ""
 (command -v open >/dev/null && open "http://localhost:$PORT") || true
 wait
