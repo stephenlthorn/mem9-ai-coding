@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>mem9-infra-kb · one brain for every coding tool</title>
-  <link rel="stylesheet" href="/static/styles.css?v=17" />
+  <title>mem9 · shared memory for coding agents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css?v=20" />
 </head>
 <body>
   <div id="app">
@@ -13,147 +16,123 @@
         <div class="logo-group">
           <span class="logo-badge">mem9</span>
           <span class="header-title">Infra Knowledge Base</span>
-          <span class="header-dim" id="backend-name">·</span>
         </div>
-        <div class="header-tools">
-          <span class="tool-pill tool-claude-code">Claude Code</span>
-          <span class="tool-pill tool-codex">Codex</span>
-          <span class="tool-pill tool-cursor">Cursor</span>
-          <span class="header-dim">→ <span id="header-team-repos">acme · pulumi + lza</span></span>
+        <div class="header-meta">
+          <span class="meta-chip" id="header-team-repos">acme · pulumi + lza</span>
+          <span class="meta-chip meta-backend" id="backend-name">TiDB Cloud</span>
         </div>
         <div class="header-actions">
-          <button id="reset-btn" class="btn btn-ghost">Reset KB</button>
+          <button id="reset-btn" class="btn btn-ghost">Reset</button>
         </div>
       </div>
       <nav class="tabs">
-        <button class="tab active" data-tab="scenario">Scenario</button>
-        <button class="tab" data-tab="teams">Teams &amp; Repos</button>
+        <button class="tab active" data-tab="scenario">Overview</button>
+        <button class="tab" data-tab="teams">Teams</button>
         <button class="tab" data-tab="architecture">Architecture</button>
-        <button class="tab" data-tab="sysprompt">System prompt</button>
+        <button class="tab" data-tab="sysprompt">Config</button>
         <button class="tab" data-tab="live">Live</button>
-        <button class="tab" data-tab="cte">Dependency CTE</button>
-        <button class="tab" data-tab="search">Vector + FTS</button>
+        <button class="tab" data-tab="cte">Dependencies</button>
+        <button class="tab" data-tab="search">Search</button>
         <button class="tab" data-tab="scenarios">Why mem9</button>
       </nav>
     </header>
 
     <main class="main">
 
-      <!-- ─────────────── SCENARIO (default) ─────────────── -->
+      <!-- ─────────────── OVERVIEW ─────────────── -->
       <section class="view active" data-view="scenario">
-        <div class="talk talk-hero">
-          <div class="talk-title">TiDB - Shared Memory Infrastructure</div>
-          <ul>
-            <li>"Acme" platform team runs a Pulumi GitHub repo for IaC across AWS, Cloudflare, and Okta.</li>
-            <li>Code is written by AI coding agents.</li>
-            <li><b>Challenge:</b> coding agents have no shared context.</li>
-          </ul>
-        </div>
-
-        <div class="talk-grid">
-          <div class="talk">
-            <h4>The scenario</h4>
-            <ul>
-              <li>Pulumi monorepo</li>
-              <li>Reusable component libraries:
-                <ul class="talk-sub">
-                  <li><span class="mono">S3Bucket</span></li>
-                  <li><span class="mono">PostgreSQL</span></li>
-                  <li><span class="mono">DNSRecord</span></li>
-                  <li><span class="mono">SSOApplication</span></li>
-                </ul>
-              </li>
-              <li>PROD and staging environments</li>
-            </ul>
-          </div>
-          <div class="talk">
-            <h4>The agents</h4>
-            <ul><li>Three different AI coding tools, different developers, same infra:</li></ul>
-            <div class="talk-pills">
-              <span class="tool-pill tool-claude-code">Claude Code</span>
-              <span class="tool-pill tool-codex">Codex</span>
-              <span class="tool-pill tool-cursor">Cursor</span>
-            </div>
-          </div>
-          <div class="talk">
-            <h4>The task</h4>
-            <ul>
-              <li>Production is complete.</li>
-              <li>Staging has drifted - missing its DNS + SSO layer (4 components).</li>
-              <li>Bring staging to parity with production, using all three tools.</li>
-            </ul>
+        <div class="hero">
+          <span class="eyebrow">TiDB Cloud · mem9</span>
+          <h1 class="hero-title">One brain for every coding agent.</h1>
+          <p class="hero-sub">Three AI tools share one queryable memory. Each reads before it builds and writes back when it's done — so none starts cold or repeats another's work.</p>
+          <div class="hero-tools">
+            <span class="tool-pill tool-claude-code">Claude Code</span>
+            <span class="tool-pill tool-codex">Codex</span>
+            <span class="tool-pill tool-cursor">Cursor</span>
+            <span class="hero-arrow">→</span>
+            <span class="tool-pill tool-mem9">one mem9 space</span>
           </div>
         </div>
 
-        <div class="talk">
-          <h4>Why each agent fails on its own</h4>
-          <ul class="talk-2col">
-            <li><b>Duplication</b> - can't see a component exists → builds a second one. TiDB holds what exists as queryable state.</li>
-            <li><b>Broken conventions</b> - writes raw <span class="mono">aws.s3.Bucket</span> instead of the library wrapper. TiDB stores the graph edge that says "use the library."</li>
-            <li><b>Invisible blast radius</b> - changes <span class="mono">S3Bucket</span>, also breaks all RDS databases (they use S3Bucket for backups, two hops away). A recursive CTE in TiDB reveals the full chain.</li>
-            <li><b>Cold starts</b> - the next session re-derives everything and re-makes mistakes. TiDB's session log hands off context warm.</li>
-          </ul>
+        <div class="section-label">Without shared memory</div>
+        <div class="fail-grid">
+          <div class="fail-card">
+            <span class="fail-icon">⧉</span>
+            <div class="fail-name">Duplication</div>
+            <div class="fail-line">Rebuilds components that already exist.</div>
+          </div>
+          <div class="fail-card">
+            <span class="fail-icon">⚠</span>
+            <div class="fail-name">Raw resources</div>
+            <div class="fail-line">Skips the library wrapper, breaks conventions.</div>
+          </div>
+          <div class="fail-card">
+            <span class="fail-icon">◎</span>
+            <div class="fail-name">Hidden blast radius</div>
+            <div class="fail-line">Breaks dependents two hops away.</div>
+          </div>
+          <div class="fail-card">
+            <span class="fail-icon">❄</span>
+            <div class="fail-name">Cold starts</div>
+            <div class="fail-line">Re-derives context every session.</div>
+          </div>
         </div>
 
-        <div class="talk talk-fix">
-          <h4>The fix</h4>
-          <ul><li>A <b>shared, queryable memory in TiDB Cloud</b> that every agent reads before it builds and writes back when it's done. No agent starts cold; none repeats another's work.</li></ul>
+        <div class="fix-banner">
+          <span class="fix-mark">✓</span>
+          <div><b>With mem9</b> — one shared memory in TiDB Cloud. Query first, compose libraries, write back.</div>
         </div>
       </section>
 
       <!-- ─────────────── TEAMS & REPOS ─────────────── -->
       <section class="view" data-view="teams">
-        <div class="talk">
-          <h4>mem9 topology: team = space · repo = namespace</h4>
-          <ul class="talk-2col">
-            <li><b>Team</b> maps to a mem9 <b>space</b> (one API key). Each team has its own isolated TiDB Cloud cluster behind mem9.</li>
-            <li><b>Repo</b> maps to an <b>appId namespace</b> within that space (<code>acme_pulumi_kb</code>, <code>acme_lza_kb</code>). Same cluster, separate recall scope.</li>
-            <li>Cross-repo queries run client-side: recall from two namespaces, merge by <code>account_ref</code>.</li>
-            <li>Cross-team isolation: a different API key (different space) cannot read another team's memories - enforced by mem9, not by app code.</li>
-          </ul>
+        <div class="lead">
+          <h2 class="lead-title">Team = space. Repo = namespace.</h2>
+          <p class="lead-sub">Each team gets an isolated mem9 space. Repos are <code>appId</code> namespaces inside it — same cluster, separate recall scope.</p>
         </div>
 
-        <div class="teams-grid" id="teams-grid">
+        <div class="teams-grid">
           <div class="team-card">
             <div class="team-header">
-              <span class="team-badge">team: acme</span>
-              <span class="team-hint">one mem9 space · one TiDB cluster</span>
+              <span class="team-badge">acme</span>
+              <span class="team-hint">one space · one cluster</span>
             </div>
-            <div class="repos-row" id="repos-row">
-              <div class="repo-card" id="repo-pulumi">
+            <div class="repos-row">
+              <div class="repo-card">
                 <div class="repo-name"><span class="repo-dot dot-pulumi"></span>pulumi</div>
+                <div class="repo-count" id="repo-count-pulumi">—</div>
                 <div class="repo-appid">acme_pulumi_kb</div>
-                <div class="repo-count" id="repo-count-pulumi">— components</div>
-                <div class="repo-types">AWS · Cloudflare · Okta · IaC</div>
+                <div class="repo-types">AWS · Cloudflare · Okta</div>
               </div>
-              <div class="repo-card" id="repo-lza">
+              <div class="repo-card">
                 <div class="repo-name"><span class="repo-dot dot-lza"></span>lza</div>
+                <div class="repo-count" id="repo-count-lza">—</div>
                 <div class="repo-appid">acme_lza_kb</div>
-                <div class="repo-count" id="repo-count-lza">— components</div>
-                <div class="repo-types">AWS Accounts · OUs · SCPs · IAM</div>
+                <div class="repo-types">Accounts · OUs · SCPs · IAM</div>
               </div>
             </div>
             <div class="cross-repo-note">
-              Cross-repo: <code>account_ref</code> links LZA accounts → Pulumi stacks. Queried from both namespaces, merged client-side.
+              <code>account_ref</code> links LZA accounts to Pulumi stacks — recalled from both namespaces, merged client-side.
             </div>
           </div>
 
           <div class="team-card team-card-isolated">
             <div class="team-header">
-              <span class="team-badge team-badge-other">team: globex</span>
-              <span class="team-hint">separate mem9 space · separate TiDB cluster</span>
+              <span class="team-badge team-badge-other">globex</span>
+              <span class="team-hint">separate space · separate cluster</span>
             </div>
             <div class="isolation-msg">
               <span class="iso-lock">🔒</span>
-              Globex data is in a different mem9 space (different API key). Acme cannot read globex memories — isolation enforced at the space level, not by app code.
+              <span>Different API key, different space. Acme cannot read globex — isolation enforced by mem9, not app code.</span>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-header"><span class="card-title">All repos · combined component graph</span>
-            <div class="env-filter">
-              <button class="repo-btn active" data-repo="all">All repos</button>
+          <div class="card-header">
+            <span class="card-title">Combined graph</span>
+            <div class="seg">
+              <button class="repo-btn active" data-repo="all">All</button>
               <button class="repo-btn" data-repo="pulumi"><span class="repo-dot dot-pulumi"></span>pulumi</button>
               <button class="repo-btn" data-repo="lza"><span class="repo-dot dot-lza"></span>lza</button>
             </div>
@@ -166,138 +145,113 @@
             <span class="leg cf">Cloudflare</span>
             <span class="leg okta">Okta</span>
             <span class="leg account">Account</span>
-            <span class="leg-hint repo-hint"><span class="repo-dot dot-pulumi"></span>pulumi &nbsp;<span class="repo-dot dot-lza"></span>lza</span>
+            <span class="leg-hint"><span class="repo-dot dot-pulumi"></span>pulumi&nbsp;&nbsp;<span class="repo-dot dot-lza"></span>lza</span>
           </div>
         </div>
       </section>
 
       <!-- ─────────────── ARCHITECTURE ─────────────── -->
       <section class="view" data-view="architecture">
-        <div class="talk">
-          <h4>Architecture</h4>
-          <ul class="talk-2col">
-            <li>Agent CLI → MCP process (local) → <b>TiDB Cloud</b> (remote, MySQL protocol). MCP is the adapter; agents never talk to TiDB directly.</li>
-            <li>MCP is an open standard - no custom glue per tool. All three CLIs load the same config.</li>
-            <li>Two MCP servers: <b>TiDB</b> (official PingCAP MCP - raw SQL, vector, CTE) + <b>tidb-infra-kb</b> (a thin custom MCP we wrote that adds convention guardrails; it talks to the same TiDB DB).</li>
-            <li>Unified TiDB DB: OLTP + OLAP + Graph + Vector + FTS, ACID across concurrent writes.</li>
-            <li>The dashboard is a live window on the same DB - not the system.</li>
-          </ul>
+        <div class="lead">
+          <h2 class="lead-title">Architecture</h2>
+          <p class="lead-sub">Every tool speaks MCP. The dashboard is just a live window on the same store.</p>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title">Architecture</span></div>
           <div class="arch-wrap">
             <svg viewBox="0 0 780 320" xmlns="http://www.w3.org/2000/svg" class="arch-svg">
               <defs>
-                <marker id="dah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7585a6"/></marker>
-                <linearGradient id="cyl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22305a"/><stop offset="1" stop-color="#141d36"/></linearGradient>
+                <marker id="dah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5a5a6a"/></marker>
+                <linearGradient id="cyl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3566"/><stop offset="1" stop-color="#161a2e"/></linearGradient>
               </defs>
-              <g font-family="-apple-system, sans-serif" font-size="15" text-anchor="middle">
-                <rect x="20" y="34" width="170" height="48" rx="9" fill="rgba(204,120,92,0.12)" stroke="#CC785C" stroke-width="1.5"/><text x="105" y="64" fill="#CC785C" font-weight="700">Claude Code</text>
-                <rect x="20" y="134" width="170" height="48" rx="9" fill="rgba(16,163,127,0.12)" stroke="#10A37F" stroke-width="1.5"/><text x="105" y="164" fill="#10A37F" font-weight="700">Codex</text>
-                <rect x="20" y="234" width="170" height="48" rx="9" fill="rgba(74,144,226,0.12)" stroke="#4A90E2" stroke-width="1.5"/><text x="105" y="264" fill="#4A90E2" font-weight="700">Cursor</text>
-                <rect x="300" y="120" width="150" height="76" rx="10" fill="#1a1e2a" stroke="#3a4a6e" stroke-width="1.5"/>
-                <text x="375" y="150" fill="#e8eaf0" font-weight="700">MCP</text>
-                <text x="375" y="170" fill="#8089a0" font-size="12">tidb</text>
-                <text x="375" y="186" fill="#8089a0" font-size="12">tidb-infra-kb</text>
-                <ellipse cx="640" cy="120" rx="78" ry="20" fill="#2a3a66"/>
+              <g font-family="'Hanken Grotesk', sans-serif" font-size="15" text-anchor="middle">
+                <rect x="20" y="34" width="170" height="48" rx="10" fill="rgba(204,120,92,0.12)" stroke="#CC785C" stroke-width="1.5"/><text x="105" y="64" fill="#CC785C" font-weight="700">Claude Code</text>
+                <rect x="20" y="134" width="170" height="48" rx="10" fill="rgba(16,163,127,0.14)" stroke="#13B583" stroke-width="1.5"/><text x="105" y="164" fill="#13B583" font-weight="700">Codex</text>
+                <rect x="20" y="234" width="170" height="48" rx="10" fill="rgba(91,140,255,0.12)" stroke="#5B8CFF" stroke-width="1.5"/><text x="105" y="264" fill="#5B8CFF" font-weight="700">Cursor</text>
+                <rect x="300" y="120" width="150" height="76" rx="12" fill="#16161c" stroke="#33333d" stroke-width="1.5"/>
+                <text x="375" y="150" fill="#f4f4f6" font-weight="700">MCP</text>
+                <text x="375" y="170" fill="#8a8a97" font-size="12">mem9 client</text>
+                <text x="375" y="186" fill="#8a8a97" font-size="12">infra-kb</text>
+                <ellipse cx="640" cy="120" rx="78" ry="20" fill="#2f3a6e"/>
                 <rect x="562" y="120" width="156" height="96" fill="url(#cyl)"/>
-                <ellipse cx="640" cy="216" rx="78" ry="20" fill="#141d36"/>
-                <ellipse cx="640" cy="120" rx="78" ry="20" fill="none" stroke="#3a4a6e"/>
-                <text x="640" y="160" fill="#fff" font-weight="700" font-size="17">TiDB Cloud</text>
-                <text x="640" y="182" fill="#aab6cf" font-size="12">shared memory</text>
-                <rect x="566" y="262" width="148" height="40" rx="8" fill="#13161e" stroke="#3a4a6e" stroke-width="1.5"/><text x="640" y="287" fill="#cdd8ef" font-weight="700" font-size="14">Dashboard</text>
+                <ellipse cx="640" cy="216" rx="78" ry="20" fill="#161a2e"/>
+                <ellipse cx="640" cy="120" rx="78" ry="20" fill="none" stroke="#3a4480"/>
+                <text x="640" y="158" fill="#fff" font-weight="700" font-size="17">TiDB Cloud</text>
+                <text x="640" y="182" fill="#aab0d4" font-size="12">via mem9</text>
+                <rect x="566" y="262" width="148" height="40" rx="9" fill="#131316" stroke="#33333d" stroke-width="1.5"/><text x="640" y="287" fill="#cdd0e8" font-weight="700" font-size="14">Dashboard</text>
               </g>
-              <g stroke="#7585a6" stroke-width="2" fill="none">
+              <g stroke="#5a5a6a" stroke-width="2" fill="none">
                 <path d="M190,58 C250,58 245,150 298,150" marker-end="url(#dah)"/>
                 <path d="M190,158 L298,158" marker-end="url(#dah)"/>
                 <path d="M190,258 C250,258 245,176 298,168" marker-end="url(#dah)"/>
                 <path d="M450,158 L556,150" marker-end="url(#dah)"/>
                 <path d="M640,216 L640,260" marker-end="url(#dah)" stroke-dasharray="4,4"/>
               </g>
-              <text x="505" y="143" fill="#7585a6" font-size="12" font-family="sans-serif">SQL</text>
+              <text x="505" y="143" fill="#6a6a76" font-size="12" font-family="'IBM Plex Mono', monospace">REST</text>
             </svg>
           </div>
         </div>
         <div class="arch-points">
-          <div class="arch-point"><b>MCP = the standard plug.</b> Each tool loads two servers: the official <span class="mono">tidb</span> MCP (raw SQL, vector, recursive CTE) and <span class="mono">tidb-infra-kb</span> (convention-checked reads/writes). No custom glue per tool.</div>
-          <div class="arch-point"><b>One database, not four.</b> Relational state, the dependency graph, vector embeddings, and full-text - all in the same TiDB tables, with ACID across concurrent writes from all three agents.</div>
-          <div class="arch-point"><b>The dashboard reads the same DB.</b> It's an observability window, not the system. Everything you see is a live query against TiDB.</div>
+          <div class="arch-point"><b>MCP is the standard plug.</b> One config, every tool. No custom glue.</div>
+          <div class="arch-point"><b>One store, every pattern.</b> Graph, vector, and full-text in the same memory — no ETL.</div>
+          <div class="arch-point"><b>Just an API key.</b> mem9 manages the TiDB cluster; agents never touch credentials.</div>
         </div>
       </section>
 
-      <!-- ─────────────── SYSTEM PROMPT ─────────────── -->
+      <!-- ─────────────── CONFIG / SYSTEM PROMPT ─────────────── -->
       <section class="view" data-view="sysprompt">
-        <div class="talk">
-          <h4>System prompt</h4>
-          <ul class="talk-2col">
-            <li>The behavior is <b>configuration, not code</b>.</li>
-            <li>Each tool loads a rules file: <span class="mono">CLAUDE.md</span> / <span class="mono">AGENTS.md</span> / <span class="mono">.cursorrules</span>.</li>
-            <li>Standing instruction, every session: <b>query first → compose libraries → write back</b>.</li>
-            <li>Happens automatically across all three tools - no per-task reminder.</li>
-          </ul>
+        <div class="lead">
+          <h2 class="lead-title">Behavior is configuration, not code.</h2>
+          <p class="lead-sub">One standing instruction in every tool's rules file: <b>query first → compose → write back.</b></p>
         </div>
 
         <div class="card">
-          <div class="card-header"><span class="card-title">Standing instruction (loaded into every agent, every session)</span></div>
-          <pre class="sysprompt-block">Before writing any infrastructure code, query the tidb-infra-kb MCP first:
-  - what components already exist (don't duplicate)
-  - how they connect (dependency edges)
-  - what previous sessions did (session_log)
+          <div class="card-header"><span class="card-title">Standing instruction · CLAUDE.md / AGENTS.md / .cursorrules</span></div>
+          <pre class="code-block">Before writing infrastructure code, query the infra-kb MCP:
+  · what already exists        (don't duplicate)
+  · how things connect         (dependency edges)
+  · what previous sessions did (session log)
 
-Never use raw aws.* / cloudflare.* / okta.* resources - always compose the
-reusable library components in libs/. Follow the acme-&lt;env&gt;-&lt;name&gt; naming
-convention and apply the required tags (Environment, ManagedBy, Component, Team).
+Never use raw aws.* / cloudflare.* / okta.* — compose the libs/ wrappers.
+Follow acme-&lt;env&gt;-&lt;name&gt; naming and the required tags.
 
-After you create or change anything, record it with write_component so the next
-session - and the next tool - starts warm.</pre>
+After any change, record it with write_component so the next
+session — and the next tool — starts warm.</pre>
         </div>
 
         <div class="card">
-          <div class="card-header"><span class="card-title">The MCP servers each tool connects to</span></div>
-          <pre class="sysprompt-block">{
+          <div class="card-header"><span class="card-title">MCP servers · one entry per repo</span></div>
+          <pre class="code-block">{
   "mcpServers": {
-    "tidb":          { "command": "uvx", "args": ["--from","pytidb[mcp]","tidb-mcp-server"] },
-    "tidb-infra-kb": { "command": "python", "args": ["-m","src.mcp_server"] }
+    "infra-kb-pulumi": { "command": "python", "args": ["-m","src.mcp_server"] },
+    "infra-kb-lza":    { "command": "python", "args": ["-m","src.mcp_server"] }
   }
 }
 
-tidb           -> official PingCAP MCP: db_query, db_execute (raw SQL, vector, CTE)
-tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomic)</pre>
+query_knowledge_base  ·  write_component   →  hybrid recall + atomic writes</pre>
         </div>
-        <div class="scn-fix">Because it lives in the rules file, the "read first, write back" behavior happens on every run - across all three tools - with no per-task reminder.</div>
       </section>
 
       <!-- ─────────────── LIVE ─────────────── -->
       <section class="view" data-view="live">
-        <div class="talk">
-          <h4>Live</h4>
-          <ul class="talk-2col">
-            <li>Left = every query/write from all 3 tools. Right = the shared graph + staging parity.</li>
-            <li>Three tools close the staging gap, sharing one brain. Watch the parity strip go green.</li>
-            <li><b>Claude Code</b>: queries first, builds static-assets + DNS, writes back (gap 4 → 2).</li>
-            <li><b>Codex</b>: opens cold, reads the log, continues admin-DNS - no re-briefing (2 → 1).</li>
-            <li><b>Cursor</b>: recursive query to verify the pattern, builds admin-SSO (1 → 0, parity).</li>
-            <li><b>Reset KB</b> (top-right) wipes agent writes to run it fresh again.</li>
-          </ul>
+        <div class="lead">
+          <h2 class="lead-title">Three tools, one memory, live.</h2>
+          <p class="lead-sub">Watch the staging gap close as each tool reads the shared log and writes back. The parity strip goes green.</p>
         </div>
-        <div class="live-split">
 
-          <!-- LEFT: what the tools are doing -->
+        <div class="live-split">
           <section class="feed-pane">
             <div class="pane-head">
-              <span class="pane-title">3 tools → mem9 (acme · pulumi + lza)</span>
+              <span class="pane-title">Activity</span>
               <span class="live-dot" title="auto-refresh"></span>
             </div>
-            <div class="pane-sub">Every query and write from Claude Code, Codex, and Cursor lands in the same mem9 space. Watch them collaborate across repos.</div>
             <div id="live-feed" class="live-feed"></div>
           </section>
 
-          <!-- RIGHT: the shared brain -->
           <section class="brain-pane">
             <div class="card">
               <div class="card-header">
-                <span class="card-title">Shared knowledge graph</span>
-                <div class="env-filter">
+                <span class="card-title">Knowledge graph</span>
+                <div class="seg">
                   <button class="env-btn active" data-env="all">All</button>
                   <button class="env-btn" data-env="library">Lib</button>
                   <button class="env-btn" data-env="production">Prod</button>
@@ -313,41 +267,30 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
                 <span class="leg cf">Cloudflare</span>
                 <span class="leg okta">Okta</span>
                 <span class="leg account">Account</span>
-                <span class="leg-hint repo-hint"><span class="repo-dot dot-pulumi"></span>pulumi &nbsp;<span class="repo-dot dot-lza"></span>lza &nbsp; scroll to zoom · drag to pan</span>
+                <span class="leg-hint"><span class="repo-dot dot-pulumi"></span>pulumi&nbsp;&nbsp;<span class="repo-dot dot-lza"></span>lza</span>
               </div>
             </div>
             <div class="card">
               <div class="card-header">
-                <span class="card-title">Staging parity vs production</span>
-                <span id="parity-stat" class="card-count">-</span>
+                <span class="card-title">Staging parity</span>
+                <span id="parity-stat" class="card-count">—</span>
               </div>
               <div id="parity" class="parity"></div>
             </div>
           </section>
-
         </div>
 
-        <!-- ── 3-step runbook ───────────────────────────────────────────── -->
         <div class="runbook">
-
           <div class="rb-step">
             <div class="rb-header">
               <span class="rb-num">1</span>
               <span class="rb-tool tool-claude-code">Claude Code</span>
-              <span class="rb-title">Inspect the gap, scaffold the asset layer</span>
+              <span class="rb-title">Inspect the gap, scaffold assets</span>
+              <span class="rb-delta">gap 4 → 2</span>
             </div>
-            <div class="rb-say">
-              <ul>
-                <li>Claude Code queries TiDB first (doesn't assume)</li>
-                <li>It finds staging is missing static-assets and assets-DNS</li>
-                <li>It composes the existing library components and writes both back to TiDB</li>
-                <li>Parity goes from 4 missing to 2</li>
-              </ul>
-            </div>
-            <div class="rb-cmd-label">Paste into Claude Code pane:</div>
             <div class="rb-cmd-wrap">
               <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
-              <pre class="rb-cmd">Use the tidb-infra-kb MCP. Query the knowledge base: what components exist in staging vs production, and what is staging missing? Then scaffold the missing staging static-assets bucket and its Cloudflare DNS record, composing the S3Bucket and DnsRecord libraries - never raw aws.* resources. Follow the acme-&lt;env&gt;-&lt;name&gt; naming and required tags. Record each new component with write_component. Pass developer='claude-code' on every tidb-infra-kb call so the activity feed attributes the work.</pre>
+              <pre class="rb-cmd">Use the infra-kb MCP. Query the knowledge base: what exists in staging vs production, and what is staging missing? Scaffold the missing staging static-assets bucket and its Cloudflare DNS, composing the S3Bucket and DnsRecord libs — never raw aws.*. Record each with write_component, developer='claude-code'.</pre>
             </div>
           </div>
 
@@ -355,26 +298,12 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
             <div class="rb-header">
               <span class="rb-num">2</span>
               <span class="rb-tool tool-codex">Codex</span>
-              <span class="rb-title">Open cold, pick up warm from TiDB session log</span>
+              <span class="rb-title">Open cold, pick up warm from the log</span>
+              <span class="rb-delta">gap 2 → 1</span>
             </div>
-            <div class="rb-say">
-              <ul>
-                <li>Codex just opened</li>
-                <li>Zero context of what Claude Code did</li>
-                <li>It reads the shared TiDB session log - sees exactly what was just created - and continues without any re-briefing</li>
-                <li>It adds the admin-DNS</li>
-                <li>Parity drops to 1 missing</li>
-              </ul>
-            </div>
-            <div class="rb-cmd-label">Launch the Codex pane (runs MiniMax M3):</div>
             <div class="rb-cmd-wrap">
               <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
-              <pre class="rb-cmd">cd ~/GitHub/mem9-ai-coding &amp;&amp; minimax -m MiniMax-M3</pre>
-            </div>
-            <div class="rb-cmd-label">Paste into Codex pane:</div>
-            <div class="rb-cmd-wrap">
-              <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
-              <pre class="rb-cmd">Use the tidb-infra-kb MCP. Read the recent session_log - what did the previous session just create? Continue the staging build: add the admin-portal DNS record (acme-staging-admin-dns) matching the production pattern, composing DnsRecord. Record it with write_component. Pass developer='codex' on every tidb-infra-kb call so the activity feed attributes the work.</pre>
+              <pre class="rb-cmd">Use the infra-kb MCP. Read the recent session log — what did the previous session create? Continue: add acme-staging-admin-dns matching prod, composing DnsRecord. Record it with write_component, developer='codex'.</pre>
             </div>
           </div>
 
@@ -382,64 +311,49 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
             <div class="rb-header">
               <span class="rb-num">3</span>
               <span class="rb-tool tool-cursor">Cursor</span>
-              <span class="rb-title">Run a recursive CTE to verify the pattern, then finish</span>
+              <span class="rb-title">Trace dependencies, then finish</span>
+              <span class="rb-delta">gap 1 → 0</span>
             </div>
-            <div class="rb-say">
-              <ul>
-                <li>Cursor uses the official TiDB MCP to run a recursive query</li>
-                <li>SSO app must redirect to a DNS record before writing a single line</li>
-                <li>That is graph use benefit</li>
-                <li>A vector store cannot compute this</li>
-                <li>Then it builds the final component and staging reaches parity</li>
-              </ul>
-            </div>
-            <div class="rb-cmd-label">Paste into Cursor pane:</div>
             <div class="rb-cmd-wrap">
               <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
-              <pre class="rb-cmd">Use the tidb MCP (db_query) to run a recursive CTE: what does the production acme-prod-admin-sso transitively depend on? Confirm an SSO app must redirect to a DnsRecord. Then scaffold acme-staging-admin-sso composing SsoApplication, with the redirect URI pointing at acme-staging-admin-dns. Record it with write_component (developer='cursor') so the activity feed attributes the work.</pre>
+              <pre class="rb-cmd">Use the infra-kb MCP. Trace what acme-prod-admin-sso depends on — confirm SSO must redirect to a DnsRecord. Then scaffold acme-staging-admin-sso composing SsoApplication, redirect URI → acme-staging-admin-dns. Record it with write_component, developer='cursor'.</pre>
             </div>
           </div>
-
         </div>
       </section>
 
-      <!-- ─────────────── CTE ─────────────── -->
+      <!-- ─────────────── DEPENDENCIES ─────────────── -->
       <section class="view" data-view="cte">
-        <div class="talk">
-          <h4>Dependency CTE</h4>
-          <ul class="talk-2col">
-            <li>The question a vector DB <b>can't</b> answer: what transitively depends on this?</li>
-            <li>Pick a component → <b>Blast radius</b> (what breaks) or <b>Dependencies</b> (what it needs).</li>
-            <li><span class="mono">S3Bucket</span> blast radius reaches the RDS databases <b>two hops away</b> (via backup buckets).</li>
-            <li>Plain recursive SQL on TiDB - graph reachability, not similarity.</li>
-          </ul>
+        <div class="lead">
+          <h2 class="lead-title">The question similarity can't answer.</h2>
+          <p class="lead-sub">What transitively depends on this? <code>S3Bucket</code>'s blast radius reaches RDS two hops away — graph reachability, not vector similarity.</p>
         </div>
         <div class="cte-controls">
           <label>Component <select id="cte-node"></select></label>
-          <div class="cte-mode">
-            <button class="cte-btn active" data-mode="blast-radius">Blast radius (what breaks if this changes)</button>
-            <button class="cte-btn" data-mode="dependencies">Dependencies (what this needs)</button>
+          <div class="seg">
+            <button class="cte-btn active" data-mode="blast-radius">Blast radius</button>
+            <button class="cte-btn" data-mode="dependencies">Dependencies</button>
           </div>
-          <button id="cte-run" class="btn btn-primary">Run recursive CTE</button>
+          <button id="cte-run" class="btn btn-primary">Trace</button>
         </div>
         <div class="cte-grid">
           <div class="card">
-            <div class="card-header"><span class="card-title">Traversal graph</span><span id="cte-summary" class="card-count">-</span></div>
+            <div class="card-header"><span class="card-title">Traversal</span><span id="cte-summary" class="card-count">—</span></div>
             <canvas id="cte-canvas" width="640" height="420"></canvas>
             <div class="legend">
               <span class="leg-depth d1">depth 1</span>
               <span class="leg-depth d2">depth 2</span>
               <span class="leg-depth d3">depth 3+</span>
-              <span class="leg-hint">scroll to zoom · drag to move · double-click to reset</span>
+              <span class="leg-hint">scroll to zoom · drag to move</span>
             </div>
           </div>
           <div class="col-side">
             <div class="card">
-              <div class="card-header"><span class="card-title">The query (SQLite + TiDB)</span></div>
-              <pre id="cte-sql" class="sql-block"></pre>
+              <div class="card-header"><span class="card-title">How it's resolved</span></div>
+              <pre id="cte-sql" class="code-block"></pre>
             </div>
             <div class="card">
-              <div class="card-header"><span class="card-title">Result rows</span><span id="cte-rowcount" class="card-count">-</span></div>
+              <div class="card-header"><span class="card-title">Result</span><span id="cte-rowcount" class="card-count">—</span></div>
               <div id="cte-rows" class="cte-rows"></div>
             </div>
           </div>
@@ -448,19 +362,14 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
 
       <!-- ─────────────── SEARCH ─────────────── -->
       <section class="view" data-view="search">
-        <div class="talk">
-          <h4>Vector + full-text</h4>
-          <ul class="talk-2col">
-            <li><b>Same table</b> as the graph also has a 1024-dim <span class="mono">VECTOR</span> + <span class="mono">FULLTEXT</span> index.</li>
-            <li>Embeddings generated server-side by TiDB's <span class="mono">EMBED_TEXT</span> - no separate vector DB, no ETL.</li>
-            <li>Vector = semantic · Full-text = keyword · Hybrid = both (rank fusion).</li>
-            <li>"admin portal access control": full-text finds <b>2</b>, vectors find <b>6</b> - 4 keywords missed.</li>
-          </ul>
+        <div class="lead">
+          <h2 class="lead-title">Vector + full-text, one store.</h2>
+          <p class="lead-sub">Semantic and keyword recall over the same memory — served by mem9, no separate vector DB.</p>
         </div>
         <div class="search-controls">
           <input id="search-input" class="search-input" type="text"
-                 placeholder="Ask in plain language, e.g. 'where do database backups live'" />
-          <div class="cte-mode">
+                 placeholder="Ask in plain language — e.g. where do database backups live" />
+          <div class="seg">
             <button class="cte-btn active" data-smode="hybrid">Hybrid</button>
             <button class="cte-btn" data-smode="vector">Vector</button>
             <button class="cte-btn" data-smode="fts">Full-text</button>
@@ -470,47 +379,47 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
         <div class="search-presets">
           <button class="preset-btn" data-q="admin portal access control login">admin portal access control</button>
           <button class="preset-btn" data-q="where do database backups live">where do database backups live</button>
-          <button class="preset-btn" data-q="CDN for user-facing static files">CDN for user-facing static files</button>
+          <button class="preset-btn" data-q="CDN for user-facing static files">CDN for static files</button>
         </div>
         <div class="cte-grid">
           <div class="card">
-            <div class="card-header"><span class="card-title">Results</span><span id="search-stat" class="card-count">-</span></div>
+            <div class="card-header"><span class="card-title">Results</span><span id="search-stat" class="card-count">—</span></div>
             <div id="search-results" class="search-results"></div>
           </div>
           <div class="col-side">
             <div class="card">
-              <div class="card-header"><span class="card-title">The query on TiDB</span></div>
-              <pre id="search-sql" class="sql-block"></pre>
-            </div>
-            <div class="card">
-              <div class="card-header"><span class="card-title">How to read it</span></div>
-              <div class="search-legend">
-                <div><span class="sig-chip sig-vec">vector</span> semantic match (cosine distance, lower = closer)</div>
-                <div><span class="sig-chip sig-fts">FTS</span> keyword match via the full-text index</div>
-                <div><span class="sig-chip sig-both">both</span> hybrid surfaces it on either signal (rank fusion)</div>
-              </div>
+              <div class="card-header"><span class="card-title">How it's resolved</span></div>
+              <pre id="search-sql" class="code-block"></pre>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ─────────────── SCENARIOS ─────────────── -->
+      <!-- ─────────────── WHY mem9 ─────────────── -->
       <section class="view" data-view="scenarios">
-        <div class="talk">
-          <h4>Why TiDB</h4>
-          <ul class="talk-2col">
-            <li><b>One engine, every access pattern</b>: SQL + graph (CTE) + vector + full-text, no ETL.</li>
-            <li><b>ACID for agent state</b>: component + edge + log in one transaction.</li>
-            <li><b>vs S3 / filesystem</b>: no queries, no recursion, no transactions for concurrent writes.</li>
-            <li><b>vs multiple DBs</b>: 4 systems to sync, no cross-system atomicity.</li>
-            <li>S3 is the filing cabinet for artifacts; <b>TiDB is the brain</b>.</li>
-          </ul>
+        <div class="lead">
+          <h2 class="lead-title">Why mem9 on TiDB.</h2>
+          <p class="lead-sub">One engine for every access pattern — graph, vector, full-text — with ACID across concurrent agent writes.</p>
+        </div>
+        <div class="why-grid">
+          <div class="why-card">
+            <div class="why-h">One engine</div>
+            <div class="why-p">SQL + graph + vector + full-text. No ETL between four systems.</div>
+          </div>
+          <div class="why-card">
+            <div class="why-h">ACID state</div>
+            <div class="why-p">Component, edge, and log written in one transaction.</div>
+          </div>
+          <div class="why-card">
+            <div class="why-h">Not a filesystem</div>
+            <div class="why-p">S3 stores artifacts. mem9 is the brain agents query.</div>
+          </div>
         </div>
         <div id="scenario-list" class="scenario-list"></div>
       </section>
 
     </main>
   </div>
-  <script src="/static/app.js?v=17"></script>
+  <script src="/static/app.js?v=20"></script>
 </body>
 </html>

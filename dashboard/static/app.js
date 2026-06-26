@@ -1,13 +1,13 @@
 /* mem9-infra-kb · live mission control */
 
 const TYPE_COLOR = {
-  S3: '#FF9F0A', RDS: '#4A90E2', Cloudflare: '#F6821F', Okta: '#0C7DC1', Library: '#30D158',
-  Account: '#4ECDC4', IAM: '#9B59B6', SCP: '#FF6B6B', OU: '#C5A028',
+  S3: '#F5A524', RDS: '#5B8CFF', Cloudflare: '#F97D4B', Okta: '#38BDF8', Library: '#34D399',
+  Account: '#2DD4BF', IAM: '#A78BFA', SCP: '#FB7185', OU: '#D4A72C',
 };
-const ENV_RING   = { production: '#30D158', staging: '#FFD60A', library: '#BF5AF2', org: '#4ECDC4' };
-const REPO_COLOR = { pulumi: '#4A90E2', lza: '#4ECDC4' };
-const REL_COLOR  = { instantiates: '#BF5AF2', fronts: '#F6821F', redirects_to: '#0C7DC1', uses: '#545b72' };
-const DEPTH_COLOR = { 1: '#4A90E2', 2: '#BF5AF2', 3: '#FF453A' };
+const ENV_RING   = { production: '#34D399', staging: '#FBBF24', library: '#A78BFA', org: '#2DD4BF' };
+const REPO_COLOR = { pulumi: '#5B8CFF', lza: '#2DD4BF' };
+const REL_COLOR  = { instantiates: '#A78BFA', fronts: '#F97D4B', redirects_to: '#38BDF8', uses: '#52525e' };
+const DEPTH_COLOR = { 1: '#5B8CFF', 2: '#A78BFA', 3: '#FB7185' };
 
 const $ = id => document.getElementById(id);
 const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x !== undefined) e.textContent = x; return e; };
@@ -35,9 +35,11 @@ class GraphSim {
     this.nodes = nodes.map((c, i) => {
       const p = prev[c.name];
       if (p) return Object.assign(p, c);
-      const a = (i / nodes.length) * Math.PI * 2;
-      const r = c.environment === 'library' ? 52 : c.environment === 'production' ? 150 : c.environment === 'org' ? 180 : 100;
-      return { ...c, x: cx + r * Math.cos(a) + (Math.random() - 0.5) * 22, y: cy + r * Math.sin(a) + (Math.random() - 0.5) * 22, vx: 0, vy: 0, fixed: false };
+      // phyllotaxis (sunflower) spawn: golden-angle spread so no two nodes
+      // start on top of each other — eliminates label collisions on load.
+      const a = i * 2.399963229728653;
+      const rr = 34 + 120 * Math.sqrt((i + 0.5) / Math.max(1, nodes.length));
+      return { ...c, x: cx + rr * Math.cos(a), y: cy + rr * Math.sin(a), vx: 0, vy: 0, fixed: false };
     });
     const names = new Set(this.nodes.map(n => n.name));
     this.edges = edges.filter(e => names.has(e.from_name) && names.has(e.to_name));
@@ -84,17 +86,17 @@ class GraphSim {
     let energy = 0;
     if (!this.drag) {
       for (let i = 0; i < N.length; i++) for (let j = i + 1; j < N.length; j++) {
-        const a = N[i], b = N[j], dx = a.x - b.x, dy = a.y - b.y, f = 2300 / (dx * dx + dy * dy + 1);
+        const a = N[i], b = N[j], dx = a.x - b.x, dy = a.y - b.y, f = 4200 / (dx * dx + dy * dy + 1);
         a.vx += dx * f; a.vy += dy * f; b.vx -= dx * f; b.vy -= dy * f;
       }
       this.edges.forEach(e => {
         const a = byName[e.from_name], b = byName[e.to_name]; if (!a || !b) return;
-        const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) + 0.001, f = (d - 112) * 0.024;
+        const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) + 0.001, f = (d - 134) * 0.022;
         a.vx += dx / d * f; a.vy += dy / d * f; b.vx -= dx / d * f; b.vy -= dy / d * f;
       });
       N.forEach(n => {
         if (n.fixed) { n.vx = n.vy = 0; return; }
-        n.vx += (cx - n.x) * 0.008; n.vy += (cy - n.y) * 0.008; n.vx *= 0.78; n.vy *= 0.78;
+        n.vx += (cx - n.x) * 0.006; n.vy += (cy - n.y) * 0.006; n.vx *= 0.8; n.vy *= 0.8;
         n.x = Math.max(44, Math.min(W - 44, n.x + n.vx)); n.y = Math.max(26, Math.min(H - 26, n.y + n.vy));
         energy += n.vx * n.vx + n.vy * n.vy;
       });
@@ -249,7 +251,7 @@ async function loadTeamsTab() {
     if (data.repos) {
       data.repos.forEach(r => {
         const el2 = $(`repo-count-${r.repo}`);
-        if (el2) el2.textContent = `${r.component_count} components`;
+        if (el2) el2.textContent = r.component_count;
       });
     }
     const hdr = $('header-team-repos');
@@ -425,7 +427,7 @@ function applyHash() {
   if (['scenario', 'teams', 'architecture', 'sysprompt', 'live', 'cte', 'search', 'scenarios'].includes(h)) showTab(h);
 }
 window.addEventListener('hashchange', applyHash);
-getJSON('/api/backend').then(d => { $('backend-name').textContent = '· ' + d.backend; }).catch(() => {});
+getJSON('/api/backend').then(() => { $('backend-name').textContent = 'TiDB Cloud'; }).catch(() => {});
 loadTeamsTab();
 applyHash();
 loadAll().then(applyHash);
