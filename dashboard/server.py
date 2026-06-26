@@ -4,8 +4,8 @@ Endpoints power five views:
   - Overview        : full component graph + table + session log
   - Terminals       : 3-CLI triptych, live session log or scripted replay
   - Memory          : before (seed) / after (current) memory comparison
-  - Dependency CTE  : recursive-CTE traversal visualised as a subgraph
-  - Scenarios       : narrated Pulumi pain points TiDB's graph solves
+  - Dependency      : transitive dependency traversal visualised as a subgraph
+  - Scenarios       : narrated Pulumi pain points mem9's hybrid recall solves
 """
 from __future__ import annotations
 
@@ -25,16 +25,82 @@ from src import seed as seeder
 STATIC_DIR = Path(__file__).parent / "static"
 
 REPO = "pulumi"
-C = db.tref(REPO, "infra_components")
-E = db.tref(REPO, "component_edges")
-L = db.tref(REPO, "session_log")
 
 db.init_db(repos=[REPO])
 
-app = FastAPI(title="tidb-infra-kb dashboard", docs_url=None, redoc_url=None)
+app = FastAPI(title="mem9-infra-kb dashboard", docs_url=None, redoc_url=None)
 
 
-# ── Core reads ───────────────────────────────────────────────────────────────
+# ── Memory helpers ────────────────────────────────────────────────────────────
+
+def _all_memories(repo: str = REPO) -> list[dict]:
+    return db.recall(db.database_for(repo), limit=200)
+
+
+def _all_components(repo: str = REPO) -> list[dict]:
+    rows = []
+    seen: set[str] = set()
+    for m in _all_memories(repo):
+        meta = m.get("metadata", {})
+        if meta.get("edge") or meta.get("action") or not meta.get("name"):
+            continue
+        name = meta["name"]
+        if name in seen:
+            continue
+        seen.add(name)
+        rows.append({
+            "id": m.get("id", ""),
+            "name": name,
+            "component_type": meta.get("type", ""),
+            "environment": meta.get("env", ""),
+            "repo": meta.get("repo", repo),
+            "account_ref": meta.get("account_ref", ""),
+            "repo_path": meta.get("repo_path", ""),
+            "summary": m.get("content", ""),
+            "code_excerpt": "",
+            "created_by": meta.get("developer", ""),
+            "created_at": m.get("createdAt", ""),
+        })
+    return rows
+
+
+def _all_edges(repo: str = REPO) -> list[dict]:
+    rows = []
+    for m in _all_memories(repo):
+        meta = m.get("metadata", {})
+        if not meta.get("edge"):
+            continue
+        rows.append({
+            "id": m.get("id", ""),
+            "relationship": meta.get("relationship", ""),
+            "note": m.get("content", ""),
+            "from_name": meta.get("from", ""),
+            "to_name": meta.get("to", ""),
+            "from_type": "",
+            "from_env": "",
+            "to_type": "",
+            "to_env": "",
+        })
+    return rows
+
+
+def _session_log_entries(repo: str = REPO) -> list[dict]:
+    rows = []
+    for m in _all_memories(repo):
+        meta = m.get("metadata", {})
+        if not meta.get("action"):
+            continue
+        rows.append({
+            "id": m.get("id", ""),
+            "developer": meta.get("developer", ""),
+            "action": meta.get("action", ""),
+            "detail": m.get("content", ""),
+            "created_at": m.get("createdAt", ""),
+        })
+    return rows[-60:]
+
+
+# ── Core reads ────────────────────────────────────────────────────────────────
 
 @app.get("/healthz")
 def healthz():
@@ -48,38 +114,26 @@ def backend():
 
 @app.get("/api/components")
 def components():
-    return JSONResponse(db.query(
-        f"SELECT id, name, component_type, environment, repo, account_ref, repo_path, summary, "
-        f"code_excerpt, created_by, created_at FROM {C} ORDER BY environment, component_type, name",
-        repos=[REPO]))
+    return JSONResponse(_all_components())
 
 
 @app.get("/api/edges")
 def edges():
-    return JSONResponse(db.query(
-        f"SELECT e.id, e.relationship, e.note, "
-        f"c1.name AS from_name, c1.component_type AS from_type, c1.environment AS from_env, "
-        f"c2.name AS to_name, c2.component_type AS to_type, c2.environment AS to_env "
-        f"FROM {E} e "
-        f"JOIN {C} c1 ON e.from_id = c1.id "
-        f"JOIN {C} c2 ON e.to_id = c2.id",
-        repos=[REPO]))
+    return JSONResponse(_all_edges())
 
 
 @app.get("/api/session-log")
 def session_log():
-    return JSONResponse(db.query(
-        f"SELECT id, developer, action, detail, created_at "
-        f"FROM {L} ORDER BY created_at DESC, id DESC LIMIT 60",
-        repos=[REPO]))
+    return JSONResponse(_session_log_entries())
 
 
 @app.get("/api/missing")
 def missing():
-    prod = {r["name"].replace("acme-prod-", ""): r
-            for r in db.query(f"SELECT * FROM {C} WHERE environment='production'", repos=[REPO])}
-    staging = {r["name"].replace("acme-staging-", "")
-               for r in db.query(f"SELECT name FROM {C} WHERE environment='staging'", repos=[REPO])}
+    comps = _all_components()
+    prod = {c["name"].replace("acme-prod-", ""): c
+            for c in comps if c["environment"] == "production"}
+    staging = {c["name"].replace("acme-staging-", "")
+               for c in comps if c["environment"] == "staging"}
     out = [
         {"production_name": comp["name"],
          "expected_staging_name": f"acme-staging-{key}",
@@ -89,21 +143,18 @@ def missing():
     return JSONResponse(out)
 
 
-# ── Before / after memory ────────────────────────────────────────────────────
+# ── Before / after memory ─────────────────────────────────────────────────────
 
 @app.get("/api/memory")
 def memory():
-    rows = db.query(
-        f"SELECT name, component_type, environment, summary, created_by, created_at "
-        f"FROM {C} ORDER BY created_at, id",
-        repos=[REPO])
+    rows = _all_components()
     before = [r for r in rows if r["created_by"] == "seed"]
     after = rows
     new = [r for r in rows if r["created_by"] != "seed"]
     return JSONResponse({"before": before, "after": after, "new": new})
 
 
-# ── Recursive CTE traversals ─────────────────────────────────────────────────
+# ── Dependency traversals ─────────────────────────────────────────────────────
 
 @app.get("/api/cte/dependencies")
 def cte_dependencies(name: str):
@@ -141,11 +192,8 @@ SCENARIOS = [
             "Drift, double storage cost, and an untagged bucket nobody owns.",
         ],
         "query": (
-            f"SELECT c2.name, e.relationship, e.note\n"
-            f"FROM {E} e\n"
-            f"JOIN {C} c1 ON e.from_id = c1.id\n"
-            f"JOIN {C} c2 ON e.to_id = c2.id\n"
-            "WHERE c1.name = 'PostgresDatabase';"
+            "mem9 hybrid search: 'PostgresDatabase instantiates'\n"
+            "-> returns edge memories with from_name=PostgresDatabase"
         ),
         "result": "PostgresDatabase --instantiates--> S3Bucket  (backup bucket, automatic)",
         "with": [
@@ -170,7 +218,11 @@ SCENARIOS = [
             "Ships the change, CI is green, prod static-assets + both analytics DBs break.",
             "The RDS breakage is the surprise - backups compose S3Bucket two hops away.",
         ],
-        "query": db._cte_blast_radius_sql(db.database_for(REPO), "S3Bucket"),
+        "query": (
+            "mem9 hybrid search: 'depends_on S3Bucket'\n"
+            "-> all components with metadata.depends_on == 'S3Bucket'\n"
+            "-> client-side transitive closure over depends_on chains"
+        ),
         "result": (
             "depth 1: PostgresDatabase, acme-prod-data-exports, acme-prod-static-assets, "
             "acme-staging-data-exports\n"
@@ -178,14 +230,14 @@ SCENARIOS = [
             "acme-prod-assets-dns (fronts static-assets)"
         ),
         "with": [
-            "Recursive CTE returns the full transitive closure: 7 dependents across prod + staging.",
+            "Blast-radius search returns the full transitive closure: 7 dependents across prod + staging.",
             "Dev sees the RDS instances are in the blast radius before touching anything.",
             "Stages the change behind a flag, migrates per-environment, zero surprises.",
         ],
         "why_tidb": (
-            "A recursive CTE traverses arbitrary-depth dependency chains in one query. "
-            "Vector similarity finds 'related-looking' code; it can't compute a transitive "
-            "closure. This is graph reachability - exactly what SQL recursion is for."
+            "mem9 hybrid recall surfaces all components whose dependency chain includes S3Bucket. "
+            "Vector similarity finds 'related-looking' code; metadata search + graph traversal "
+            "computes the transitive closure that pure similarity can't."
         ),
     },
     {
@@ -199,14 +251,15 @@ SCENARIOS = [
             "Conventions drift: someone forgets proxied:true, someone hand-rolls the SSO redirect.",
         ],
         "query": (
-            f"SELECT developer, action, detail FROM {L}\n"
-            "ORDER BY created_at DESC LIMIT 5;"
+            "mem9 recall: acme_pulumi_kb\n"
+            "-> filter metadata.action present (session-log entries)\n"
+            "-> reverse-chronological, limit 5"
         ),
         "result": "claude-code created acme-staging-static-assets, acme-staging-assets-dns ...",
         "with": [
             "Claude Code scaffolds static-assets + assets-dns, writes back to the KB.",
             "Codex opens cold, reads the session log, continues with admin-dns - no re-briefing.",
-            "Cursor runs the dependency CTE, sees SSO must redirect to a DnsRecord, finishes it.",
+            "Cursor runs the dependency search, sees SSO must redirect to a DnsRecord, finishes it.",
             "Three tools, one shared memory, conventions preserved end to end.",
         ],
         "why_tidb": (
@@ -222,7 +275,7 @@ def scenarios():
     return JSONResponse(SCENARIOS)
 
 
-# ── Scripted 3-CLI replay ────────────────────────────────────────────────────
+# ── Scripted 3-CLI replay ─────────────────────────────────────────────────────
 
 def _m_static_assets():
     db.write_component(
@@ -264,12 +317,15 @@ def _m_admin_sso():
                   "Okta redirect URI points at the staging admin DNS hostname")
 
 
-# Each step: which CLI, prompt typed, SQL/tool shown, terminal output, optional mutation.
 DEMO_STEPS = [
     {
         "tool": "claude-code", "title": "Inspect the gap",
         "prompt": "What infra exists in staging vs production?",
-        "sql": f"SELECT environment, name, component_type FROM {C}\nWHERE environment IN ('staging','production') ORDER BY environment;",
+        "sql": (
+            "mem9 recall: acme_pulumi_kb (all components)\n"
+            "-> filter metadata.env IN ('staging', 'production')\n"
+            "-> group by environment, sort by type + name"
+        ),
         "output": [
             "production: 6 components (RDS, S3 x2, Cloudflare x2, Okta)",
             "staging:    2 components (RDS, S3)",
@@ -302,7 +358,11 @@ DEMO_STEPS = [
     {
         "tool": "codex", "title": "Pick up warm context",
         "prompt": "I'm continuing the staging work. What did the last session create?",
-        "sql": f"SELECT developer, action, detail FROM {L}\nORDER BY created_at DESC LIMIT 4;",
+        "sql": (
+            "mem9 recall: acme_pulumi_kb\n"
+            "-> filter metadata.action present (session-log entries)\n"
+            "-> reverse-chronological, limit 4"
+        ),
         "output": [
             "claude-code - created - acme-staging-assets-dns",
             "claude-code - created - acme-staging-static-assets",
@@ -322,9 +382,13 @@ DEMO_STEPS = [
         "mutate": _m_admin_dns,
     },
     {
-        "tool": "cursor", "title": "Trace dependencies (recursive CTE)",
+        "tool": "cursor", "title": "Trace dependencies",
         "prompt": "Before I add the SSO app: what does prod's admin-sso depend on? Trace it.",
-        "sql": db._cte_dependencies_sql(db.database_for(REPO), "acme-prod-admin-sso"),
+        "sql": (
+            "mem9 hybrid search: 'acme-prod-admin-sso'\n"
+            "-> metadata.depends_on chain + edge memories\n"
+            "-> depth-1: SsoApplication, redirects_to acme-prod-admin-dns"
+        ),
         "output": [
             "depth 1: acme-prod-admin-sso --uses--> SsoApplication",
             "depth 1: acme-prod-admin-sso --redirects_to--> acme-prod-admin-dns",
@@ -379,7 +443,7 @@ def reset():
     return JSONResponse({"ok": True})
 
 
-# ── Static ───────────────────────────────────────────────────────────────────
+# ── Static ────────────────────────────────────────────────────────────────────
 
 if STATIC_DIR.exists():
     @app.get("/")
