@@ -55,6 +55,12 @@ on both; the local target degrades keyword search to `LIKE`.
 
 (A SQLite path exists purely as an offline/test substrate: relational + `LIKE`, no vector.)
 
+> **Full-text is region-gated.** It is Cloud Starter/Essential only **and** only served in
+> some regions. A cluster can accept the `FULLTEXT INDEX` DDL yet not serve `FTS_MATCH_WORD`
+> queries (e.g. `eu-central-1` does not). When full-text is unavailable, `db.search()`
+> degrades hybrid to vector-only automatically, so the demo still runs - it just can't show
+> the vector+full-text fusion live. To demo full hybrid, use a full-text-enabled region.
+
 ## Quick start
 
 ```bash

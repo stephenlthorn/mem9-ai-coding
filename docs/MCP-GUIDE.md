@@ -73,5 +73,9 @@ python -m src.cross_repo_demo       # writes both repos, prints the cross-db JOI
   back automatically.
 - **Eventual consistency.** Full-text and columnar indexes lag writes by ~seconds. For a
   read-your-write check use a point lookup by `name`.
-- **Full-text is Cloud only.** On a local tiup playground, keyword search degrades to `LIKE`;
-  vector search still works (with precomputed embeddings).
+- **Full-text is Cloud only and region-gated.** On a local tiup playground, keyword search
+  degrades to `LIKE`; vector search still works (with precomputed embeddings). On Cloud, full-text
+  is also only served in some regions - a cluster can accept the `FULLTEXT INDEX` DDL yet hang on
+  `FTS_MATCH_WORD` (e.g. `eu-central-1` does not serve it). `db.search()` handles this with bounded
+  timeouts and degrades hybrid to vector-only, so search never hangs. For live full-text, use a
+  full-text-enabled region.
