@@ -1,16 +1,14 @@
 """Generate MCP configs for Claude Code, Codex, and Cursor.
 
-Routing is EXPLICIT: one named server entry per repo database, all scoped to a
-single team cluster. For team 'acme' with repos pulumi + lza this emits:
+Routing is EXPLICIT: one named server entry per repo namespace, all scoped to a
+single mem9 space (API key). For team 'acme' with repos pulumi + lza this emits:
 
-  tidb-pulumi      official TiDB MCP, TIDB_DATABASE=acme_pulumi_kb  (raw SQL/vector)
-  tidb-lza         official TiDB MCP, TIDB_DATABASE=acme_lza_kb
-  infra-kb-pulumi  mem9 convention MCP, MEM9_REPO=pulumi
+  infra-kb-pulumi  mem9 convention MCP, MEM9_REPO=pulumi  (hybrid search + write)
   infra-kb-lza     mem9 convention MCP, MEM9_REPO=lza
 
-Same team credentials unlock every database in that team's cluster, so a cross-repo
-JOIN works from any entry - but the agent always picks the destination explicitly.
-Generated files contain secrets and are gitignored. Run: python -m src.gen_configs
+The same API key is used for every repo namespace - appId isolation is handled
+server-side by mem9. Generated files contain secrets and are gitignored.
+Run: python -m src.gen_configs
 """
 from __future__ import annotations
 
@@ -34,29 +32,13 @@ VENV_PY = ROOT / ".venv" / "bin" / "python"
 def _env() -> dict:
     if load_dotenv:
         load_dotenv(ROOT / ".env", override=False)
-    needed = ["TIDB_HOST", "TIDB_PORT", "TIDB_USERNAME", "TIDB_PASSWORD"]
-    env = {k: os.environ.get(k, "") for k in needed}
-    if not env["TIDB_HOST"]:
-        sys.exit("ERROR: TIDB_HOST not set. Copy .env.example to .env and fill in your mem9.ai creds.")
-    env["TEAM"] = topology.team()
-    return env
-
-
-def _tidb_server(env: dict, repo: str) -> dict:
-    cursor_dir = ROOT / ".cursor"
+    key = os.environ.get("MEM9_API_KEY", "").strip()
+    if not key:
+        sys.exit("ERROR: MEM9_API_KEY not set. Copy .env.example to .env and paste your mem9 space key.")
     return {
-        "command": "uvx",
-        "args": ["--from", "pytidb[mcp]", "tidb-mcp-server"],
-        "env": {
-            "TIDB_HOST": env["TIDB_HOST"],
-            "TIDB_PORT": str(env["TIDB_PORT"] or "4000"),
-            "TIDB_USERNAME": env["TIDB_USERNAME"],
-            "TIDB_PASSWORD": env["TIDB_PASSWORD"],
-            "TIDB_DATABASE": topology.database_for(repo, env["TEAM"]),
-            "UV_CACHE_DIR": str(cursor_dir / "uv-cache"),
-            "XDG_CACHE_HOME": str(cursor_dir / "xdg-cache"),
-            "XDG_DATA_HOME": str(cursor_dir / "xdg-data"),
-        },
+        "MEM9_API_KEY": key,
+        "MEM9_BASE_URL": os.environ.get("MEM9_BASE_URL", "https://api.mem9.ai"),
+        "TEAM": topology.team(),
     }
 
 
@@ -65,16 +47,17 @@ def _kb_server(env: dict, repo: str) -> dict:
         "command": str(VENV_PY),
         "args": ["-m", "src.mcp_server"],
         "cwd": str(ROOT),
-        "env": {"MEM9_REPO": repo, "MEM9_TEAM": env["TEAM"]},
+        "env": {
+            "MEM9_REPO": repo,
+            "MEM9_TEAM": env["TEAM"],
+            "MEM9_API_KEY": env["MEM9_API_KEY"],
+            "MEM9_BASE_URL": env["MEM9_BASE_URL"],
+        },
     }
 
 
 def _servers(env: dict) -> dict:
-    servers = {}
-    for repo in topology.repo_names():
-        servers[f"tidb-{repo}"] = _tidb_server(env, repo)
-        servers[f"infra-kb-{repo}"] = _kb_server(env, repo)
-    return servers
+    return {f"infra-kb-{repo}": _kb_server(env, repo) for repo in topology.repo_names()}
 
 
 def write_claude_code(env: dict) -> Path:
@@ -93,18 +76,7 @@ def write_cursor(env: dict) -> Path:
 def write_codex(env: dict) -> Path:
     lines = ["# ── Add these blocks to ~/.codex/config.toml ──────────────────────────────"]
     for repo in topology.repo_names():
-        t = _tidb_server(env, repo)
         lines += [
-            f"[mcp_servers.tidb-{repo}]",
-            'command = "uvx"',
-            'args = ["--from", "pytidb[mcp]", "tidb-mcp-server"]',
-            f"[mcp_servers.tidb-{repo}.env]",
-            f'TIDB_HOST = "{t["env"]["TIDB_HOST"]}"',
-            f'TIDB_PORT = "{t["env"]["TIDB_PORT"]}"',
-            f'TIDB_USERNAME = "{t["env"]["TIDB_USERNAME"]}"',
-            f'TIDB_PASSWORD = "{t["env"]["TIDB_PASSWORD"]}"',
-            f'TIDB_DATABASE = "{t["env"]["TIDB_DATABASE"]}"',
-            "",
             f"[mcp_servers.infra-kb-{repo}]",
             f'command = "{VENV_PY}"',
             'args = ["-m", "src.mcp_server"]',
@@ -112,6 +84,8 @@ def write_codex(env: dict) -> Path:
             f"[mcp_servers.infra-kb-{repo}.env]",
             f'MEM9_REPO = "{repo}"',
             f'MEM9_TEAM = "{env["TEAM"]}"',
+            f'MEM9_API_KEY = "{env["MEM9_API_KEY"]}"',
+            f'MEM9_BASE_URL = "{env["MEM9_BASE_URL"]}"',
             "",
         ]
     out = ROOT / "configs" / "generated" / "codex-config.toml"
@@ -127,8 +101,7 @@ def main() -> None:
     print(f"  Claude Code : {paths[0]}")
     print(f"  Cursor      : {paths[1]}")
     print(f"  Codex       : paste blocks from {paths[2]} into ~/.codex/config.toml")
-    print("\nNamed entries per repo: " + ", ".join(
-        f"tidb-{r}/infra-kb-{r}" for r in topology.repo_names()))
+    print("\nNamed entries per repo: " + ", ".join(f"infra-kb-{r}" for r in topology.repo_names()))
 
 
 if __name__ == "__main__":

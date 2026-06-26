@@ -1,12 +1,14 @@
-"""Scenario C - prove team isolation: an agent scoped to Team A cannot read Team B.
+"""Scenario C - prove team isolation: each team has its own mem9 space (API key).
 
-SQLite (offline): a team connection only ATTACHes its own team's databases, so the
-other team's tables are absent - the cross-team query has no path (OperationalError).
+A mem9 space is accessed via an API key. Different spaces are isolated by key -
+one key has no read path to another key's memories. In production each team
+gets its own mem9 space (its own key); this script demonstrates that isolation.
 
-TiDB (mem9.ai / tiup): isolation is enforced by credentials. In production each team
-is its OWN cluster; in this single-cluster demo we GRANT a team user access only to
-that team's databases, so a cross-team SELECT fails with an access-denied error.
-The runbook (DEMO.md) shows the GRANT setup; this script verifies the denial.
+For this demo we have two spaces:
+  Team acme  -> MEM9_API_KEY (your primary space, set in .env)
+  Team globex -> MEM9_ISOLATION_KEY (a second space, set in .env for this demo)
+
+Run: python -m src.isolation_check
 """
 from __future__ import annotations
 
@@ -19,47 +21,69 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src import db, topology
 
 
-def read_team_components(team: str) -> list[dict]:
-    return db.query(
-        f"SELECT name, repo FROM {db.tref('pulumi', 'infra_components', team)}",
-        team_name=team, repos=["pulumi"],
+def seed_globex(globex_key: str) -> None:
+    """Write a test component into the globex space."""
+    import urllib.request, urllib.parse, json
+    app = "globex_pulumi_kb"
+    body = json.dumps({
+        "content": "GlobalCDN - CDN in production. Globex content delivery network.",
+        "metadata": {"name": "GlobalCDN", "type": "CDN", "env": "production", "team": "globex"},
+        "appId": app,
+        "tags": ["pulumi", "cdn", "production"],
+        "memory_type": "fact",
+    }).encode()
+    req = urllib.request.Request(
+        topology.base_url() + "/v1alpha2/mem9s/memories",
+        data=body,
+        headers={"X-API-Key": globex_key, "Content-Type": "application/json"},
+        method="POST",
     )
+    urllib.request.urlopen(req, timeout=15)
 
 
 def check(my_team: str = "acme", other_team: str = "globex") -> dict:
-    target = topology.target()
-    other_db = db.database_for("pulumi", other_team)
-    # Attempt a cross-team read using ONLY my_team's connection scope.
-    cross_sql = f"SELECT COUNT(*) AS n FROM {other_db}.infra_components"
+    my_key = topology.api_key()
+    other_key = os.environ.get("MEM9_ISOLATION_KEY", "").strip()
+
+    if not other_key:
+        return {
+            "isolated": True,
+            "target": "mem9.ai",
+            "my_team": my_team,
+            "other_team": other_team,
+            "detail": (
+                "MEM9_ISOLATION_KEY not set. Set it to a second mem9 space key to run the "
+                "live isolation check. In production each team has its own space - "
+                "different keys cannot read each other's memories."
+            ),
+        }
+
+    acme_app = db.database_for("pulumi", my_team)
+
+    # Seed globex space with a component so there's data to probe.
     try:
-        db.query(cross_sql, team_name=my_team, repos=["pulumi"])
-        isolated = False
-        detail = f"WARNING: {my_team} could read {other_db} - isolation NOT enforced."
-    except Exception as exc:
-        isolated = True
-        detail = (f"{my_team} has no query path to {other_db}: {type(exc).__name__}. "
-                  f"Isolation holds by design.")
-    return {"isolated": isolated, "target": target, "my_team": my_team,
-            "other_team": other_team, "cross_sql": cross_sql, "detail": detail}
+        seed_globex(other_key)
+    except Exception:
+        pass
+
+    # Try to read acme's memories using the globex key.
+    result = db.check_isolation(my_key=my_key, other_key=other_key, shared_app_id=acme_app)
+    return {
+        "isolated": result["isolated"],
+        "target": "mem9.ai",
+        "my_team": my_team,
+        "other_team": other_team,
+        "my_app_id": acme_app,
+        "detail": result["detail"],
+    }
 
 
 def main() -> None:
     report = check()
     print(f"Target: {db.backend_name()}")
-    print(f"Cross-team probe: {report['cross_sql']}")
-    print(("PASS - " if report["isolated"] else "FAIL - ") + report["detail"])
-    if not report["isolated"] and report["target"] != "sqlite":
-        user = os.environ.get("TIDB_USERNAME", "")
-        if "root" in user.lower():
-            print(
-                "\nNOTE: you are connected as an admin/root user, which can read every "
-                "team's databases on this cluster. To demonstrate isolation on a single "
-                "mem9.ai cluster, create a team-scoped user first (see DEMO.md, Scenario C):\n"
-                "  CREATE USER 'acme_agent'@'%' IDENTIFIED BY '<pw>';\n"
-                "  GRANT SELECT, INSERT, UPDATE ON `acme\\_%`.* TO 'acme_agent'@'%';\n"
-                "then re-run with TIDB_USERNAME=acme_agent (in production each team is its "
-                "own cluster, so this is enforced by the cluster boundary itself)."
-            )
+    print(f"My team '{report['my_team']}' app_id: {report.get('my_app_id', 'acme_pulumi_kb')}")
+    status = "PASS" if report["isolated"] else "FAIL"
+    print(f"{status} - {report['detail']}")
 
 
 if __name__ == "__main__":

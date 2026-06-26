@@ -1,20 +1,17 @@
-"""Team / repo / target topology for the mem9 knowledge base.
+"""Team / repo topology for the mem9 knowledge base.
 
 Model:
-  team  -> a TiDB cluster in production; a database-name namespace in this demo.
-  repo  -> a database inside the team's cluster (pulumi -> *_pulumi_kb, lza -> *_lza_kb).
+  team  -> a mem9 space (API key scopes access to one team's memories).
+  repo  -> a namespace within the team's space, expressed as appId: {team}_{repo}_kb.
 
-Targets (capabilities differ; see capability matrix in README):
-  cloud  - mem9.ai / TiDB Cloud Starter: EMBED_TEXT auto-embed + FULLTEXT + hybrid.
-  local  - self-hosted tiup playground: vector (precomputed) + LIKE, no full-text.
-  sqlite - offline/test substrate: relational + LIKE only, no vector.
+The underlying TiDB cluster is provisioned and managed by mem9.ai - callers never
+handle raw database credentials.
 """
 from __future__ import annotations
 
 import os
 from pathlib import Path
 
-# Skip .env loading when running under pytest so monkeypatch controls env cleanly.
 if not os.environ.get("PYTEST_CURRENT_TEST"):
     try:
         from dotenv import load_dotenv
@@ -22,10 +19,10 @@ if not os.environ.get("PYTEST_CURRENT_TEST"):
     except Exception:
         pass
 
-# repo registry: logical repo -> (database stem, source dir, manifest module)
+# repo registry: logical repo -> source dir + manifest module
 REPOS: dict[str, dict] = {
-    "pulumi": {"db_stem": "pulumi_kb", "source": "environments", "manifest": "src.repos.pulumi"},
-    "lza": {"db_stem": "lza_kb", "source": "lza", "manifest": "src.repos.lza"},
+    "pulumi": {"source": "environments", "manifest": "src.repos.pulumi"},
+    "lza":    {"source": "lza",          "manifest": "src.repos.lza"},
 }
 
 
@@ -37,36 +34,21 @@ def repo_names() -> list[str]:
     return list(REPOS.keys())
 
 
-def target() -> str:
-    host = os.environ.get("TIDB_HOST", "").strip()
-    if not host:
-        return "sqlite"
-    explicit = os.environ.get("MEM9_TARGET", "").strip().lower()
-    if explicit in ("cloud", "local"):
-        return explicit
-    if "tidbcloud.com" in host or host.endswith(".mem9.ai"):
-        return "cloud"
-    return "local"
+def api_key() -> str:
+    key = os.environ.get("MEM9_API_KEY", "").strip()
+    if not key:
+        raise RuntimeError(
+            "MEM9_API_KEY not set. Copy .env.example to .env and paste your mem9 space key."
+        )
+    return key
 
 
-def has_vector() -> bool:
-    return target() in ("cloud", "local")
+def base_url() -> str:
+    return os.environ.get("MEM9_BASE_URL", "https://api.mem9.ai").rstrip("/")
 
 
-def has_fulltext() -> bool:
-    return target() == "cloud"
-
-
-def has_auto_embed() -> bool:
-    return target() == "cloud"
-
-
-def database_for(repo: str, team: str | None = None) -> str:
+def app_id(repo: str, team_name: str | None = None) -> str:
+    """appId used for per-repo namespace isolation inside a mem9 space."""
     if repo not in REPOS:
         raise KeyError(f"unknown repo: {repo!r} (known: {list(REPOS)})")
-    team_name = (team or _current_team()).strip().lower()
-    return f"{team_name}_{REPOS[repo]['db_stem']}"
-
-
-def _current_team() -> str:
-    return os.environ.get("MEM9_TEAM", "acme").strip().lower()
+    return f"{(team_name or team()).strip().lower()}_{repo}_kb"

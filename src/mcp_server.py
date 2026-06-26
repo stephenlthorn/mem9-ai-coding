@@ -1,4 +1,4 @@
-"""mem9 convention MCP server - ONE process per repo database (stdio transport).
+"""mem9 convention MCP server - ONE process per repo namespace (stdio transport).
 
 Routing is explicit, never inferred: which repo this server writes to is fixed by
 the MEM9_REPO environment variable set in the named MCP config entry (e.g. the
@@ -20,38 +20,36 @@ from src import db as _db
 
 REPO = os.environ.get("MEM9_REPO", "pulumi")
 TEAM = os.environ.get("MEM9_TEAM", "acme")
-DB_NAME = _db.database_for(REPO, TEAM)
-
-_db.init_db(TEAM, [REPO])
+APP_ID = _db.database_for(REPO, TEAM)
 
 TOOLS = [
     {
         "name": "query_knowledge_base",
         "description": (
-            f"Run a read-only SELECT against team '{TEAM}'. This server is bound to the "
-            f"'{REPO}' repo (database {DB_NAME}). You may also cross-database JOIN to other "
-            f"repos in the SAME team cluster using fully-qualified names (e.g. "
-            f"{_db.database_for('lza', TEAM)}.infra_components). Tables per repo: "
-            "infra_components(id,name,component_type,environment,repo,account_ref,repo_path,summary,code_excerpt), "
-            "component_edges(id,from_id,to_id,relationship,note), session_log(id,developer,action,detail,created_at). "
-            "Always query before creating anything."
+            f"Search the '{REPO}' repo knowledge base (namespace {APP_ID}) for team '{TEAM}'. "
+            "Uses hybrid recall (vector + full-text) powered by mem9.ai / TiDB Cloud. "
+            "Always query before creating anything - the KB holds every component this team "
+            "has already scaffolded so you don't duplicate work."
         ),
         "inputSchema": {
             "type": "object",
             "properties": {
-                "sql": {"type": "string", "description": "A SELECT/WITH query. Qualify tables as <db>.<table>."},
+                "query": {
+                    "type": "string",
+                    "description": "Natural language description of what you're looking for.",
+                },
                 "developer": {"type": "string", "description": "claude-code | codex | cursor"},
             },
-            "required": ["sql"],
+            "required": ["query"],
         },
     },
     {
         "name": "write_component",
         "description": (
-            f"Atomically record a component + dependency edge + session-log entry into the "
-            f"'{REPO}' repo (database {DB_NAME}) for team '{TEAM}'. Write-back is INSTRUCTION-"
-            "DRIVEN: call this after you scaffold a resource so the next session starts warm. "
-            "Set account_ref to the LZA account the resource belongs to (enables cross-repo JOINs)."
+            f"Record a component into the '{REPO}' repo knowledge base (namespace {APP_ID}) "
+            f"for team '{TEAM}'. Write-back is INSTRUCTION-DRIVEN: call this after you scaffold "
+            "a resource so the next session starts warm. "
+            "Set account_ref to the LZA account the resource belongs to (enables cross-repo joins)."
         ),
         "inputSchema": {
             "type": "object",
@@ -86,8 +84,8 @@ def _handle(msg):
         _respond(id_, {
             "protocolVersion": "2024-11-05",
             "capabilities": {"tools": {}},
-            "serverInfo": {"name": f"mem9-infra-kb-{REPO}", "version": "2.0.0",
-                           "repo": REPO, "team": TEAM, "database": DB_NAME},
+            "serverInfo": {"name": f"mem9-infra-kb-{REPO}", "version": "3.0.0",
+                           "repo": REPO, "team": TEAM, "app_id": APP_ID},
         })
     elif method == "notifications/initialized":
         pass
@@ -99,19 +97,19 @@ def _handle(msg):
         args = params.get("arguments", {})
         try:
             if tool == "query_knowledge_base":
-                sql = args.get("sql", "").strip()
+                q = args.get("query", "").strip()
                 developer = args.get("developer", "unknown")
-                rows = _db.query(sql, team_name=TEAM)
-                _db.log_query(REPO, developer, f"SQL: {sql[:120]}", team_name=TEAM)
-                _respond(id_, {"content": [{"type": "text", "text": json.dumps(rows, indent=2, default=str)}]})
+                result = _db.search(REPO, q, team_name=TEAM)
+                _db.log_query(REPO, developer, f"searched: {q[:120]}", team_name=TEAM)
+                _respond(id_, {"content": [{"type": "text", "text": json.dumps(result, indent=2, default=str)}]})
             elif tool == "write_component":
-                comp_id = _db.write_component(
+                mem_id = _db.write_component(
                     repo=REPO, team_name=TEAM, name=args["name"], type=args["type"],
                     env=args["env"], summary=args["summary"], depends_on=args.get("depends_on"),
                     account_ref=args.get("account_ref"), developer=args["developer"],
                 )
                 _respond(id_, {"content": [{"type": "text",
-                          "text": f"Written to {DB_NAME}: {args['name']} (id={comp_id})"}]})
+                          "text": f"Written to {APP_ID}: {args['name']} (id={mem_id})"}]})
             else:
                 _error(id_, -32601, f"Unknown tool: {tool}")
         except Exception as exc:
