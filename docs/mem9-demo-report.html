@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>mem9 — Shared Memory for AI Coding Agents</title>
+<title>mem9 — Shared Memory for AI Coding Agents (v2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -32,6 +32,7 @@
   .cover { height: 100vh; min-height: 980px; background: linear-gradient(150deg, #0a0c14 0%, #131a30 55%, #0d2b2a 100%); color: #fff; padding: 26mm 20mm; display: flex; flex-direction: column; }
   .cover-badge { display: inline-flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 11pt; letter-spacing: 0.5px; }
   .cover-dot { width: 12px; height: 12px; border-radius: 4px; background: linear-gradient(135deg, #4d8bff, #1ad0bd); }
+  .cover-ver { margin-left: 10px; font-family: var(--mono); font-size: 9pt; font-weight: 600; letter-spacing: 1px; color: #07121f; background: linear-gradient(135deg, #4d8bff, #1ad0bd); padding: 2px 9px; border-radius: 20px; }
   .cover-eyebrow { font-family: var(--mono); font-size: 9.5pt; letter-spacing: 2.5px; text-transform: uppercase; color: #6f86c9; margin-top: 70mm; }
   .cover-title { font-family: var(--font-display); font-weight: 800; font-size: 42pt; line-height: 1.02; letter-spacing: -1.4px; margin: 10px 0 16px; max-width: 16em; }
   .cover-sub { font-size: 14.5pt; line-height: 1.5; color: #c4cce4; max-width: 30em; }
@@ -102,15 +103,15 @@
 
 <!-- ─────────────── COVER ─────────────── -->
 <div class="cover">
-  <div class="cover-badge"><span class="cover-dot"></span> mem9 · TiDB Cloud</div>
-  <div class="cover-eyebrow">Technical Demo Report</div>
+  <div class="cover-badge"><span class="cover-dot"></span> mem9 · TiDB Cloud <span class="cover-ver">v2</span></div>
+  <div class="cover-eyebrow">Technical Demo Report · Version 2</div>
   <div class="cover-title">Shared memory for every AI coding agent.</div>
   <div class="cover-sub">How a team of AI coding tools — Claude Code, Codex, and Cursor — share one queryable knowledge base on mem9, so none starts cold or repeats another's work.</div>
   <div class="cover-foot">
     <div><b>Team</b> acme</div>
     <div><b>Repos</b> pulumi · lza</div>
     <div><b>Store</b> mem9 → TiDB Cloud</div>
-    <div><b>Access</b> Model Context Protocol</div>
+    <div><b>Version</b> 2 · redesigned dashboard + live walkthrough</div>
   </div>
 </div>
 
@@ -314,7 +315,7 @@ session — and the next tool — starts warm.</pre>
 
   <p style="margin-top:14px;">Each tool attributes its work in the activity feed; the parity strip turns green as the gap closes. The same component graph, dependency traversal, and hybrid search shown in this report are all live views over the one mem9 space — the dashboard is an observability window on the system, not the system itself.</p>
 
-  <div class="footer-note">mem9 · TiDB Cloud — shared memory for AI coding agents. Generated for the team/repo demo (team acme, repos pulumi + lza).</div>
+  <div class="footer-note">mem9 · TiDB Cloud — shared memory for AI coding agents · Report v2 (redesigned dashboard + live walkthrough). Generated for the team/repo demo (team acme, repos pulumi + lza).</div>
 </div>
 
 </body>
