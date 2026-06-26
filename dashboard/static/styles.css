@@ -94,6 +94,7 @@ canvas { display: block; width: 100%; height: auto; background: radial-gradient(
 .leg.rds { background: rgba(74,144,226,0.12); color: var(--rds); }
 .leg.cf { background: rgba(246,130,31,0.12); color: var(--cf); }
 .leg.okta { background: rgba(12,125,193,0.14); color: var(--okta); }
+.leg.account { background: rgba(78,205,196,0.14); color: #4ECDC4; }
 .leg-sep { width: 1px; height: 16px; background: var(--border); }
 .leg.ring-prod { color: var(--ring-prod); border: 1px solid rgba(48,209,88,0.4); }
 .leg.ring-staging { color: var(--ring-staging); border: 1px solid rgba(255,214,10,0.4); }
@@ -367,3 +368,65 @@ tr.row-new td { background: rgba(48,209,88,0.05); }
 .rb-cmd { font-family: var(--mono); font-size: 13px; line-height: 1.6; color: #cdd6ea; background: #0d1018; padding: 12px 48px 12px 14px; border-radius: 7px; white-space: pre-wrap; word-break: break-word; }
 .rb-copy { position: absolute; top: 8px; right: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; color: var(--text-dim); cursor: pointer; font-size: 11px; font-weight: 600; padding: 4px 10px; transition: all 0.15s; }
 .rb-copy:hover { border-color: #4A90E2; color: #fff; }
+
+/* ── Teams & Repos tab ────────────────────────────────────────────────────── */
+.teams-grid { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+
+.team-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid #4A90E2; border-radius: 0 var(--radius) var(--radius) 0; padding: 16px 18px; }
+.team-card-isolated { border-left-color: #545b72; opacity: 0.75; }
+
+.team-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.team-badge { font-size: 13px; font-weight: 700; padding: 3px 12px; border-radius: 6px; background: rgba(74,144,226,0.15); color: #4A90E2; border: 1px solid rgba(74,144,226,0.3); font-family: var(--mono); }
+.team-badge-other { background: rgba(84,91,114,0.2); color: var(--text-dim); border-color: var(--border); }
+.team-hint { font-size: 12px; color: var(--text-faint); }
+
+.repos-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+.repo-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; min-width: 200px; flex: 1; }
+.repo-name { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; font-family: var(--mono); }
+.repo-appid { font-size: 11px; color: var(--text-faint); font-family: var(--mono); margin-bottom: 6px; }
+.repo-count { font-size: 13px; font-weight: 600; color: #4A90E2; margin-bottom: 4px; }
+.repo-types { font-size: 11px; color: var(--text-faint); }
+
+.repo-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-pulumi { background: #4A90E2; }
+.dot-lza { background: #4ECDC4; border: 2px dashed #4ECDC4; background-clip: padding-box; }
+
+.cross-repo-note { font-size: 12px; color: var(--text-dim); background: rgba(74,144,226,0.06); border: 1px solid rgba(74,144,226,0.15); border-radius: 6px; padding: 8px 12px; }
+.cross-repo-note code { font-family: var(--mono); font-size: 11px; color: #4A90E2; }
+
+.isolation-msg { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text-dim); line-height: 1.6; padding: 8px 0; }
+.iso-lock { font-size: 20px; flex-shrink: 0; }
+
+/* repo filter buttons (Teams graph) */
+.repo-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text-dim); cursor: pointer; font-size: 12px; padding: 4px 11px; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+.repo-btn:hover, .repo-btn.active { border-color: #4ECDC4; color: #fff; background: rgba(78,205,196,0.1); }
+
+/* repo badge in search results */
+.repo-badge { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 4px; }
+.repo-badge.repo-pulumi { background: rgba(74,144,226,0.15); color: #4A90E2; }
+.repo-badge.repo-lza { background: rgba(78,205,196,0.15); color: #4ECDC4; }
+
+/* repo-hint in legend */
+.repo-hint { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-faint); margin-left: auto; font-style: italic; }
+.repo-hint .repo-dot { width: 6px; height: 6px; }
+
+/* type badges (used in parity + search) */
+.type-badge { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+.type-S3    { background: rgba(255,159,10,0.15); color: var(--s3); }
+.type-RDS   { background: rgba(74,144,226,0.15); color: var(--rds); }
+.type-Cloudflare { background: rgba(246,130,31,0.15); color: var(--cf); }
+.type-Okta  { background: rgba(12,125,193,0.18); color: var(--okta); }
+.type-Library { background: rgba(48,209,88,0.15); color: var(--lib); }
+.type-Account { background: rgba(78,205,196,0.15); color: #4ECDC4; }
+.type-IAM   { background: rgba(155,89,182,0.15); color: #9B59B6; }
+.type-SCP   { background: rgba(255,107,107,0.15); color: #FF6B6B; }
+.type-OU    { background: rgba(197,160,40,0.15); color: #C5A028; }
+
+/* env badge */
+.env-badge { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+.env-production { background: rgba(48,209,88,0.12); color: var(--lib); }
+.env-staging    { background: rgba(255,214,10,0.12); color: var(--ring-staging); }
+.env-library    { background: rgba(191,90,242,0.12); color: var(--ring-lib); }
+.env-org        { background: rgba(78,205,196,0.12); color: #4ECDC4; }
+
+.mem-name { font-family: var(--mono); font-size: 12px; color: var(--text); font-weight: 600; }

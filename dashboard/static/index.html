@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>tidb-infra-kb · one brain for every coding tool</title>
+  <title>mem9-infra-kb · one brain for every coding tool</title>
   <link rel="stylesheet" href="/static/styles.css?v=17" />
 </head>
 <body>
@@ -11,7 +11,7 @@
     <header class="header">
       <div class="header-inner">
         <div class="logo-group">
-          <span class="logo-badge">tidb</span>
+          <span class="logo-badge">mem9</span>
           <span class="header-title">Infra Knowledge Base</span>
           <span class="header-dim" id="backend-name">·</span>
         </div>
@@ -19,7 +19,7 @@
           <span class="tool-pill tool-claude-code">Claude Code</span>
           <span class="tool-pill tool-codex">Codex</span>
           <span class="tool-pill tool-cursor">Cursor</span>
-          <span class="header-dim">→ one TiDB</span>
+          <span class="header-dim">→ <span id="header-team-repos">acme · pulumi + lza</span></span>
         </div>
         <div class="header-actions">
           <button id="reset-btn" class="btn btn-ghost">Reset KB</button>
@@ -27,12 +27,13 @@
       </div>
       <nav class="tabs">
         <button class="tab active" data-tab="scenario">Scenario</button>
+        <button class="tab" data-tab="teams">Teams &amp; Repos</button>
         <button class="tab" data-tab="architecture">Architecture</button>
         <button class="tab" data-tab="sysprompt">System prompt</button>
         <button class="tab" data-tab="live">Live</button>
         <button class="tab" data-tab="cte">Dependency CTE</button>
         <button class="tab" data-tab="search">Vector + FTS</button>
-        <button class="tab" data-tab="scenarios">Why TiDB</button>
+        <button class="tab" data-tab="scenarios">Why mem9</button>
       </nav>
     </header>
 
@@ -97,6 +98,76 @@
         <div class="talk talk-fix">
           <h4>The fix</h4>
           <ul><li>A <b>shared, queryable memory in TiDB Cloud</b> that every agent reads before it builds and writes back when it's done. No agent starts cold; none repeats another's work.</li></ul>
+        </div>
+      </section>
+
+      <!-- ─────────────── TEAMS & REPOS ─────────────── -->
+      <section class="view" data-view="teams">
+        <div class="talk">
+          <h4>mem9 topology: team = space · repo = namespace</h4>
+          <ul class="talk-2col">
+            <li><b>Team</b> maps to a mem9 <b>space</b> (one API key). Each team has its own isolated TiDB Cloud cluster behind mem9.</li>
+            <li><b>Repo</b> maps to an <b>appId namespace</b> within that space (<code>acme_pulumi_kb</code>, <code>acme_lza_kb</code>). Same cluster, separate recall scope.</li>
+            <li>Cross-repo queries run client-side: recall from two namespaces, merge by <code>account_ref</code>.</li>
+            <li>Cross-team isolation: a different API key (different space) cannot read another team's memories - enforced by mem9, not by app code.</li>
+          </ul>
+        </div>
+
+        <div class="teams-grid" id="teams-grid">
+          <div class="team-card">
+            <div class="team-header">
+              <span class="team-badge">team: acme</span>
+              <span class="team-hint">one mem9 space · one TiDB cluster</span>
+            </div>
+            <div class="repos-row" id="repos-row">
+              <div class="repo-card" id="repo-pulumi">
+                <div class="repo-name"><span class="repo-dot dot-pulumi"></span>pulumi</div>
+                <div class="repo-appid">acme_pulumi_kb</div>
+                <div class="repo-count" id="repo-count-pulumi">— components</div>
+                <div class="repo-types">AWS · Cloudflare · Okta · IaC</div>
+              </div>
+              <div class="repo-card" id="repo-lza">
+                <div class="repo-name"><span class="repo-dot dot-lza"></span>lza</div>
+                <div class="repo-appid">acme_lza_kb</div>
+                <div class="repo-count" id="repo-count-lza">— components</div>
+                <div class="repo-types">AWS Accounts · OUs · SCPs · IAM</div>
+              </div>
+            </div>
+            <div class="cross-repo-note">
+              Cross-repo: <code>account_ref</code> links LZA accounts → Pulumi stacks. Queried from both namespaces, merged client-side.
+            </div>
+          </div>
+
+          <div class="team-card team-card-isolated">
+            <div class="team-header">
+              <span class="team-badge team-badge-other">team: globex</span>
+              <span class="team-hint">separate mem9 space · separate TiDB cluster</span>
+            </div>
+            <div class="isolation-msg">
+              <span class="iso-lock">🔒</span>
+              Globex data is in a different mem9 space (different API key). Acme cannot read globex memories — isolation enforced at the space level, not by app code.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">All repos · combined component graph</span>
+            <div class="env-filter">
+              <button class="repo-btn active" data-repo="all">All repos</button>
+              <button class="repo-btn" data-repo="pulumi"><span class="repo-dot dot-pulumi"></span>pulumi</button>
+              <button class="repo-btn" data-repo="lza"><span class="repo-dot dot-lza"></span>lza</button>
+            </div>
+          </div>
+          <canvas id="teams-canvas" width="780" height="360"></canvas>
+          <div class="legend">
+            <span class="leg lib">Library</span>
+            <span class="leg s3">S3</span>
+            <span class="leg rds">RDS</span>
+            <span class="leg cf">Cloudflare</span>
+            <span class="leg okta">Okta</span>
+            <span class="leg account">Account</span>
+            <span class="leg-hint repo-hint"><span class="repo-dot dot-pulumi"></span>pulumi &nbsp;<span class="repo-dot dot-lza"></span>lza</span>
+          </div>
         </div>
       </section>
 
@@ -214,10 +285,10 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
           <!-- LEFT: what the tools are doing -->
           <section class="feed-pane">
             <div class="pane-head">
-              <span class="pane-title">3 tools → 1 TiDB</span>
+              <span class="pane-title">3 tools → mem9 (acme · pulumi + lza)</span>
               <span class="live-dot" title="auto-refresh"></span>
             </div>
-            <div class="pane-sub">Every query and write from Claude Code, Codex, and Cursor lands in the same TiDB database. Watch them collaborate.</div>
+            <div class="pane-sub">Every query and write from Claude Code, Codex, and Cursor lands in the same mem9 space. Watch them collaborate across repos.</div>
             <div id="live-feed" class="live-feed"></div>
           </section>
 
@@ -231,6 +302,7 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
                   <button class="env-btn" data-env="library">Lib</button>
                   <button class="env-btn" data-env="production">Prod</button>
                   <button class="env-btn" data-env="staging">Staging</button>
+                  <button class="env-btn" data-env="org">Org</button>
                 </div>
               </div>
               <canvas id="live-canvas" width="640" height="360"></canvas>
@@ -240,7 +312,8 @@ tidb-infra-kb  -> convention layer: query_knowledge_base, write_component (atomi
                 <span class="leg rds">RDS</span>
                 <span class="leg cf">Cloudflare</span>
                 <span class="leg okta">Okta</span>
-                <span class="leg-hint">scroll to zoom · drag to move · double-click to reset</span>
+                <span class="leg account">Account</span>
+                <span class="leg-hint repo-hint"><span class="repo-dot dot-pulumi"></span>pulumi &nbsp;<span class="repo-dot dot-lza"></span>lza &nbsp; scroll to zoom · drag to pan</span>
               </div>
             </div>
             <div class="card">

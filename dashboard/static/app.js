@@ -1,7 +1,11 @@
-/* tidb-infra-kb · live mission control */
+/* mem9-infra-kb · live mission control */
 
-const TYPE_COLOR = { S3: '#FF9F0A', RDS: '#4A90E2', Cloudflare: '#F6821F', Okta: '#0C7DC1', Library: '#30D158' };
-const ENV_RING   = { production: '#30D158', staging: '#FFD60A', library: '#BF5AF2' };
+const TYPE_COLOR = {
+  S3: '#FF9F0A', RDS: '#4A90E2', Cloudflare: '#F6821F', Okta: '#0C7DC1', Library: '#30D158',
+  Account: '#4ECDC4', IAM: '#9B59B6', SCP: '#FF6B6B', OU: '#C5A028',
+};
+const ENV_RING   = { production: '#30D158', staging: '#FFD60A', library: '#BF5AF2', org: '#4ECDC4' };
+const REPO_COLOR = { pulumi: '#4A90E2', lza: '#4ECDC4' };
 const REL_COLOR  = { instantiates: '#BF5AF2', fronts: '#F6821F', redirects_to: '#0C7DC1', uses: '#545b72' };
 const DEPTH_COLOR = { 1: '#4A90E2', 2: '#BF5AF2', 3: '#FF453A' };
 
@@ -10,30 +14,29 @@ const el = (t, c, x) => { const e = document.createElement(t); if (c) e.classNam
 const clear = n => { while (n.firstChild) n.removeChild(n.firstChild); };
 const getJSON = p => fetch(p).then(r => r.json());
 const postJSON = (p, b) => fetch(p, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b || {}) }).then(r => r.json());
-const shortName = n => n.replace('acme-prod-', '').replace('acme-staging-', '');
+const shortName = n => n.replace('acme-prod-', '').replace('acme-staging-', '').replace('acme-lza-', '');
 
-let _components = [], _edges = [], _activeEnv = 'all', _lastLogId = -1;
+let _components = [], _edges = [], _allComponents = [], _activeEnv = 'all', _activeRepo = 'all', _lastLogId = -1;
 
-// ── Graph engine (shared by Live + CTE) ──────────────────────────────────────
-// Force layout that SETTLES and stops (no perpetual jitter), with wheel-zoom,
-// drag-to-pan, and drag-a-node (pins it). Double-click resets the view.
+// ── Graph engine (shared by Live + CTE + Teams) ──────────────────────────────
 class GraphSim {
   constructor(id) {
     this.canvas = $(id);
     this.raf = null; this.nodes = []; this.edges = []; this.opts = {};
-    this.scale = 1; this.ox = 0; this.oy = 0;       // view transform
+    this.scale = 1; this.ox = 0; this.oy = 0;
     this.settleFrames = 0;
     this.drag = null; this.pan = null;
-    this._wire();
+    if (this.canvas) this._wire();
   }
   set(nodes, edges, opts = {}) {
+    if (!this.canvas) return;
     const W = this.canvas.width, H = this.canvas.height, cx = W / 2, cy = H / 2;
     const prev = Object.fromEntries(this.nodes.map(n => [n.name, n]));
     this.nodes = nodes.map((c, i) => {
       const p = prev[c.name];
       if (p) return Object.assign(p, c);
       const a = (i / nodes.length) * Math.PI * 2;
-      const r = c.environment === 'library' ? 52 : c.environment === 'production' ? 150 : 100;
+      const r = c.environment === 'library' ? 52 : c.environment === 'production' ? 150 : c.environment === 'org' ? 180 : 100;
       return { ...c, x: cx + r * Math.cos(a) + (Math.random() - 0.5) * 22, y: cy + r * Math.sin(a) + (Math.random() - 0.5) * 22, vx: 0, vy: 0, fixed: false };
     });
     const names = new Set(this.nodes.map(n => n.name));
@@ -44,7 +47,6 @@ class GraphSim {
   stop() { if (this.raf) cancelAnimationFrame(this.raf); this.raf = null; }
   _wake() { this.settleFrames = 0; if (!this.raf) this.raf = requestAnimationFrame(() => this._loop()); }
 
-  // screen (CSS) → canvas-internal → world coordinates
   _toWorld(e) {
     const rect = this.canvas.getBoundingClientRect();
     const cxp = (e.clientX - rect.left) * (this.canvas.width / rect.width);
@@ -80,7 +82,7 @@ class GraphSim {
     const W = this.canvas.width, H = this.canvas.height, cx = W / 2, cy = H / 2;
     const N = this.nodes, byName = Object.fromEntries(N.map(n => [n.name, n]));
     let energy = 0;
-    if (!this.drag) {  // pause physics while dragging a node
+    if (!this.drag) {
       for (let i = 0; i < N.length; i++) for (let j = i + 1; j < N.length; j++) {
         const a = N[i], b = N[j], dx = a.x - b.x, dy = a.y - b.y, f = 2300 / (dx * dx + dy * dy + 1);
         a.vx += dx * f; a.vy += dy * f; b.vx -= dx * f; b.vy -= dy * f;
@@ -98,7 +100,6 @@ class GraphSim {
       });
     }
     this._draw();
-    // settle: once motion is negligible and nothing is being dragged, stop.
     if (!this.drag && !this.pan && energy < 0.05) this.settleFrames++; else this.settleFrames = 0;
     if (this.settleFrames > 20) { this.raf = null; return; }
     this.raf = requestAnimationFrame(() => this._loop());
@@ -136,29 +137,44 @@ class GraphSim {
       let ring = ENV_RING[n.environment] || '#888';
       if (depthMap && depthMap[n.name]) ring = DEPTH_COLOR[Math.min(depthMap[n.name], 3)] || ring;
       const a0 = dim ? (isHL ? 1 : 0.18) : 1;
+      const isLza = n.repo === 'lza';
       ctx.save();
-      ctx.globalAlpha = a0 * 0.55; ctx.beginPath(); ctx.arc(n.x, n.y, r + 4, 0, 7); ctx.strokeStyle = ring; ctx.lineWidth = depthMap && depthMap[n.name] ? 3 : 2; ctx.stroke();
+      // outer ring — dashed for lza to distinguish repos visually
+      ctx.globalAlpha = a0 * 0.55;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 4, 0, 7);
+      ctx.strokeStyle = ring; ctx.lineWidth = depthMap && depthMap[n.name] ? 3 : 2;
+      ctx.setLineDash(isLza ? [4, 3] : []);
+      ctx.stroke();
+      ctx.setLineDash([]);
       ctx.globalAlpha = a0 * 0.2; ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 7); ctx.fillStyle = fill; ctx.fill();
       ctx.globalAlpha = a0 * 0.9; ctx.strokeStyle = fill; ctx.lineWidth = 1.5; ctx.stroke();
       ctx.globalAlpha = a0; ctx.fillStyle = fill; ctx.font = `bold ${r === 18 ? 10 : 9}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(n.component_type === 'Cloudflare' ? 'CF' : n.component_type === 'Library' ? 'L' : n.component_type[0], n.x, n.y);
+      const typeLabel = n.component_type === 'Cloudflare' ? 'CF' : n.component_type === 'Library' ? 'L' : (n.component_type || '?')[0];
+      ctx.fillText(typeLabel, n.x, n.y);
       ctx.globalAlpha = a0 * 0.9; ctx.fillStyle = '#e8eaf0'; ctx.font = `${r === 18 ? 10 : 9}px sans-serif`;
       ctx.fillText(shortName(n.name), n.x, n.y + r + 10);
+      // repo dot below name for multi-repo graphs
+      if (this.opts.showRepo) {
+        ctx.globalAlpha = a0 * 0.7; ctx.fillStyle = REPO_COLOR[n.repo] || '#888';
+        ctx.beginPath(); ctx.arc(n.x, n.y + r + 20, 3, 0, 7); ctx.fill();
+      }
       ctx.restore();
     });
-    ctx.restore();   // end view transform (zoom/pan)
+    ctx.restore();
   }
 }
 
-const liveGraph = new GraphSim('live-canvas');
-const cteGraph = new GraphSim('cte-canvas');
+const liveGraph  = new GraphSim('live-canvas');
+const cteGraph   = new GraphSim('cte-canvas');
+const teamsGraph = new GraphSim('teams-canvas');
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 function showTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === name));
-  if (name === 'live') liveGraph.set(filtered(), _edges, {});
-  if (name === 'cte') initCte();
+  if (name === 'live')   liveGraph.set(filteredLive(), _edges, {});
+  if (name === 'teams')  renderTeamsGraph();
+  if (name === 'cte')    initCte();
   if (name === 'search') initSearch();
   if (name === 'scenarios') loadScenarios();
 }
@@ -201,37 +217,79 @@ function renderParity(components, missing) {
   });
 }
 
-// ── Env filter (live graph) ──────────────────────────────────────────────────
-function filtered() { return _activeEnv === 'all' ? _components : _components.filter(c => c.environment === _activeEnv); }
+// ── Env filter (live graph) ───────────────────────────────────────────────────
+function filteredLive() {
+  return _activeEnv === 'all' ? _allComponents : _allComponents.filter(c => c.environment === _activeEnv);
+}
 document.querySelectorAll('.env-btn').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('.env-btn').forEach(x => x.classList.remove('active'));
-  b.classList.add('active'); _activeEnv = b.dataset.env; liveGraph.set(filtered(), _edges, {});
+  b.classList.add('active'); _activeEnv = b.dataset.env; liveGraph.set(filteredLive(), _edges, {});
 }));
+
+// ── Teams tab: repo filter + graph ────────────────────────────────────────────
+let _teamsActiveRepo = 'all';
+
+function filteredTeams() {
+  if (_teamsActiveRepo === 'all') return _allComponents;
+  return _allComponents.filter(c => c.repo === _teamsActiveRepo);
+}
+
+function renderTeamsGraph() {
+  teamsGraph.set(filteredTeams(), _edges, { showRepo: true });
+}
+
+document.querySelectorAll('.repo-btn').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.repo-btn').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); _teamsActiveRepo = b.dataset.repo; renderTeamsGraph();
+}));
+
+async function loadTeamsTab() {
+  try {
+    const data = await getJSON('/api/repos');
+    if (data.repos) {
+      data.repos.forEach(r => {
+        const el2 = $(`repo-count-${r.repo}`);
+        if (el2) el2.textContent = `${r.component_count} components`;
+      });
+    }
+    const hdr = $('header-team-repos');
+    if (hdr && data.team && data.repos) {
+      const names = data.repos.map(r => r.repo).join(' + ');
+      hdr.textContent = `${data.team} · ${names}`;
+    }
+  } catch (e) { /* non-critical */ }
+}
 
 // ── Load + poll ──────────────────────────────────────────────────────────────
 async function loadAll() {
-  const [comps, edges, log, missing] = await Promise.all([
-    getJSON('/api/components'), getJSON('/api/edges'), getJSON('/api/session-log'), getJSON('/api/missing'),
+  const [allComps, pulComps, edges, log, missing] = await Promise.all([
+    getJSON('/api/all-components'),
+    getJSON('/api/components'),
+    getJSON('/api/edges'),
+    getJSON('/api/session-log'),
+    getJSON('/api/missing'),
   ]);
-  _components = comps; _edges = edges;
-  liveGraph.set(filtered(), edges, {});
-  renderFeed(log); renderParity(comps, missing);
+  _allComponents = allComps;
+  _components = pulComps;  // pulumi-only, used for parity + CTE
+  _edges = edges;
+  liveGraph.set(filteredLive(), edges, {});
+  renderFeed(log); renderParity(pulComps, missing);
   _lastLogId = log.length ? log[0].id : -1;
 }
 
 async function poll() {
-  const [log, comps, missing] = await Promise.all([
-    getJSON('/api/session-log'), getJSON('/api/components'), getJSON('/api/missing'),
+  const [log, allComps, pulComps, missing] = await Promise.all([
+    getJSON('/api/session-log'), getJSON('/api/all-components'), getJSON('/api/components'), getJSON('/api/missing'),
   ]);
   const newest = log.length ? log[0].id : -1;
-  const grew = comps.length !== _components.length;
-  // Only re-render when something actually changed (prevents the feed/graph
-  // from flickering every poll).
+  const grew = allComps.length !== _allComponents.length;
   if (newest !== _lastLogId) renderFeed(log);
   if (grew || newest !== _lastLogId) {
-    _components = comps; _edges = await getJSON('/api/edges');
-    if (grew && $('live-canvas').offsetParent !== null) liveGraph.set(filtered(), _edges, {});
-    renderParity(comps, missing);
+    _allComponents = allComps; _components = pulComps;
+    _edges = await getJSON('/api/edges');
+    if (grew && $('live-canvas').offsetParent !== null) liveGraph.set(filteredLive(), _edges, {});
+    if (grew && $('teams-canvas').offsetParent !== null) renderTeamsGraph();
+    renderParity(pulComps, missing);
     _lastLogId = newest;
   }
 }
@@ -240,7 +298,7 @@ async function poll() {
 let _cteMode = 'blast-radius', _cteInit = false;
 function initCte() {
   const sel = $('cte-node'); const cur = sel.value;
-  clear(sel); _components.forEach(c => sel.appendChild(el('option', null, c.name)));
+  clear(sel); _allComponents.forEach(c => sel.appendChild(el('option', null, c.name)));
   sel.value = cur || 'S3Bucket';
   if (!_cteInit) { _cteInit = true; runCte(); }
 }
@@ -254,12 +312,12 @@ $('cte-node').addEventListener('change', runCte);
 async function runCte() {
   const name = $('cte-node').value || 'S3Bucket';
   const data = await getJSON(`/api/cte/${_cteMode}?name=${encodeURIComponent(name)}`);
-  $('cte-sql').textContent = data.sql;
+  $('cte-sql').textContent = data.note || '';
   $('cte-rowcount').textContent = data.rows.length + ' rows';
   $('cte-summary').textContent = `${name} · ${data.nodes.length} nodes`;
   const depthMap = {}; depthMap[name] = 0;
   data.rows.forEach(r => { const far = _cteMode === 'blast-radius' ? r.from_name : r.to_name; depthMap[far] = Math.min(depthMap[far] ?? 99, r.depth); });
-  cteGraph.set(_components, _edges, { highlight: new Set(data.nodes), depthMap, dim: true });
+  cteGraph.set(_allComponents, _edges, { highlight: new Set(data.nodes), depthMap, dim: true });
   const rows = $('cte-rows'); clear(rows);
   if (!data.rows.length) { rows.appendChild(el('div', 'feed-empty', 'No dependencies at this node.')); return; }
   data.rows.forEach(r => {
@@ -297,10 +355,10 @@ async function runSearch() {
   if (!q) return;
   $('search-stat').textContent = 'searching...';
   const data = await getJSON(`/api/search?mode=${_searchMode}&q=${encodeURIComponent(q)}`);
-  $('search-sql').textContent = data.sql || '';
+  $('search-sql').textContent = data.note || '';
   const box = $('search-results'); clear(box);
   if (!data.available) {
-    box.appendChild(el('div', 'feed-empty', data.note || 'Search requires the TiDB backend.'));
+    box.appendChild(el('div', 'feed-empty', data.note || 'Search unavailable.'));
     $('search-stat').textContent = 'unavailable';
     return;
   }
@@ -308,34 +366,18 @@ async function runSearch() {
   if (!data.results.length) { box.appendChild(el('div', 'feed-empty', 'No matches.')); return; }
   const mode = data.mode;
   data.results.forEach((r, i) => {
-    const semanticOnly = r.in_vector && !r.in_fts;
-    const card = el('div', 'search-row' + (mode === 'hybrid' && semanticOnly ? ' semantic-only' : ''));
+    const card = el('div', 'search-row');
     const head = el('div', 'search-row-head');
     head.appendChild(el('span', 'search-rank', '#' + (i + 1)));
     head.appendChild(el('span', 'mem-name', r.name));
     head.appendChild(el('span', `type-badge type-${r.component_type}`, r.component_type));
     head.appendChild(el('span', `env-badge env-${r.environment}`, r.environment));
+    if (r.repo) head.appendChild(el('span', `repo-badge repo-${r.repo}`, r.repo));
     const sig = el('span', 'search-sigs');
-    // Mode-specific chips so the three modes look genuinely different:
-    //  vector  -> only the cosine-distance chip (pure semantic ranking)
-    //  fts     -> only the keyword chip (pure full-text)
-    //  hybrid  -> both signals, with an explicit hit/miss so you can see
-    //             which rows the keyword index MISSED but vectors caught.
-    if (mode === 'vector') {
-      sig.appendChild(el('span', 'sig-chip sig-vec', r.distance != null ? `cosine ${r.distance.toFixed(3)}` : 'vector'));
-    } else if (mode === 'fts') {
-      sig.appendChild(el('span', 'sig-chip sig-fts', 'keyword match'));
-    } else {
-      sig.appendChild(el('span', 'sig-chip sig-vec', r.distance != null ? `vector ${r.distance.toFixed(3)}` : 'vector'));
-      sig.appendChild(el('span', r.in_fts ? 'sig-chip sig-fts' : 'sig-chip sig-miss',
-        r.in_fts ? 'FTS ✓' : 'FTS ✗'));
-    }
+    if (r.hybrid_score != null) sig.appendChild(el('span', 'sig-chip sig-vec', `score ${r.hybrid_score.toFixed(3)}`));
     head.appendChild(sig);
     card.appendChild(head);
     card.appendChild(el('div', 'search-summary', r.summary || ''));
-    if (mode === 'hybrid' && semanticOnly) {
-      card.appendChild(el('div', 'semantic-note', '⚡ vector-only - keyword search missed this; semantics found it'));
-    }
     box.appendChild(card);
   });
 }
@@ -355,14 +397,14 @@ async function loadScenarios() {
     const body = el('div', 'sc-body');
     const w = el('div', 'sc-col sc-without'); w.appendChild(el('h4', null, 'Without the graph'));
     const ulW = el('ul'); s.without.forEach(x => ulW.appendChild(el('li', null, x))); w.appendChild(ulW);
-    const y = el('div', 'sc-col sc-with'); y.appendChild(el('h4', null, 'With TiDB knowledge graph'));
+    const y = el('div', 'sc-col sc-with'); y.appendChild(el('h4', null, 'With mem9 knowledge graph'));
     const ulY = el('ul'); s.with.forEach(x => ulY.appendChild(el('li', null, x))); y.appendChild(ulY);
     body.appendChild(w); body.appendChild(y); card.appendChild(body);
     const q = el('div', 'sc-query');
     q.appendChild(el('div', 'sc-query-label', 'The query that answers it'));
     const pre = el('pre'); pre.appendChild(el('code', null, s.query)); q.appendChild(pre);
     q.appendChild(el('div', 'sc-result', '→ ' + s.result)); card.appendChild(q);
-    const why = el('div', 'sc-why'); why.appendChild(el('b', null, 'Why TiDB: ')); why.appendChild(el('span', null, s.why_tidb)); card.appendChild(why);
+    const why = el('div', 'sc-why'); why.appendChild(el('b', null, 'Why mem9: ')); why.appendChild(el('span', null, s.why_tidb)); card.appendChild(why);
     list.appendChild(card);
   });
 }
@@ -373,17 +415,18 @@ $('reset-btn').addEventListener('click', async () => {
   $('reset-btn').textContent = 'Resetting…';
   await postJSON('/api/reset');
   await loadAll();
-  if (document.querySelector('.view[data-view="live"]').classList.contains('active')) liveGraph.set(filtered(), _edges, {});
+  if (document.querySelector('.view[data-view="live"]').classList.contains('active')) liveGraph.set(filteredLive(), _edges, {});
   $('reset-btn').textContent = 'Reset KB';
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 function applyHash() {
   const h = (location.hash || '').replace('#', '');
-  if (['scenario', 'architecture', 'sysprompt', 'live', 'cte', 'search', 'scenarios'].includes(h)) showTab(h);
+  if (['scenario', 'teams', 'architecture', 'sysprompt', 'live', 'cte', 'search', 'scenarios'].includes(h)) showTab(h);
 }
 window.addEventListener('hashchange', applyHash);
 getJSON('/api/backend').then(d => { $('backend-name').textContent = '· ' + d.backend; }).catch(() => {});
-applyHash();           // deep-link to the right tab immediately (don't wait on data)
+loadTeamsTab();
+applyHash();
 loadAll().then(applyHash);
 setInterval(poll, 2000);

@@ -25,8 +25,9 @@ from src import seed as seeder
 STATIC_DIR = Path(__file__).parent / "static"
 
 REPO = "pulumi"
+ALL_REPOS = ["pulumi", "lza"]
 
-db.init_db(repos=[REPO])
+db.init_db(repos=ALL_REPOS)
 
 app = FastAPI(title="mem9-infra-kb dashboard", docs_url=None, redoc_url=None)
 
@@ -125,6 +126,33 @@ def edges():
 @app.get("/api/session-log")
 def session_log():
     return JSONResponse(_session_log_entries())
+
+
+@app.get("/api/repos")
+def repos():
+    team_name = db.team()
+    result = []
+    for repo in ALL_REPOS:
+        comps = _all_components(repo)
+        result.append({
+            "team": team_name,
+            "repo": repo,
+            "app_id": db.database_for(repo),
+            "component_count": len(comps),
+        })
+    return JSONResponse({
+        "team": team_name,
+        "model": "team = mem9 space · repo = appId namespace",
+        "repos": result,
+    })
+
+
+@app.get("/api/all-components")
+def all_components():
+    comps = []
+    for repo in ALL_REPOS:
+        comps.extend(_all_components(repo))
+    return JSONResponse(comps)
 
 
 @app.get("/api/missing")
