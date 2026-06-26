@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>mem9 — Shared Memory for AI Coding Agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #14161c; --ink-dim: #44485a; --ink-faint: #7b8196;
+    --line: #e4e7ef; --line-soft: #eef0f6; --paper: #ffffff; --wash: #f7f8fc;
+    --accent: #2f6df6; --accent-soft: #eaf1fe; --teal: #0b9d8e; --teal-soft: #e3f7f4;
+    --amber: #c77a12; --red: #d6455d; --violet: #7b59e0; --green: #15976b;
+    --d1: #2f6df6; --d2: #7b59e0; --d3: #d6455d;
+    --font-display: "Bricolage Grotesque", Georgia, serif;
+    --font: "Hanken Grotesk", -apple-system, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: var(--font); color: var(--ink); background: var(--paper); font-size: 11pt; line-height: 1.55; }
+
+  @page { size: Letter; margin: 16mm 16mm 18mm; }
+  @page :first { margin: 0; }
+
+  .page { padding: 0; }
+  .section { page-break-before: always; padding-top: 4mm; }
+  .keep { page-break-inside: avoid; }
+
+  /* ── Cover ── */
+  .cover { height: 100vh; min-height: 980px; background: linear-gradient(150deg, #0a0c14 0%, #131a30 55%, #0d2b2a 100%); color: #fff; padding: 26mm 20mm; display: flex; flex-direction: column; }
+  .cover-badge { display: inline-flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 11pt; letter-spacing: 0.5px; }
+  .cover-dot { width: 12px; height: 12px; border-radius: 4px; background: linear-gradient(135deg, #4d8bff, #1ad0bd); }
+  .cover-eyebrow { font-family: var(--mono); font-size: 9.5pt; letter-spacing: 2.5px; text-transform: uppercase; color: #6f86c9; margin-top: 70mm; }
+  .cover-title { font-family: var(--font-display); font-weight: 800; font-size: 42pt; line-height: 1.02; letter-spacing: -1.4px; margin: 10px 0 16px; max-width: 16em; }
+  .cover-sub { font-size: 14.5pt; line-height: 1.5; color: #c4cce4; max-width: 30em; }
+  .cover-foot { margin-top: auto; display: flex; gap: 26px; font-family: var(--mono); font-size: 9.5pt; color: #8893b8; flex-wrap: wrap; }
+  .cover-foot b { color: #dfe6fb; font-weight: 600; }
+
+  /* ── Headings ── */
+  .kicker { font-family: var(--mono); font-size: 9pt; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 26pt; letter-spacing: -0.8px; line-height: 1.05; margin-bottom: 10px; }
+  h2 { font-family: var(--font-display); font-weight: 700; font-size: 15pt; letter-spacing: -0.3px; margin: 20px 0 8px; }
+  p { margin-bottom: 9px; color: var(--ink-dim); }
+  p.lead { font-size: 12.5pt; color: var(--ink); max-width: 40em; }
+  b, strong { color: var(--ink); font-weight: 600; }
+  code { font-family: var(--mono); font-size: 0.86em; background: var(--wash); color: var(--accent); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line-soft); }
+  .rule { height: 3px; width: 52px; background: var(--accent); border-radius: 3px; margin: 14px 0 18px; }
+
+  /* ── Cards / grids ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .card { border: 1px solid var(--line); border-radius: 11px; padding: 15px 16px; background: var(--paper); }
+  .card.wash { background: var(--wash); border-color: var(--line-soft); }
+  .card h3 { font-family: var(--font-display); font-size: 12pt; font-weight: 700; margin-bottom: 5px; }
+  .card p { font-size: 10pt; margin: 0; }
+  .ic { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; font-size: 14pt; margin-bottom: 9px; }
+  .ic.bad { background: #fdeaed; color: var(--red); }
+  .ic.good { background: var(--teal-soft); color: var(--teal); }
+
+  .callout { border-left: 3px solid var(--teal); background: var(--teal-soft); border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 4px 0 2px; }
+  .callout b { color: var(--green); }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin: 8px 0; }
+  th { text-align: left; font-family: var(--mono); font-size: 8pt; text-transform: uppercase; letter-spacing: 0.6px; color: var(--ink-faint); padding: 7px 10px; border-bottom: 1.5px solid var(--line); }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--ink-dim); }
+  td.mono, .mono-cell { font-family: var(--mono); font-size: 9pt; color: var(--ink); }
+
+  .pill { display: inline-block; font-family: var(--mono); font-size: 8pt; font-weight: 600; padding: 1px 7px; border-radius: 20px; }
+  .pill.d1 { background: var(--accent-soft); color: var(--d1); }
+  .pill.d2 { background: #f0ebfc; color: var(--d2); }
+  .pill.d3 { background: #fdeaed; color: var(--d3); }
+  .pill.d4 { background: #fdeaed; color: var(--d3); }
+
+  /* ── Chain visual ── */
+  .chain { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-family: var(--mono); font-size: 9pt; margin: 8px 0; }
+  .chain .node { background: var(--wash); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; color: var(--ink); }
+  .chain .node.foundation { background: var(--teal-soft); border-color: #9fe0d6; color: #0a6b60; font-weight: 600; }
+  .chain .arr { color: var(--ink-faint); font-size: 8pt; }
+  .chain .verb { color: var(--accent); font-size: 7.5pt; }
+
+  /* ── Architecture diagram ── */
+  .arch { background: var(--wash); border: 1px solid var(--line-soft); border-radius: 12px; padding: 14px; margin: 10px 0; }
+  .arch svg { display: block; width: 100%; height: auto; }
+
+  .footer-note { font-family: var(--mono); font-size: 8pt; color: var(--ink-faint); margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 8px; }
+  ul.clean { list-style: none; margin: 4px 0; }
+  ul.clean li { position: relative; padding-left: 18px; margin-bottom: 5px; font-size: 10pt; color: var(--ink-dim); }
+  ul.clean li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- ─────────────── COVER ─────────────── -->
+<div class="cover">
+  <div class="cover-badge"><span class="cover-dot"></span> mem9 · TiDB Cloud</div>
+  <div class="cover-eyebrow">Technical Demo Report</div>
+  <div class="cover-title">Shared memory for every AI coding agent.</div>
+  <div class="cover-sub">How a team of AI coding tools — Claude Code, Codex, and Cursor — share one queryable knowledge base on mem9, so none starts cold or repeats another's work.</div>
+  <div class="cover-foot">
+    <div><b>Team</b> acme</div>
+    <div><b>Repos</b> pulumi · lza</div>
+    <div><b>Store</b> mem9 → TiDB Cloud</div>
+    <div><b>Access</b> Model Context Protocol</div>
+  </div>
+</div>
+
+<!-- ─────────────── 1. THE IDEA ─────────────── -->
+<div class="section page">
+  <div class="kicker">The idea</div>
+  <h1>Three tools, one brain.</h1>
+  <div class="rule"></div>
+  <p class="lead">A platform team runs its infrastructure as code — AWS, Cloudflare, and Okta via Pulumi, plus an AWS Landing Zone for accounts and guardrails. Increasingly that code is written by AI coding agents. The problem isn't any single agent's capability; it's that <b>they share no memory</b>. Each session starts cold, re-derives context from the filesystem, and re-makes the same mistakes.</p>
+
+  <h2>Without shared memory</h2>
+  <div class="grid-2">
+    <div class="card keep"><span class="ic bad">⧉</span><h3>Duplication</h3><p>An agent can't see a component already exists, so it builds a second one — a duplicate bucket, a parallel DNS record.</p></div>
+    <div class="card keep"><span class="ic bad">⚠</span><h3>Broken conventions</h3><p>It writes a raw <code>aws.s3.Bucket</code> instead of the library wrapper, skipping required tags and encryption.</p></div>
+    <div class="card keep"><span class="ic bad">◎</span><h3>Invisible blast radius</h3><p>It changes a shared library and breaks resources two or three hops away that it never saw.</p></div>
+    <div class="card keep"><span class="ic bad">❄</span><h3>Cold starts</h3><p>The next session — or the next tool — re-derives everything from scratch and repeats the same errors.</p></div>
+  </div>
+
+  <div class="callout keep" style="margin-top:14px;">
+    <b>The fix.</b> One shared, queryable memory in TiDB Cloud — reached through mem9 — that every agent reads <b>before</b> it builds and writes back <b>when</b> it's done. A single standing instruction makes the behavior automatic across all three tools: <b>query first → compose libraries → write back.</b>
+  </div>
+</div>
+
+<!-- ─────────────── 2. TOPOLOGY ─────────────── -->
+<div class="section page">
+  <div class="kicker">Topology</div>
+  <h1>Team = space. Repo = namespace.</h1>
+  <div class="rule"></div>
+  <p class="lead">mem9 maps cleanly onto how teams already organize work. A <b>team</b> is a mem9 <b>space</b> — one API key, one isolated TiDB Cloud cluster behind it. A <b>repo</b> is an <code>appId</code> namespace inside that space, so multiple repos share a cluster but keep separate recall scopes.</p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>acme · pulumi</h3>
+      <p style="font-family:var(--mono);font-size:8.5pt;color:var(--ink-faint);">appId acme_pulumi_kb</p>
+      <p style="margin-top:6px;">AWS · Cloudflare · Okta IaC. 21 components: reusable libraries plus production and staging instances.</p>
+    </div>
+    <div class="card">
+      <h3>acme · lza</h3>
+      <p style="font-family:var(--mono);font-size:8.5pt;color:var(--ink-faint);">appId acme_lza_kb</p>
+      <p style="margin-top:6px;">AWS Landing Zone: accounts, OUs, SCPs, IAM baseline. 11 components modelling the org layer.</p>
+    </div>
+  </div>
+
+  <h2>Isolation &amp; cross-repo</h2>
+  <ul class="clean">
+    <li><b>Cross-repo</b> within a team: an <code>account_ref</code> links LZA accounts to the Pulumi stacks that live in them — recalled from both namespaces and merged client-side.</li>
+    <li><b>Cross-team</b> isolation: a different team is a different space with a different API key. One team cannot read another's memories — enforced by mem9 at the space level, not by application code.</li>
+  </ul>
+
+  <div class="footer-note">In production each team's space sits on its own managed TiDB Cloud cluster. Agents never handle raw database credentials — the mem9 API key is the only secret.</div>
+</div>
+
+<!-- ─────────────── 3. ARCHITECTURE ─────────────── -->
+<div class="section page">
+  <div class="kicker">Architecture</div>
+  <h1>One store. One plug. One key.</h1>
+  <div class="rule"></div>
+
+  <div class="arch keep">
+    <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" font-family="Hanken Grotesk, sans-serif">
+      <rect x="14" y="20" width="150" height="40" rx="9" fill="#fbeee8" stroke="#CC785C"/><text x="89" y="45" text-anchor="middle" fill="#b25c3e" font-weight="700" font-size="13">Claude Code</text>
+      <rect x="14" y="105" width="150" height="40" rx="9" fill="#e7f6f1" stroke="#13B583"/><text x="89" y="130" text-anchor="middle" fill="#0a8a62" font-weight="700" font-size="13">Codex</text>
+      <rect x="14" y="190" width="150" height="40" rx="9" fill="#eaf1fe" stroke="#2f6df6"/><text x="89" y="215" text-anchor="middle" fill="#1f5be0" font-weight="700" font-size="13">Cursor</text>
+
+      <rect x="280" y="92" width="150" height="66" rx="11" fill="#f7f8fc" stroke="#cdd3e6"/>
+      <text x="355" y="118" text-anchor="middle" fill="#14161c" font-weight="700" font-size="13">MCP</text>
+      <text x="355" y="138" text-anchor="middle" fill="#7b8196" font-size="10">infra-kb · one per repo</text>
+
+      <rect x="556" y="78" width="190" height="94" rx="12" fill="#0d2b2a"/>
+      <text x="651" y="116" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">mem9 → TiDB Cloud</text>
+      <text x="651" y="138" text-anchor="middle" fill="#8fe6da" font-size="10">graph · vector · full-text</text>
+
+      <g stroke="#aab1c9" stroke-width="1.6" fill="none">
+        <path d="M164,40 C230,40 220,120 278,122" marker-end="url(#ar)"/>
+        <path d="M164,125 L278,125" marker-end="url(#ar)"/>
+        <path d="M164,210 C230,210 220,130 278,128" marker-end="url(#ar)"/>
+        <path d="M430,125 L552,125" marker-end="url(#ar)"/>
+      </g>
+      <text x="492" y="116" text-anchor="middle" fill="#7b8196" font-size="9" font-family="IBM Plex Mono, monospace">REST</text>
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#aab1c9"/></marker></defs>
+    </svg>
+  </div>
+
+  <div class="grid-3">
+    <div class="card wash keep"><h3>MCP is the plug</h3><p>Every tool loads the same Model Context Protocol config — one named server per repo. No custom glue per tool.</p></div>
+    <div class="card wash keep"><h3>One store, every pattern</h3><p>Relational state, the dependency graph, vector embeddings, and full-text all live in the same memory. No ETL between four systems.</p></div>
+    <div class="card wash keep"><h3>Just an API key</h3><p>mem9 provisions and manages the TiDB Cloud cluster. Agents read and write through one key and never touch credentials.</p></div>
+  </div>
+
+  <h2>The standing instruction</h2>
+  <p>Loaded into every tool's rules file (<code>CLAUDE.md</code> / <code>AGENTS.md</code> / <code>.cursorrules</code>), so the read-first / write-back behavior happens on every run with no per-task reminder:</p>
+  <div class="card" style="background:#0c0c10;border-color:#0c0c10;">
+    <pre style="font-family:var(--mono);font-size:9pt;line-height:1.65;color:#cdd2e4;white-space:pre-wrap;margin:0;">Before writing infrastructure code, query the infra-kb MCP:
+  · what already exists        (don't duplicate)
+  · how things connect         (dependency edges)
+  · what previous sessions did (session log)
+
+Never use raw aws.* / cloudflare.* / okta.* — compose the libs/ wrappers.
+After any change, record it with write_component so the next
+session — and the next tool — starts warm.</pre>
+  </div>
+</div>
+
+<!-- ─────────────── 4. CAPABILITY: TRANSITIVE DEPENDENCIES ─────────────── -->
+<div class="section page">
+  <div class="kicker">Capability spotlight</div>
+  <h1>The question similarity can't answer.</h1>
+  <div class="rule"></div>
+  <p class="lead">A vector store finds things that <i>look</i> related. It cannot compute a transitive closure — "what, exactly, breaks if I change this?" That is graph reachability, and it is what recursive traversal over the dependency graph gives you. The knowledge base records each <code>depends_on</code> and every composition edge; mem9 holds them, and a single traversal walks the chain to any depth.</p>
+
+  <h2>A five-hop chain</h2>
+  <p>The production customer-portal service sits at the top of a chain that bottoms out at a single KMS key — five hops down, across four resource types:</p>
+  <div class="chain keep">
+    <span class="node">portal-svc</span><span class="verb">authenticates_via</span><span class="arr">→</span>
+    <span class="node">portal-sso</span><span class="verb">redirects_to</span><span class="arr">→</span>
+    <span class="node">portal-dns</span><span class="verb">secured_by</span><span class="arr">→</span>
+    <span class="node">portal-cert</span><span class="verb">encrypted_by</span><span class="arr">→</span>
+    <span class="node">data-kms</span><span class="verb">instantiates</span><span class="arr">→</span>
+    <span class="node foundation">KmsKey</span>
+  </div>
+
+  <h2>Blast radius of one KMS key</h2>
+  <p>Run the traversal in reverse from <code>KmsKey</code> — "what breaks if we rotate it?" — and the answer is <b>13 components across four depths</b>. No flat search or similarity ranking surfaces this; only walking the graph does.</p>
+  <table class="keep">
+    <thead><tr><th>Depth</th><th>Count</th><th>Components reached</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill d1">d1</span></td><td class="mono-cell">2</td><td>data-kms, TlsCertificate</td></tr>
+      <tr><td><span class="pill d2">d2</span></td><td class="mono-cell">4</td><td>portal-cert, analytics-db, data-exports, static-assets</td></tr>
+      <tr><td><span class="pill d3">d3</span></td><td class="mono-cell">4</td><td>portal-dns, admin-dns, assets-dns, reporting-svc</td></tr>
+      <tr><td><span class="pill d4">d4</span></td><td class="mono-cell">3</td><td>portal-sso, portal-svc, admin-sso</td></tr>
+    </tbody>
+  </table>
+  <div class="callout keep">
+    <b>Why it matters.</b> Before touching a shared resource, an agent (or a human) sees the full transitive closure of what depends on it — and stages the change accordingly. The cost of a blind change is exactly the surprise this prevents.
+  </div>
+
+  <div class="footer-note">The live dashboard renders this as a depth-laned "Dependency Rail": each hop is a column, connectors carry the relationship, and the foundation node is anchored as everything funnels toward it.</div>
+</div>
+
+<!-- ─────────────── 5. SEARCH + WHY ─────────────── -->
+<div class="section page">
+  <div class="kicker">Recall &amp; rationale</div>
+  <h1>Hybrid recall, and why one engine.</h1>
+  <div class="rule"></div>
+
+  <h2>Vector + full-text, one store</h2>
+  <p>The same memory that holds the graph also answers semantic and keyword queries. Ask <i>"what encrypts production data"</i> and mem9 returns the KMS key, the resources it encrypts, and the TLS cert — ranked by hybrid relevance, served from TiDB Cloud with no separate vector database and no synchronization to keep in step.</p>
+
+  <h2>Why mem9 on TiDB — versus the alternatives</h2>
+  <table class="keep">
+    <thead><tr><th>Approach</th><th>Graph reachability</th><th>Semantic recall</th><th>Atomic agent state</th></tr></thead>
+    <tbody>
+      <tr><td class="mono-cell">S3 / filesystem</td><td>no traversal</td><td>no</td><td>no transactions</td></tr>
+      <tr><td class="mono-cell">Vector DB only</td><td>similarity ≠ reachability</td><td>yes</td><td>no</td></tr>
+      <tr><td class="mono-cell">Four separate systems</td><td>partial, with ETL</td><td>yes</td><td>no cross-system atomicity</td></tr>
+      <tr><td class="mono-cell" style="color:var(--teal);font-weight:600;">mem9 → TiDB Cloud</td><td style="color:var(--green);">recursive traversal</td><td style="color:var(--green);">vector + full-text</td><td style="color:var(--green);">one transaction</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:6px;">Component, edge, and session-log entry are written together. Relational state, the dependency graph, vector embeddings, and full-text indexes are one engine — so the agent's memory is consistent across concurrent writes from all three tools.</p>
+
+  <div class="callout keep"><b>S3 is the filing cabinet for artifacts. mem9 is the brain agents query.</b></div>
+</div>
+
+<!-- ─────────────── 6. THE LIVE DEMO ─────────────── -->
+<div class="section page">
+  <div class="kicker">The live demo</div>
+  <h1>Closing the staging gap, warm.</h1>
+  <div class="rule"></div>
+  <p class="lead">Production is complete; staging has drifted — it's missing its DNS and SSO layer (four components). Three different tools bring staging to parity, each reading the shared memory before it builds and writing back when it's done. No agent starts cold.</p>
+
+  <div class="grid-3">
+    <div class="card keep"><h3 style="color:#b25c3e;">1 · Claude Code</h3><p>Queries the KB, finds staging missing static-assets + DNS, composes the libraries, writes both back. <b>Gap 4 → 2.</b></p></div>
+    <div class="card keep"><h3 style="color:#0a8a62;">2 · Codex</h3><p>Opens cold with zero context. Reads the shared session log, sees what was just built, continues with admin-DNS. <b>Gap 2 → 1.</b></p></div>
+    <div class="card keep"><h3 style="color:#1f5be0;">3 · Cursor</h3><p>Traces what prod's admin-SSO depends on, confirms it must redirect to a DnsRecord, builds the matching SSO app. <b>Gap 1 → 0.</b></p></div>
+  </div>
+
+  <p style="margin-top:14px;">Each tool attributes its work in the activity feed; the parity strip turns green as the gap closes. The same component graph, dependency traversal, and hybrid search shown in this report are all live views over the one mem9 space — the dashboard is an observability window on the system, not the system itself.</p>
+
+  <div class="footer-note">mem9 · TiDB Cloud — shared memory for AI coding agents. Generated for the team/repo demo (team acme, repos pulumi + lza).</div>
+</div>
+
+</body>
+</html>
