@@ -198,6 +198,9 @@ def _default_ca() -> str | None:
 @contextmanager
 def _tidb_conn(team_name: str, repos: list[str]):
     import pymysql
+    # Bounded timeouts so a slow/initializing index (e.g. a TiCI full-text index
+    # still building after a reseed) fails fast instead of hanging the caller.
+    rt = int(os.environ.get("MEM9_DB_READ_TIMEOUT", "30"))
     con = pymysql.connect(
         host=os.environ["TIDB_HOST"],
         port=int(os.environ.get("TIDB_PORT", "4000")),
@@ -208,6 +211,9 @@ def _tidb_conn(team_name: str, repos: list[str]):
         ssl={"ca": os.environ.get("TIDB_CA_PATH") or _default_ca()},
         cursorclass=pymysql.cursors.DictCursor,
         autocommit=False,
+        connect_timeout=int(os.environ.get("MEM9_DB_CONNECT_TIMEOUT", "15")),
+        read_timeout=rt,
+        write_timeout=rt,
     )
     try:
         cur = con.cursor()
@@ -461,9 +467,25 @@ def search(repo: str, q: str, mode: str = "hybrid", k: int = 6, team_name: str |
             else "Vector + LIKE keyword boost (RRF)." if target() == "local"
             else "LIKE keyword search only (no vector on SQLite).")
     pool = 10
-    with _conn([repo], team_name) as con:
-        kw = _keyword_search(con, db_name, qsafe, pool)
-        vec = _vector_search(con, db_name, qsafe, pool) if topology.has_vector() else []
+    # Run vector first on its own connection (fast, reliable). Keyword search runs
+    # on a separate connection and degrades gracefully: on cloud, the full-text
+    # index can be momentarily unavailable while TiCI builds it after a write, and
+    # we must not let that hang or kill the vector results.
+    vec = []
+    if topology.has_vector():
+        try:
+            with _conn([repo], team_name) as con:
+                vec = _vector_search(con, db_name, qsafe, pool)
+        except Exception:
+            vec = []
+    kw = []
+    try:
+        with _conn([repo], team_name) as con:
+            kw = _keyword_search(con, db_name, qsafe, pool)
+    except Exception:
+        kw = []
+        if topology.has_fulltext():
+            note += " (full-text index warming up or unavailable; showing vector results.)"
 
     kw_rank = {r["name"]: i for i, r in enumerate(kw)}
     vec_rank = {r["name"]: i for i, r in enumerate(vec)}
