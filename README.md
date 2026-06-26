@@ -55,11 +55,14 @@ on both; the local target degrades keyword search to `LIKE`.
 
 (A SQLite path exists purely as an offline/test substrate: relational + `LIKE`, no vector.)
 
-> **Full-text is region-gated.** It is Cloud Starter/Essential only **and** only served in
-> some regions. A cluster can accept the `FULLTEXT INDEX` DDL yet not serve `FTS_MATCH_WORD`
-> queries (e.g. `eu-central-1` does not). When full-text is unavailable, `db.search()`
-> degrades hybrid to vector-only automatically, so the demo still runs - it just can't show
-> the vector+full-text fusion live. To demo full hybrid, use a full-text-enabled region.
+> **Full-text is early-access.** It is Cloud Starter/Essential only, limited to specific AWS
+> regions, and rolled out per cluster - so a cluster can accept the `FULLTEXT INDEX` DDL yet
+> never build or serve `FTS_MATCH_WORD` (we have seen the index builder stall even with a
+> TiFlash replica present). To get live full-text, provision the cluster in a currently
+> supported region with full-text enabled (see TiDB Cloud docs for the current region list),
+> then point `.env` at it. When full-text is unavailable, `db.search()` degrades hybrid to
+> vector-only automatically, so the demo still runs - it just can't show the vector+full-text
+> fusion live.
 
 ## Quick start
 
