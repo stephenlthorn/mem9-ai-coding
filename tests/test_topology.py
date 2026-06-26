@@ -1,10 +1,11 @@
+"""Topology: team -> mem9 space, repo -> appId namespace within it."""
 import importlib
 
 import pytest
 
 
 def reload_topology(monkeypatch, **env):
-    for k in ("TIDB_HOST", "MEM9_TARGET", "MEM9_TEAM"):
+    for k in ("MEM9_TEAM", "MEM9_NS_VERSION"):
         monkeypatch.delenv(k, raising=False)
     for k, v in env.items():
         monkeypatch.setenv(k, v)
@@ -13,47 +14,33 @@ def reload_topology(monkeypatch, **env):
     return topology
 
 
-def test_no_host_is_sqlite(monkeypatch):
+def test_repos_and_team_defaults(monkeypatch):
     t = reload_topology(monkeypatch)
-    assert t.target() == "sqlite"
-    assert t.has_vector() is False
-    assert t.has_fulltext() is False
-    assert t.has_auto_embed() is False
+    assert t.team() == "acme"
+    assert set(t.repo_names()) == {"pulumi", "lza"}
 
 
-def test_tidbcloud_host_is_cloud(monkeypatch):
-    t = reload_topology(monkeypatch, TIDB_HOST="gateway01.eu-central-1.prod.aws.tidbcloud.com")
-    assert t.target() == "cloud"
-    assert t.has_vector() and t.has_fulltext() and t.has_auto_embed()
-
-
-def test_localhost_host_is_local_tiup(monkeypatch):
-    t = reload_topology(monkeypatch, TIDB_HOST="127.0.0.1")
-    assert t.target() == "local"
-    assert t.has_vector() is True
-    assert t.has_fulltext() is False
-    assert t.has_auto_embed() is False
-
-
-def test_explicit_target_overrides_inference(monkeypatch):
-    t = reload_topology(monkeypatch, TIDB_HOST="gateway01.prod.aws.tidbcloud.com", MEM9_TARGET="local")
-    assert t.target() == "local"
-
-
-def test_database_for_namespaces_by_team(monkeypatch):
+def test_app_id_namespaces_by_team_and_repo(monkeypatch):
     t = reload_topology(monkeypatch, MEM9_TEAM="acme")
-    assert t.database_for("pulumi") == "acme_pulumi_kb"
-    assert t.database_for("lza") == "acme_lza_kb"
-    assert t.database_for("pulumi", team="globex") == "globex_pulumi_kb"
+    assert t.app_id("pulumi") == "acme_pulumi_kb"
+    assert t.app_id("lza") == "acme_lza_kb"
+    assert t.app_id("pulumi", team_name="globex") == "globex_pulumi_kb"
+
+
+def test_ns_version_suffix_when_set(monkeypatch):
+    t = reload_topology(monkeypatch, MEM9_TEAM="acme", MEM9_NS_VERSION="demo")
+    assert t.ns_version() == "demo"
+    assert t.app_id("pulumi") == "acme_pulumi_kb_demo"
+    assert t.app_id("lza", team_name="globex") == "globex_lza_kb_demo"
+
+
+def test_ns_version_empty_by_default(monkeypatch):
+    t = reload_topology(monkeypatch)
+    assert t.ns_version() == ""
+    assert t.app_id("pulumi") == "acme_pulumi_kb"
 
 
 def test_unknown_repo_raises(monkeypatch):
     t = reload_topology(monkeypatch)
     with pytest.raises(KeyError):
-        t.database_for("nope")
-
-
-def test_repos_and_team_defaults(monkeypatch):
-    t = reload_topology(monkeypatch)
-    assert t.team() == "acme"
-    assert set(t.repo_names()) == {"pulumi", "lza"}
+        t.app_id("nope")
