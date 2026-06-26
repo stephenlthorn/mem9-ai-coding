@@ -89,6 +89,13 @@
   ul.clean { list-style: none; margin: 4px 0; }
   ul.clean li { position: relative; padding-left: 18px; margin-bottom: 5px; font-size: 10pt; color: var(--ink-dim); }
   ul.clean li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
+
+  /* ── Screenshots (live dashboard walkthrough) ── */
+  figure.shot { margin: 12px 0 6px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #0a0c14; page-break-inside: avoid; box-shadow: 0 6px 20px rgba(20,22,28,0.08); }
+  figure.shot img { display: block; width: 100%; height: auto; }
+  figcaption { display: flex; gap: 8px; align-items: baseline; font-size: 9.5pt; color: var(--ink-dim); padding: 9px 14px; background: var(--wash); border-top: 1px solid var(--line-soft); }
+  figcaption .tag { font-family: var(--mono); font-size: 7.5pt; letter-spacing: 0.5px; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+  figcaption b { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -205,6 +212,11 @@ Never use raw aws.* / cloudflare.* / okta.* — compose the libs/ wrappers.
 After any change, record it with write_component so the next
 session — and the next tool — starts warm.</pre>
   </div>
+
+  <figure class="shot">
+    <img src="img/config.png" alt="Config tab of the dashboard showing the standing instruction and MCP server config" />
+    <figcaption><span class="tag">Dashboard · Config</span><span>The <b>Config</b> tab: the standing instruction every tool loads, and the one-entry-per-repo MCP wiring that makes it automatic.</span></figcaption>
+  </figure>
 </div>
 
 <!-- ─────────────── 4. CAPABILITY: TRANSITIVE DEPENDENCIES ─────────────── -->
@@ -225,6 +237,11 @@ session — and the next tool — starts warm.</pre>
     <span class="node foundation">KmsKey</span>
   </div>
 
+  <figure class="shot">
+    <img src="img/deps-needs.png" alt="Dependency Rail showing what the portal service depends on, four hops to KmsKey" />
+    <figcaption><span class="tag">Dashboard · Dependencies</span><span>"What does <b>portal-svc</b> need?" — each hop is a column; the chain reads left-to-right and converges on the shared KMS foundation. 9 components, 4 hops downstream.</span></figcaption>
+  </figure>
+
   <h2>Blast radius of one KMS key</h2>
   <p>Run the traversal in reverse from <code>KmsKey</code> — "what breaks if we rotate it?" — and the answer is <b>13 components across four depths</b>. No flat search or similarity ranking surfaces this; only walking the graph does.</p>
   <table class="keep">
@@ -240,6 +257,11 @@ session — and the next tool — starts warm.</pre>
     <b>Why it matters.</b> Before touching a shared resource, an agent (or a human) sees the full transitive closure of what depends on it — and stages the change accordingly. The cost of a blind change is exactly the surprise this prevents.
   </div>
 
+  <figure class="shot">
+    <img src="img/deps-blast.png" alt="Dependency Rail showing the blast radius of KmsKey, 13 components across four depths" />
+    <figcaption><span class="tag">Dashboard · Dependencies</span><span>"What breaks if we rotate <b>KmsKey</b>?" — the reverse traversal fans 13 components across four depths, all funneling onto the anchored foundation. The Trace panel reads each chain as a sentence.</span></figcaption>
+  </figure>
+
   <div class="footer-note">The live dashboard renders this as a depth-laned "Dependency Rail": each hop is a column, connectors carry the relationship, and the foundation node is anchored as everything funnels toward it.</div>
 </div>
 
@@ -251,6 +273,11 @@ session — and the next tool — starts warm.</pre>
 
   <h2>Vector + full-text, one store</h2>
   <p>The same memory that holds the graph also answers semantic and keyword queries. Ask <i>"what encrypts production data"</i> and mem9 returns the KMS key, the resources it encrypts, and the TLS cert — ranked by hybrid relevance, served from TiDB Cloud with no separate vector database and no synchronization to keep in step.</p>
+
+  <figure class="shot">
+    <img src="img/search.png" alt="Search tab showing hybrid recall results for 'what encrypts production data'" />
+    <figcaption><span class="tag">Dashboard · Search</span><span>The <b>Search</b> tab: hybrid (vector + full-text) recall over the same store, with per-result type, environment, and repo, scored by relevance.</span></figcaption>
+  </figure>
 
   <h2>Why mem9 on TiDB — versus the alternatives</h2>
   <table class="keep">
@@ -279,6 +306,11 @@ session — and the next tool — starts warm.</pre>
     <div class="card keep"><h3 style="color:#0a8a62;">2 · Codex</h3><p>Opens cold with zero context. Reads the shared session log, sees what was just built, continues with admin-DNS. <b>Gap 2 → 1.</b></p></div>
     <div class="card keep"><h3 style="color:#1f5be0;">3 · Cursor</h3><p>Traces what prod's admin-SSO depends on, confirms it must redirect to a DnsRecord, builds the matching SSO app. <b>Gap 1 → 0.</b></p></div>
   </div>
+
+  <figure class="shot">
+    <img src="img/live.png" alt="Live tab showing the activity feed, shared knowledge graph, and staging parity strip" />
+    <figcaption><span class="tag">Dashboard · Live</span><span>The <b>Live</b> tab: the activity feed (every tool's reads and writes), the shared knowledge graph, and the staging-parity strip — four components missing, before the agents run.</span></figcaption>
+  </figure>
 
   <p style="margin-top:14px;">Each tool attributes its work in the activity feed; the parity strip turns green as the gap closes. The same component graph, dependency traversal, and hybrid search shown in this report are all live views over the one mem9 space — the dashboard is an observability window on the system, not the system itself.</p>
 

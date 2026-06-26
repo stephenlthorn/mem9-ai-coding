@@ -34,36 +34,56 @@ app = FastAPI(title="mem9-infra-kb dashboard", docs_url=None, redoc_url=None)
 
 # ── Memory helpers ────────────────────────────────────────────────────────────
 
-# Components + edges come from the COMPLETE manifest-backed graph (db._load_graph
-# = manifest backbone + live mem9 overlay), so the Live graph and the Dependencies
-# view are both complete and consistent. The session log stays a pure mem9 read
-# (it is the live activity stream the agents write to).
+# The manifest is the authoritative, clean component set. mem9's list reads are
+# lossy and occasionally return corrupted name fragments, so for the Live graph
+# and the parity check we use the manifest backbone and overlay ONLY genuinely-new
+# `acme-staging-*` components — the only thing agents add during the live demo —
+# which keeps the graph clean while still reflecting live writes. The session log
+# stays a pure mem9 read (the live activity stream the agents write to).
 
 def _all_memories(repo: str = REPO) -> list[dict]:
     return db.recall(db.database_for(repo), limit=200)
 
 
 def _all_components(repo: str = REPO) -> list[dict]:
-    g = db._load_graph(repo)
-    return [{
-        "name": n,
-        "component_type": m.get("type", ""),
-        "environment": m.get("env", ""),
-        "repo": m.get("repo", repo),
-        "summary": m.get("summary", ""),
-        "account_ref": "",
-        "repo_path": "",
-        "code_excerpt": "",
-        "created_by": "",
-        "created_at": "",
-    } for n, m in g["meta"].items()]
+    from src.repos import load_manifest
+    rows, seen = [], set()
+    for c in load_manifest(repo):
+        seen.add(c["name"])
+        rows.append({
+            "name": c["name"], "component_type": c.get("type", ""),
+            "environment": c.get("env", ""), "repo": c.get("repo", repo),
+            "summary": c.get("summary", ""), "account_ref": c.get("account_ref", ""),
+            "repo_path": c.get("repo_path", ""), "code_excerpt": c.get("code_excerpt", ""),
+            "created_by": "seed", "created_at": "",
+        })
+    # live overlay: agent-added staging components (clean convention: acme-staging-*)
+    try:
+        g = db._load_graph(repo)
+        for name, m in g["meta"].items():
+            if name not in seen and name.startswith("acme-staging-"):
+                seen.add(name)
+                rows.append({
+                    "name": name, "component_type": m.get("type", ""),
+                    "environment": m.get("env", "staging"), "repo": m.get("repo", repo),
+                    "summary": m.get("summary", ""), "account_ref": "",
+                    "repo_path": "", "code_excerpt": "", "created_by": "", "created_at": "",
+                })
+    except Exception:
+        pass
+    return rows
 
 
 def _all_edges(repo: str = REPO) -> list[dict]:
+    known = {c["name"] for c in _all_components(repo)}
     g = db._load_graph(repo)
     rows = []
     for frm, lst in g["fwd"].items():
+        if frm not in known:
+            continue
         for to, rel in lst:
+            if to not in known:
+                continue
             rows.append({
                 "relationship": rel, "note": "",
                 "from_name": frm, "to_name": to,
@@ -142,11 +162,23 @@ def all_components():
     return JSONResponse(comps)
 
 
+# Production-only components (customer portal + KMS foundation) have no staging
+# twin by design, so they are excluded from the staging-parity check — the parity
+# story is about the original DNS + SSO drift, not the prod-only portal stack.
+def _prod_only_names() -> set[str]:
+    from src.repos import load_manifest
+    names: set[str] = set()
+    for repo in ALL_REPOS:
+        names |= {c["name"] for c in load_manifest(repo) if c.get("prod_only")}
+    return names
+
+
 @app.get("/api/missing")
 def missing():
     comps = _all_components()
+    prod_only = _prod_only_names()
     prod = {c["name"].replace("acme-prod-", ""): c
-            for c in comps if c["environment"] == "production"}
+            for c in comps if c["environment"] == "production" and c["name"] not in prod_only}
     staging = {c["name"].replace("acme-staging-", "")
                for c in comps if c["environment"] == "staging"}
     out = [

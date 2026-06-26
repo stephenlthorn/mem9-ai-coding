@@ -83,37 +83,37 @@ COMPONENTS = [
                 "SsoApplication and is fronted by a DnsRecord hostname. Internal services must wire "
                 "authenticates_via -> SSO and fronted_by -> DNS."},
 
-    {"name": "acme-prod-data-kms", "type": "KMS", "env": "production", "repo": REPO,
+    {"name": "acme-prod-data-kms", "type": "KMS", "env": "production", "repo": REPO, "prod_only": True,
      "repo_path": "environments/production/security.ts", "account_ref": "prod",
      "depends_on": "KmsKey", "relationship": "instantiates",
      "summary": "FOUNDATION NODE. Production data-encryption KMS key. Composes KmsKey. Encrypts "
                 "acme-prod-analytics-db, acme-prod-data-exports, acme-prod-static-assets and the TLS "
                 "cert key material. Rotating/deleting it transitively impacts every prod data + portal resource."},
-    {"name": "acme-prod-portal-cert", "type": "Certificate", "env": "production", "repo": REPO,
+    {"name": "acme-prod-portal-cert", "type": "Certificate", "env": "production", "repo": REPO, "prod_only": True,
      "repo_path": "environments/production/security.ts", "account_ref": "prod",
      "depends_on": "TlsCertificate", "relationship": "instantiates",
      "summary": "Production TLS certificate for the customer portal + admin domains. Composes "
                 "TlsCertificate; private key encrypted_by acme-prod-data-kms. Secures acme-prod-portal-dns "
                 "and acme-prod-admin-dns."},
-    {"name": "acme-prod-portal-dns", "type": "Cloudflare", "env": "production", "repo": REPO,
+    {"name": "acme-prod-portal-dns", "type": "Cloudflare", "env": "production", "repo": REPO, "prod_only": True,
      "repo_path": "environments/production/dns.ts", "account_ref": "prod",
      "depends_on": "DnsRecord", "relationship": "instantiates",
      "summary": "Cloudflare DNS for the customer portal (portal.acme.com). Composes DnsRecord "
                 "(proxied: true); secured_by acme-prod-portal-cert. SSO redirect target and the front "
                 "door for acme-prod-portal-svc."},
-    {"name": "acme-prod-portal-sso", "type": "Okta", "env": "production", "repo": REPO,
+    {"name": "acme-prod-portal-sso", "type": "Okta", "env": "production", "repo": REPO, "prod_only": True,
      "repo_path": "environments/production/sso.ts", "account_ref": "prod",
      "depends_on": "SsoApplication", "relationship": "instantiates",
      "summary": "Okta SSO application for the customer portal. Composes SsoApplication; redirect URI "
                 "points at acme-prod-portal-dns. acme-prod-portal-svc and acme-prod-reporting-svc "
                 "authenticate through it."},
-    {"name": "acme-prod-portal-svc", "type": "Service", "env": "production", "repo": REPO,
+    {"name": "acme-prod-portal-svc", "type": "Service", "env": "production", "repo": REPO, "prod_only": True,
      "repo_path": "environments/production/portal.ts", "account_ref": "prod",
      "depends_on": "Service", "relationship": "instantiates",
      "summary": "Production customer portal service. Composes Service; authenticates_via "
                 "acme-prod-portal-sso and fronted_by acme-prod-portal-dns. Top of the deepest prod "
                 "dependency chain (5 hops down to KmsKey)."},
-    {"name": "acme-prod-reporting-svc", "type": "Service", "env": "production", "repo": REPO,
+    {"name": "acme-prod-reporting-svc", "type": "Service", "env": "production", "repo": REPO, "prod_only": True,
      "repo_path": "environments/production/reporting.ts", "account_ref": "prod",
      "depends_on": "Service", "relationship": "instantiates",
      "summary": "Production reporting service. Composes Service; reads_from acme-prod-analytics-db and "

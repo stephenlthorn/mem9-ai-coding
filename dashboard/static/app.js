@@ -264,6 +264,11 @@ function initDeps() {
     }));
     window.addEventListener('resize', () => { if (_depData) drawConnectors(); });
   }
+  // sync controls to current state (deep-link may have set root/mode pre-init)
+  const sel = $('cte-node');
+  if ([...sel.options].some(o => o.value === _depRoot)) sel.value = _depRoot;
+  document.querySelectorAll('.dep-controls .seg [data-mode]')
+    .forEach(x => x.classList.toggle('active', x.dataset.mode === _depMode));
   runRail();
 }
 
@@ -538,9 +543,22 @@ $('reset-btn').addEventListener('click', async () => {
 });
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
-function applyHash() {
+function applyDeepLink() {
+  // ?dep=<component>&mode=<blast-radius|dependencies> deep-links a Dependencies view
+  const params = new URLSearchParams(location.search);
+  const dep = params.get('dep');
+  if (dep) {
+    _depRoot = dep;
+    const m = params.get('mode');
+    if (m === 'dependencies' || m === 'blast-radius') _depMode = m;
+    return 'cte';
+  }
   const h = (location.hash || '').replace('#', '');
-  if (TABS.includes(h)) showTab(h);
+  return TABS.includes(h) ? h : null;
+}
+function applyHash() {
+  const target = applyDeepLink();
+  if (target) showTab(target);
 }
 window.addEventListener('hashchange', applyHash);
 getJSON('/api/backend').then(() => { $('backend-name').textContent = 'TiDB Cloud'; }).catch(() => {});
