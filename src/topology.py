@@ -47,8 +47,20 @@ def base_url() -> str:
     return os.environ.get("MEM9_BASE_URL", "https://api.mem9.ai").rstrip("/")
 
 
+def ns_version() -> str:
+    """Optional namespace version suffix (e.g. 'v2') for a pristine appId.
+
+    mem9 spaces accumulate history and list reads are eventually consistent /
+    capped; bumping MEM9_NS_VERSION gives a clean namespace without changing the
+    team/repo model. Empty (default) keeps the canonical {team}_{repo}_kb form.
+    """
+    return os.environ.get("MEM9_NS_VERSION", "").strip().lower()
+
+
 def app_id(repo: str, team_name: str | None = None) -> str:
     """appId used for per-repo namespace isolation inside a mem9 space."""
     if repo not in REPOS:
         raise KeyError(f"unknown repo: {repo!r} (known: {list(REPOS)})")
-    return f"{(team_name or team()).strip().lower()}_{repo}_kb"
+    base = f"{(team_name or team()).strip().lower()}_{repo}_kb"
+    ver = ns_version()
+    return f"{base}_{ver}" if ver else base

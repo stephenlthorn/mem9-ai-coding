@@ -34,54 +34,41 @@ app = FastAPI(title="mem9-infra-kb dashboard", docs_url=None, redoc_url=None)
 
 # ── Memory helpers ────────────────────────────────────────────────────────────
 
+# Components + edges come from the COMPLETE manifest-backed graph (db._load_graph
+# = manifest backbone + live mem9 overlay), so the Live graph and the Dependencies
+# view are both complete and consistent. The session log stays a pure mem9 read
+# (it is the live activity stream the agents write to).
+
 def _all_memories(repo: str = REPO) -> list[dict]:
     return db.recall(db.database_for(repo), limit=200)
 
 
 def _all_components(repo: str = REPO) -> list[dict]:
-    rows = []
-    seen: set[str] = set()
-    for m in _all_memories(repo):
-        meta = m.get("metadata", {})
-        if meta.get("edge") or meta.get("action") or not meta.get("name"):
-            continue
-        name = meta["name"]
-        if name in seen:
-            continue
-        seen.add(name)
-        rows.append({
-            "id": m.get("id", ""),
-            "name": name,
-            "component_type": meta.get("type", ""),
-            "environment": meta.get("env", ""),
-            "repo": meta.get("repo", repo),
-            "account_ref": meta.get("account_ref", ""),
-            "repo_path": meta.get("repo_path", ""),
-            "summary": m.get("content", ""),
-            "code_excerpt": "",
-            "created_by": meta.get("developer", ""),
-            "created_at": m.get("createdAt", ""),
-        })
-    return rows
+    g = db._load_graph(repo)
+    return [{
+        "name": n,
+        "component_type": m.get("type", ""),
+        "environment": m.get("env", ""),
+        "repo": m.get("repo", repo),
+        "summary": m.get("summary", ""),
+        "account_ref": "",
+        "repo_path": "",
+        "code_excerpt": "",
+        "created_by": "",
+        "created_at": "",
+    } for n, m in g["meta"].items()]
 
 
 def _all_edges(repo: str = REPO) -> list[dict]:
+    g = db._load_graph(repo)
     rows = []
-    for m in _all_memories(repo):
-        meta = m.get("metadata", {})
-        if not meta.get("edge"):
-            continue
-        rows.append({
-            "id": m.get("id", ""),
-            "relationship": meta.get("relationship", ""),
-            "note": m.get("content", ""),
-            "from_name": meta.get("from", ""),
-            "to_name": meta.get("to", ""),
-            "from_type": "",
-            "from_env": "",
-            "to_type": "",
-            "to_env": "",
-        })
+    for frm, lst in g["fwd"].items():
+        for to, rel in lst:
+            rows.append({
+                "relationship": rel, "note": "",
+                "from_name": frm, "to_name": to,
+                "from_type": "", "from_env": "", "to_type": "", "to_env": "",
+            })
     return rows
 
 

@@ -1,30 +1,37 @@
-/* mem9-infra-kb · live mission control */
+/* mem9-infra-kb · application dashboard */
 
 const TYPE_COLOR = {
   S3: '#F5A524', RDS: '#5B8CFF', Cloudflare: '#F97D4B', Okta: '#38BDF8', Library: '#34D399',
   Account: '#2DD4BF', IAM: '#A78BFA', SCP: '#FB7185', OU: '#D4A72C',
+  KMS: '#F5A524', Certificate: '#34D399', Service: '#38BDF8',
+};
+const TYPE_GLYPH = {
+  S3: 'S3', RDS: 'RD', Cloudflare: 'CF', Okta: 'OK', Library: 'L', Account: 'AC',
+  IAM: 'IAM', SCP: 'SCP', OU: 'OU', KMS: 'KM', Certificate: 'TLS', Service: 'SV',
 };
 const ENV_RING   = { production: '#34D399', staging: '#FBBF24', library: '#A78BFA', org: '#2DD4BF' };
 const REPO_COLOR = { pulumi: '#5B8CFF', lza: '#2DD4BF' };
 const REL_COLOR  = { instantiates: '#A78BFA', fronts: '#F97D4B', redirects_to: '#38BDF8', uses: '#52525e' };
-const DEPTH_COLOR = { 1: '#5B8CFF', 2: '#A78BFA', 3: '#FB7185' };
+const DEPTH_COLOR = { 0: '#2DD4BF', 1: '#5B8CFF', 2: '#A78BFA', 3: '#FB7185' };
+const depthColor = d => DEPTH_COLOR[Math.min(d, 3)] || '#FB7185';
+const SVGNS = 'http://www.w3.org/2000/svg';
 
 const $ = id => document.getElementById(id);
 const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x !== undefined) e.textContent = x; return e; };
-const clear = n => { while (n.firstChild) n.removeChild(n.firstChild); };
+const clear = n => { while (n && n.firstChild) n.removeChild(n.firstChild); };
 const getJSON = p => fetch(p).then(r => r.json());
 const postJSON = (p, b) => fetch(p, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b || {}) }).then(r => r.json());
-const shortName = n => n.replace('acme-prod-', '').replace('acme-staging-', '').replace('acme-lza-', '');
+const shortName = n => (n || '').replace('acme-prod-', '').replace('acme-staging-', '').replace('acme-lza-', '');
+const cssEsc = s => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/"/g, '\\"');
 
-let _components = [], _edges = [], _allComponents = [], _activeEnv = 'all', _activeRepo = 'all', _lastLogId = -1;
+let _components = [], _edges = [], _allComponents = [], _activeEnv = 'all', _lastLogId = -1;
 
-// ── Graph engine (shared by Live + CTE + Teams) ──────────────────────────────
+// ── Live knowledge-graph engine (canvas, settling force layout) ───────────────
 class GraphSim {
   constructor(id) {
     this.canvas = $(id);
     this.raf = null; this.nodes = []; this.edges = []; this.opts = {};
-    this.scale = 1; this.ox = 0; this.oy = 0;
-    this.settleFrames = 0;
+    this.scale = 1; this.ox = 0; this.oy = 0; this.settleFrames = 0;
     this.drag = null; this.pan = null;
     if (this.canvas) this._wire();
   }
@@ -35,8 +42,6 @@ class GraphSim {
     this.nodes = nodes.map((c, i) => {
       const p = prev[c.name];
       if (p) return Object.assign(p, c);
-      // phyllotaxis (sunflower) spawn: golden-angle spread so no two nodes
-      // start on top of each other — eliminates label collisions on load.
       const a = i * 2.399963229728653;
       const rr = 34 + 120 * Math.sqrt((i + 0.5) / Math.max(1, nodes.length));
       return { ...c, x: cx + rr * Math.cos(a), y: cy + rr * Math.sin(a), vx: 0, vy: 0, fixed: false };
@@ -48,7 +53,6 @@ class GraphSim {
   }
   stop() { if (this.raf) cancelAnimationFrame(this.raf); this.raf = null; }
   _wake() { this.settleFrames = 0; if (!this.raf) this.raf = requestAnimationFrame(() => this._loop()); }
-
   _toWorld(e) {
     const rect = this.canvas.getBoundingClientRect();
     const cxp = (e.clientX - rect.left) * (this.canvas.width / rect.width);
@@ -112,77 +116,55 @@ class GraphSim {
     ctx.save();
     ctx.translate(this.ox, this.oy); ctx.scale(this.scale, this.scale);
     const byName = Object.fromEntries(this.nodes.map(n => [n.name, n]));
-    const { highlight, depthMap, dim } = this.opts;
     this.edges.forEach(e => {
       const a = byName[e.from_name], b = byName[e.to_name]; if (!a || !b) return;
-      const inHL = highlight && highlight.has(e.from_name) && highlight.has(e.to_name);
-      let col = REL_COLOR[e.relationship] || '#545b72';
-      if (depthMap && inHL) { const d = Math.min(depthMap[e.from_name] || depthMap[e.to_name] || 1, 3); col = DEPTH_COLOR[d] || col; }
+      const col = REL_COLOR[e.relationship] || '#545b72';
       const ang = Math.atan2(b.y - a.y, b.x - a.x);
       ctx.save();
-      ctx.strokeStyle = col; ctx.lineWidth = inHL ? 2.2 : 1.1;
-      ctx.globalAlpha = dim ? (inHL ? 0.85 : 0.08) : 0.5; ctx.setLineDash(inHL ? [] : [4, 4]);
+      ctx.strokeStyle = col; ctx.lineWidth = 1.1; ctx.globalAlpha = 0.5; ctx.setLineDash([4, 4]);
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
       const tip = { x: b.x - 15 * Math.cos(ang), y: b.y - 15 * Math.sin(ang) };
-      ctx.setLineDash([]); ctx.globalAlpha = dim ? (inHL ? 0.9 : 0.1) : 0.65; ctx.fillStyle = col;
+      ctx.setLineDash([]); ctx.globalAlpha = 0.65; ctx.fillStyle = col;
       ctx.beginPath(); ctx.moveTo(tip.x, tip.y);
       ctx.lineTo(tip.x - 8 * Math.cos(ang - 0.4), tip.y - 8 * Math.sin(ang - 0.4));
       ctx.lineTo(tip.x - 8 * Math.cos(ang + 0.4), tip.y - 8 * Math.sin(ang + 0.4));
       ctx.closePath(); ctx.fill();
-      if (!dim || inHL) { ctx.globalAlpha = dim ? 0.7 : 0.45; ctx.fillStyle = col; ctx.font = '9px sans-serif'; ctx.textAlign = 'left'; ctx.fillText(e.relationship, (a.x + b.x) / 2 + 4, (a.y + b.y) / 2 - 3); }
       ctx.restore();
     });
     this.nodes.forEach(n => {
-      const isHL = !highlight || highlight.has(n.name);
       const r = n.environment === 'library' ? 18 : 13;
       const fill = TYPE_COLOR[n.component_type] || '#888';
-      let ring = ENV_RING[n.environment] || '#888';
-      if (depthMap && depthMap[n.name]) ring = DEPTH_COLOR[Math.min(depthMap[n.name], 3)] || ring;
-      const a0 = dim ? (isHL ? 1 : 0.18) : 1;
+      const ring = ENV_RING[n.environment] || '#888';
       const isLza = n.repo === 'lza';
       ctx.save();
-      // outer ring — dashed for lza to distinguish repos visually
-      ctx.globalAlpha = a0 * 0.55;
-      ctx.beginPath(); ctx.arc(n.x, n.y, r + 4, 0, 7);
-      ctx.strokeStyle = ring; ctx.lineWidth = depthMap && depthMap[n.name] ? 3 : 2;
-      ctx.setLineDash(isLza ? [4, 3] : []);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = a0 * 0.2; ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 7); ctx.fillStyle = fill; ctx.fill();
-      ctx.globalAlpha = a0 * 0.9; ctx.strokeStyle = fill; ctx.lineWidth = 1.5; ctx.stroke();
-      ctx.globalAlpha = a0; ctx.fillStyle = fill; ctx.font = `bold ${r === 18 ? 10 : 9}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      const typeLabel = n.component_type === 'Cloudflare' ? 'CF' : n.component_type === 'Library' ? 'L' : (n.component_type || '?')[0];
-      ctx.fillText(typeLabel, n.x, n.y);
-      ctx.globalAlpha = a0 * 0.9; ctx.fillStyle = '#e8eaf0'; ctx.font = `${r === 18 ? 10 : 9}px sans-serif`;
+      ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.arc(n.x, n.y, r + 4, 0, 7);
+      ctx.strokeStyle = ring; ctx.lineWidth = 2; ctx.setLineDash(isLza ? [4, 3] : []); ctx.stroke(); ctx.setLineDash([]);
+      ctx.globalAlpha = 0.2; ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 7); ctx.fillStyle = fill; ctx.fill();
+      ctx.globalAlpha = 0.9; ctx.strokeStyle = fill; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.globalAlpha = 1; ctx.fillStyle = fill; ctx.font = `bold ${r === 18 ? 10 : 9}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText((TYPE_GLYPH[n.component_type] || (n.component_type || '?')[0]).slice(0, 2), n.x, n.y);
+      ctx.globalAlpha = 0.9; ctx.fillStyle = '#e8eaf0'; ctx.font = `${r === 18 ? 10 : 9}px sans-serif`;
       ctx.fillText(shortName(n.name), n.x, n.y + r + 10);
-      // repo dot below name for multi-repo graphs
-      if (this.opts.showRepo) {
-        ctx.globalAlpha = a0 * 0.7; ctx.fillStyle = REPO_COLOR[n.repo] || '#888';
-        ctx.beginPath(); ctx.arc(n.x, n.y + r + 20, 3, 0, 7); ctx.fill();
-      }
       ctx.restore();
     });
     ctx.restore();
   }
 }
 
-const liveGraph  = new GraphSim('live-canvas');
-const cteGraph   = new GraphSim('cte-canvas');
-const teamsGraph = new GraphSim('teams-canvas');
+const liveGraph = new GraphSim('live-canvas');
 
-// ── Tabs ─────────────────────────────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+const TABS = ['live', 'cte', 'search', 'sysprompt'];
 function showTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === name));
-  if (name === 'live')   liveGraph.set(filteredLive(), _edges, {});
-  if (name === 'teams')  renderTeamsGraph();
-  if (name === 'cte')    initCte();
+  if (name === 'live') liveGraph.set(filteredLive(), _edges, {});
+  if (name === 'cte') initDeps();
   if (name === 'search') initSearch();
-  if (name === 'scenarios') loadScenarios();
 }
-document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { showTab(t.dataset.tab); location.hash = t.dataset.tab; }));
 
-// ── Live: activity feed ──────────────────────────────────────────────────────
+// ── Live: activity feed ───────────────────────────────────────────────────────
 function renderFeed(entries) {
   const c = $('live-feed'); clear(c);
   if (!entries.length) { c.appendChild(el('div', 'feed-empty', 'No activity yet. Launch a CLI and ask it to query the knowledge base.')); return; }
@@ -200,7 +182,7 @@ function renderFeed(entries) {
   });
 }
 
-// ── Live: parity strip ───────────────────────────────────────────────────────
+// ── Live: parity strip ────────────────────────────────────────────────────────
 function renderParity(components, missing) {
   const strip = $('parity'); clear(strip);
   const prod = components.filter(c => c.environment === 'production');
@@ -208,8 +190,7 @@ function renderParity(components, missing) {
   $('parity-stat').textContent = missing.length ? `${missing.length} missing in staging` : 'at parity ✓';
   prod.forEach(p => {
     const logical = p.name.replace('acme-prod-', '');
-    const stagingName = 'acme-staging-' + logical;
-    const present = !missingNames.has(stagingName);
+    const present = !missingNames.has('acme-staging-' + logical);
     const row = el('div', 'parity-row');
     row.appendChild(el('span', `parity-mark ${present ? 'ok' : 'gap'}`, present ? '✓' : '✗'));
     row.appendChild(el('span', 'parity-name', logical));
@@ -219,7 +200,7 @@ function renderParity(components, missing) {
   });
 }
 
-// ── Env filter (live graph) ───────────────────────────────────────────────────
+// ── Live: env filter ──────────────────────────────────────────────────────────
 function filteredLive() {
   return _activeEnv === 'all' ? _allComponents : _allComponents.filter(c => c.environment === _activeEnv);
 }
@@ -228,58 +209,20 @@ document.querySelectorAll('.env-btn').forEach(b => b.addEventListener('click', (
   b.classList.add('active'); _activeEnv = b.dataset.env; liveGraph.set(filteredLive(), _edges, {});
 }));
 
-// ── Teams tab: repo filter + graph ────────────────────────────────────────────
-let _teamsActiveRepo = 'all';
-
-function filteredTeams() {
-  if (_teamsActiveRepo === 'all') return _allComponents;
-  return _allComponents.filter(c => c.repo === _teamsActiveRepo);
-}
-
-function renderTeamsGraph() {
-  teamsGraph.set(filteredTeams(), _edges, { showRepo: true });
-}
-
-document.querySelectorAll('.repo-btn').forEach(b => b.addEventListener('click', () => {
-  document.querySelectorAll('.repo-btn').forEach(x => x.classList.remove('active'));
-  b.classList.add('active'); _teamsActiveRepo = b.dataset.repo; renderTeamsGraph();
-}));
-
-async function loadTeamsTab() {
-  try {
-    const data = await getJSON('/api/repos');
-    if (data.repos) {
-      data.repos.forEach(r => {
-        const el2 = $(`repo-count-${r.repo}`);
-        if (el2) el2.textContent = r.component_count;
-      });
-    }
-    const hdr = $('header-team-repos');
-    if (hdr && data.team && data.repos) {
-      const names = data.repos.map(r => r.repo).join(' + ');
-      hdr.textContent = `${data.team} · ${names}`;
-    }
-  } catch (e) { /* non-critical */ }
-}
-
-// ── Load + poll ──────────────────────────────────────────────────────────────
+// ── Load + poll (live) ────────────────────────────────────────────────────────
 async function loadAll() {
   const [allComps, pulComps, edges, log, missing] = await Promise.all([
-    getJSON('/api/all-components'),
-    getJSON('/api/components'),
-    getJSON('/api/edges'),
-    getJSON('/api/session-log'),
-    getJSON('/api/missing'),
+    getJSON('/api/all-components'), getJSON('/api/components'), getJSON('/api/edges'),
+    getJSON('/api/session-log'), getJSON('/api/missing'),
   ]);
-  _allComponents = allComps;
-  _components = pulComps;  // pulumi-only, used for parity + CTE
-  _edges = edges;
+  _allComponents = allComps; _components = pulComps; _edges = edges;
   liveGraph.set(filteredLive(), edges, {});
   renderFeed(log); renderParity(pulComps, missing);
   _lastLogId = log.length ? log[0].id : -1;
 }
 
 async function poll() {
+  if (!document.querySelector('.view[data-view="live"]').classList.contains('active')) return;
   const [log, allComps, pulComps, missing] = await Promise.all([
     getJSON('/api/session-log'), getJSON('/api/all-components'), getJSON('/api/components'), getJSON('/api/missing'),
   ]);
@@ -287,55 +230,260 @@ async function poll() {
   const grew = allComps.length !== _allComponents.length;
   if (newest !== _lastLogId) renderFeed(log);
   if (grew || newest !== _lastLogId) {
-    _allComponents = allComps; _components = pulComps;
-    _edges = await getJSON('/api/edges');
+    _allComponents = allComps; _components = pulComps; _edges = await getJSON('/api/edges');
     if (grew && $('live-canvas').offsetParent !== null) liveGraph.set(filteredLive(), _edges, {});
-    if (grew && $('teams-canvas').offsetParent !== null) renderTeamsGraph();
     renderParity(pulComps, missing);
     _lastLogId = newest;
   }
 }
 
-// ── CTE ──────────────────────────────────────────────────────────────────────
-let _cteMode = 'blast-radius', _cteInit = false;
-function initCte() {
-  const sel = $('cte-node'); const cur = sel.value;
-  clear(sel); _allComponents.forEach(c => sel.appendChild(el('option', null, c.name)));
-  sel.value = cur || 'S3Bucket';
-  if (!_cteInit) { _cteInit = true; runCte(); }
-}
-document.querySelectorAll('.cte-btn').forEach(b => b.addEventListener('click', () => {
-  document.querySelectorAll('.cte-btn').forEach(x => x.classList.remove('active'));
-  b.classList.add('active'); _cteMode = b.dataset.mode; runCte();
-}));
-$('cte-run').addEventListener('click', runCte);
-$('cte-node').addEventListener('change', runCte);
+// ── DEPENDENCIES: the Dependency Rail ─────────────────────────────────────────
+let _depMode = 'blast-radius', _depRoot = 'KmsKey', _depInit = false, _depData = null;
+const SOURCE_W = 200;
 
-async function runCte() {
-  const name = $('cte-node').value || 'S3Bucket';
-  const data = await getJSON(`/api/cte/${_cteMode}?name=${encodeURIComponent(name)}`);
-  $('cte-sql').textContent = data.note || '';
-  $('cte-rowcount').textContent = data.rows.length + ' rows';
-  $('cte-summary').textContent = `${name} · ${data.nodes.length} nodes`;
-  const depthMap = {}; depthMap[name] = 0;
-  data.rows.forEach(r => { const far = _cteMode === 'blast-radius' ? r.from_name : r.to_name; depthMap[far] = Math.min(depthMap[far] ?? 99, r.depth); });
-  cteGraph.set(_allComponents, _edges, { highlight: new Set(data.nodes), depthMap, dim: true });
-  const rows = $('cte-rows'); clear(rows);
-  if (!data.rows.length) { rows.appendChild(el('div', 'feed-empty', 'No dependencies at this node.')); return; }
-  data.rows.forEach(r => {
-    const row = el('div', 'cte-row');
-    row.appendChild(el('span', `depth-pill depth-${Math.min(r.depth, 3)}`, 'd' + r.depth));
-    const edge = el('span', 'cte-edge');
-    edge.appendChild(el('span', null, shortName(r.from_name) + ' '));
-    edge.appendChild(el('span', 'cte-rel', '--' + r.relationship + '--> '));
-    edge.appendChild(el('span', null, shortName(r.to_name)));
-    row.appendChild(edge); rows.appendChild(row);
+function initDeps() {
+  if (!_depInit) {
+    _depInit = true;
+    const sel = $('cte-node');
+    const names = [..._allComponents].map(c => c.name).sort();
+    clear(sel);
+    names.forEach(n => sel.appendChild(el('option', null, n)));
+    sel.value = names.includes(_depRoot) ? _depRoot : names[0];
+    _depRoot = sel.value;
+    sel.addEventListener('change', () => { _depRoot = sel.value; runRail(); });
+    const modeBtns = document.querySelectorAll('.dep-controls .seg [data-mode]');
+    modeBtns.forEach(b => b.addEventListener('click', () => {
+      modeBtns.forEach(x => x.classList.remove('active'));
+      b.classList.add('active'); _depMode = b.dataset.mode; runRail();
+    }));
+    document.querySelectorAll('.ex-btn').forEach(b => b.addEventListener('click', () => {
+      _depRoot = b.dataset.node; _depMode = b.dataset.mode;
+      $('cte-node').value = _depRoot;
+      modeBtns.forEach(x => x.classList.toggle('active', x.dataset.mode === _depMode));
+      runRail();
+    }));
+    window.addEventListener('resize', () => { if (_depData) drawConnectors(); });
+  }
+  runRail();
+}
+
+async function runRail() {
+  const data = await getJSON(`/api/cte/${_depMode}?name=${encodeURIComponent(_depRoot)}`);
+  _depData = data;
+  renderRail(data);
+}
+
+function renderRail(data) {
+  const rail = $('rail'); clear(rail);
+  const meta = {}; (data.nodes_meta || []).forEach(n => meta[n.name] = n);
+  const depthOf = {}; (data.nodes_meta || []).forEach(n => depthOf[n.name] = n.depth);
+  const maxDepth = data.max_depth || 0;
+
+  const dir = _depMode === 'blast-radius' ? 'upstream' : 'downstream';
+  const stat = $('dep-stat'); clear(stat);
+  stat.appendChild(el('b', null, String(data.count)));
+  stat.appendChild(document.createTextNode(` component${data.count === 1 ? '' : 's'} · `));
+  stat.appendChild(el('b', null, String(maxDepth)));
+  stat.appendChild(document.createTextNode(` hop${maxDepth === 1 ? '' : 's'} · ${dir}`));
+  $('cte-note').textContent = data.note || '';
+
+  // adjacency: parent (shallower) -> child (deeper); keep real arc direction
+  const parentOf = {}, relOf = {};
+  (data.rows || []).forEach(r => {
+    const a = r.from_name, b = r.to_name;
+    if (depthOf[a] == null || depthOf[b] == null) return;
+    let parent, child;
+    if (depthOf[b] > depthOf[a]) { parent = a; child = b; }
+    else if (depthOf[a] > depthOf[b]) { parent = b; child = a; }
+    else return;
+    (parentOf[child] = parentOf[child] || []).push(parent);
+    relOf[parent + '' + child] = { rel: r.relationship, from: a, to: b };
+  });
+
+  const lanes = []; for (let d = 0; d <= maxDepth; d++) lanes[d] = [];
+  (data.nodes_meta || []).forEach(n => { if (lanes[n.depth]) lanes[n.depth].push(n.name); });
+  for (let d = 1; d <= maxDepth; d++) {
+    lanes[d].sort((x, y) => {
+      const px = (parentOf[x] && parentOf[x][0]) || '', py = (parentOf[y] && parentOf[y][0]) || '';
+      const ix = lanes[d - 1].indexOf(px), iy = lanes[d - 1].indexOf(py);
+      if (ix !== iy) return ix - iy;
+      return x.localeCompare(y);
+    });
+  }
+
+  rail.style.gridTemplateColumns = `${SOURCE_W}px repeat(${maxDepth}, minmax(168px, 220px))`;
+
+  const spineNodes = new Set((data.paths && data.paths[0]) || []);
+  const spineEdges = new Set();
+  const sp = (data.paths && data.paths[0]) || [];
+  for (let i = 0; i < sp.length - 1; i++) spineEdges.add(edgeKey(sp[i], sp[i + 1], depthOf));
+
+  function card(name, isRoot) {
+    const m = meta[name] || {};
+    const d = depthOf[name] || 0;
+    const c = el('div', 'dep-card' + (isRoot ? ' is-root' : '') + (m.repo === 'lza' ? ' is-lza' : ''));
+    c.dataset.name = name;
+    c.style.setProperty('--depth-color', depthColor(d));
+    if (!spineNodes.has(name) && !isRoot) c.classList.add('off-spine');
+    const top = el('div', 'dc-top');
+    top.appendChild(el('span', 'dc-depth', isRoot ? (_depMode === 'blast-radius' ? 'root' : 'src') : 'd' + d));
+    const tok = el('span', 'dc-type');
+    const dot = el('span', 'dc-dot'); dot.style.background = TYPE_COLOR[m.type] || '#888'; tok.appendChild(dot);
+    tok.appendChild(el('span', 'dc-tok', TYPE_GLYPH[m.type] || (m.type || '?').slice(0, 2)));
+    top.appendChild(tok);
+    c.appendChild(top);
+    c.appendChild(el('div', 'dc-name', shortName(name)));
+    c.appendChild(el('div', 'dc-env', `${m.env || ''}${m.repo ? ' · ' + m.repo : ''}`));
+    c.addEventListener('mouseenter', () => highlightPath(name, parentOf));
+    c.addEventListener('mouseleave', restoreSpine);
+    c.addEventListener('click', () => { _depRoot = name; $('cte-node').value = name; runRail(); });
+    return c;
+  }
+
+  const srcRail = el('div', 'source-rail');
+  srcRail.appendChild(card(data.root, true));
+  if ((data.count || 0) === 0) srcRail.appendChild(el('div', 'rail-empty', _depMode === 'blast-radius' ? 'Nothing depends on this — safe to change.' : 'No dependencies — this is a leaf.'));
+  rail.appendChild(srcRail);
+
+  for (let d = 1; d <= maxDepth; d++) {
+    const lane = el('div', 'lane');
+    const head = el('div', 'lane-head');
+    head.style.color = depthColor(d);
+    head.appendChild(el('span', 'lh-hop', 'hop ' + d));
+    head.appendChild(el('span', 'lh-count', String(lanes[d].length)));
+    lane.appendChild(head);
+    const stack = el('div', 'lane-stack');
+    lanes[d].forEach(n => stack.appendChild(card(n, false)));
+    lane.appendChild(stack);
+    rail.appendChild(lane);
+  }
+
+  rail._graph = { parentOf, relOf, depthOf, spineEdges };
+  requestAnimationFrame(() => drawConnectors());
+  renderTrace(data, relOf, depthOf);
+}
+
+function edgeKey(a, b, depthOf) {
+  if ((depthOf[a] || 0) <= (depthOf[b] || 0)) return a + '' + b;
+  return b + '' + a;
+}
+
+function drawConnectors() {
+  const rail = $('rail'); if (!rail || !rail._graph) return;
+  const { parentOf, relOf, depthOf, spineEdges } = rail._graph;
+  const old = rail.querySelector('svg.rail-edges'); if (old) old.remove();
+  const railRect = rail.getBoundingClientRect();
+  const W = rail.scrollWidth, H = rail.scrollHeight;
+  const svg = document.createElementNS(SVGNS, 'svg');
+  svg.setAttribute('class', 'rail-edges');
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const defs = document.createElementNS(SVGNS, 'defs');
+  const marker = document.createElementNS(SVGNS, 'marker');
+  marker.setAttribute('id', 'rail-arrow');
+  marker.setAttribute('markerWidth', '8'); marker.setAttribute('markerHeight', '8');
+  marker.setAttribute('refX', '6.5'); marker.setAttribute('refY', '3'); marker.setAttribute('orient', 'auto');
+  const mp = document.createElementNS(SVGNS, 'path');
+  mp.setAttribute('d', 'M0,0 L6.5,3 L0,6 Z'); mp.setAttribute('fill', 'context-stroke');
+  marker.appendChild(mp); defs.appendChild(marker); svg.appendChild(defs);
+
+  const box = name => {
+    const e = rail.querySelector(`.dep-card[data-name="${cssEsc(name)}"]`);
+    if (!e) return null;
+    const r = e.getBoundingClientRect();
+    return {
+      left: r.left - railRect.left + rail.scrollLeft,
+      right: r.right - railRect.left + rail.scrollLeft,
+      midY: r.top - railRect.top + rail.scrollTop + r.height / 2,
+    };
+  };
+
+  Object.keys(parentOf).forEach(child => {
+    parentOf[child].forEach(parent => {
+      const p = box(parent), c = box(child); if (!p || !c) return;
+      const info = relOf[parent + '' + child] || {};
+      const childDepth = depthOf[child] || 1;
+      const col = depthColor(childDepth);
+      const isSpine = spineEdges.has(parent + '' + child);
+      const path = document.createElementNS(SVGNS, 'path');
+      let d;
+      if (info.from === parent) {
+        d = `M ${p.right} ${p.midY} C ${p.right + 56} ${p.midY}, ${c.left - 56} ${c.midY}, ${c.left} ${c.midY}`;
+      } else {
+        d = `M ${c.left} ${c.midY} C ${c.left - 56} ${c.midY}, ${p.right + 56} ${p.midY}, ${p.right} ${p.midY}`;
+      }
+      path.setAttribute('d', d);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', col);
+      path.setAttribute('stroke-width', isSpine ? 2 : 1.2);
+      path.setAttribute('marker-end', 'url(#rail-arrow)');
+      path.setAttribute('class', 'rail-edge' + (isSpine ? ' is-spine' : ' off-spine'));
+      path.dataset.edge = parent + '' + child;
+      if (childDepth >= 4) path.setAttribute('stroke-dasharray', '5 4');
+      svg.appendChild(path);
+      const t = document.createElementNS(SVGNS, 'text');
+      t.setAttribute('x', (p.right + c.left) / 2);
+      t.setAttribute('y', (p.midY + c.midY) / 2 - 4);
+      t.setAttribute('class', 'rail-verb' + (isSpine ? ' is-spine' : ' off-spine'));
+      t.setAttribute('fill', col);
+      t.textContent = info.rel || '';
+      t.dataset.edge = parent + '' + child;
+      svg.appendChild(t);
+    });
+  });
+  rail.insertBefore(svg, rail.firstChild);
+}
+
+function highlightPath(name, parentOf) {
+  const rail = $('rail');
+  const nodes = new Set([name]); const edges = new Set();
+  let frontier = [name], guard = 0;
+  while (frontier.length && guard++ < 80) {
+    const next = [];
+    frontier.forEach(n => (parentOf[n] || []).forEach(p => {
+      edges.add(p + '' + n);
+      if (!nodes.has(p)) { nodes.add(p); next.push(p); }
+    }));
+    frontier = next;
+  }
+  rail.querySelectorAll('.dep-card').forEach(c => {
+    const on = nodes.has(c.dataset.name);
+    c.classList.toggle('hl', on); c.classList.toggle('dim', !on);
+  });
+  rail.querySelectorAll('.rail-edge, .rail-verb').forEach(p => {
+    const on = edges.has(p.dataset.edge);
+    p.classList.toggle('hl', on); p.classList.toggle('dim', !on);
   });
 }
 
-// ── Vector / full-text / hybrid search ───────────────────────────────────────
-let _searchMode = 'hybrid', _searchInit = false;
+function restoreSpine() {
+  const rail = $('rail');
+  rail.querySelectorAll('.dep-card, .rail-edge, .rail-verb').forEach(e => e.classList.remove('hl', 'dim'));
+}
 
+function renderTrace(data, relOf, depthOf) {
+  const box = $('trace-chains'); clear(box);
+  const paths = (data.paths || []).slice(0, 3);
+  if (!paths.length) { box.appendChild(el('div', 'feed-empty', 'No chains.')); return; }
+  paths.forEach((p, idx) => {
+    const row = el('div', 'trace-sentence' + (idx === 0 ? ' is-spine' : ''));
+    row.appendChild(el('span', 'trace-hops', (p.length - 1) + 'h'));
+    p.forEach((n, i) => {
+      const pill = el('span', 'trace-pill', shortName(n));
+      pill.addEventListener('click', () => { _depRoot = n; $('cte-node').value = n; runRail(); });
+      row.appendChild(pill);
+      if (i < p.length - 1) {
+        const info = relOf[edgeKey(p[i], p[i + 1], depthOf)] || {};
+        row.appendChild(el('span', 'trace-verb', '→ ' + (info.rel || 'uses') + ' →'));
+      }
+    });
+    box.appendChild(row);
+  });
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+let _searchMode = 'hybrid', _searchInit = false;
 function initSearch() {
   if (_searchInit) return;
   _searchInit = true;
@@ -348,25 +496,20 @@ function initSearch() {
   }));
   $('search-run').addEventListener('click', runSearch);
   $('search-input').addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
-  $('search-input').value = 'admin portal access control login';
+  $('search-input').value = 'what encrypts production data';
   runSearch();
 }
 
 async function runSearch() {
   const q = ($('search-input').value || '').trim();
   if (!q) return;
-  $('search-stat').textContent = 'searching...';
+  $('search-stat').textContent = 'searching…';
   const data = await getJSON(`/api/search?mode=${_searchMode}&q=${encodeURIComponent(q)}`);
   $('search-sql').textContent = data.note || '';
   const box = $('search-results'); clear(box);
-  if (!data.available) {
-    box.appendChild(el('div', 'feed-empty', data.note || 'Search unavailable.'));
-    $('search-stat').textContent = 'unavailable';
-    return;
-  }
+  if (!data.available) { box.appendChild(el('div', 'feed-empty', data.note || 'Search unavailable.')); $('search-stat').textContent = 'unavailable'; return; }
   $('search-stat').textContent = `${data.results.length} results · ${data.mode}`;
   if (!data.results.length) { box.appendChild(el('div', 'feed-empty', 'No matches.')); return; }
-  const mode = data.mode;
   data.results.forEach((r, i) => {
     const card = el('div', 'search-row');
     const head = el('div', 'search-row-head');
@@ -384,51 +527,22 @@ async function runSearch() {
   });
 }
 
-// ── Scenarios ─────────────────────────────────────────────────────────────────
-async function loadScenarios() {
-  const data = await getJSON('/api/scenarios');
-  const list = $('scenario-list'); clear(list);
-  data.forEach(s => {
-    const card = el('div', 'scenario' + (s.headline ? ' headline' : ''));
-    const head = el('div', 'sc-head');
-    head.appendChild(el('span', 'sc-title', s.title));
-    head.appendChild(el('span', `tool-pill tool-${s.tool}`, s.tool));
-    if (s.headline) head.appendChild(el('span', 'sc-tag', 'HEADLINE'));
-    head.appendChild(el('div', 'sc-task', 'Task: ' + s.task));
-    card.appendChild(head);
-    const body = el('div', 'sc-body');
-    const w = el('div', 'sc-col sc-without'); w.appendChild(el('h4', null, 'Without the graph'));
-    const ulW = el('ul'); s.without.forEach(x => ulW.appendChild(el('li', null, x))); w.appendChild(ulW);
-    const y = el('div', 'sc-col sc-with'); y.appendChild(el('h4', null, 'With mem9 knowledge graph'));
-    const ulY = el('ul'); s.with.forEach(x => ulY.appendChild(el('li', null, x))); y.appendChild(ulY);
-    body.appendChild(w); body.appendChild(y); card.appendChild(body);
-    const q = el('div', 'sc-query');
-    q.appendChild(el('div', 'sc-query-label', 'The query that answers it'));
-    const pre = el('pre'); pre.appendChild(el('code', null, s.query)); q.appendChild(pre);
-    q.appendChild(el('div', 'sc-result', '→ ' + s.result)); card.appendChild(q);
-    const why = el('div', 'sc-why'); why.appendChild(el('b', null, 'Why mem9: ')); why.appendChild(el('span', null, s.why_tidb)); card.appendChild(why);
-    list.appendChild(card);
-  });
-}
-
-// ── Reset ─────────────────────────────────────────────────────────────────────
+// ── Reset ──────────────────────────────────────────────────────────────────────
 $('reset-btn').addEventListener('click', async () => {
-  if (!confirm('Reset the demo? This deletes everything the agents wrote and restores the clean baseline (4 staging components missing again).')) return;
+  if (!confirm('Reset the demo? This restores the clean baseline (staging gap reopens).')) return;
   $('reset-btn').textContent = 'Resetting…';
   await postJSON('/api/reset');
   await loadAll();
   if (document.querySelector('.view[data-view="live"]').classList.contains('active')) liveGraph.set(filteredLive(), _edges, {});
-  $('reset-btn').textContent = 'Reset KB';
+  $('reset-btn').textContent = 'Reset';
 });
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
+// ── Boot ─────────────────────────────────────────────────────────────────────
 function applyHash() {
   const h = (location.hash || '').replace('#', '');
-  if (['scenario', 'teams', 'architecture', 'sysprompt', 'live', 'cte', 'search', 'scenarios'].includes(h)) showTab(h);
+  if (TABS.includes(h)) showTab(h);
 }
 window.addEventListener('hashchange', applyHash);
 getJSON('/api/backend').then(() => { $('backend-name').textContent = 'TiDB Cloud'; }).catch(() => {});
-loadTeamsTab();
-applyHash();
 loadAll().then(applyHash);
 setInterval(poll, 2000);

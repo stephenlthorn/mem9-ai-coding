@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -17,6 +18,8 @@ from pathlib import Path
 from src import topology
 
 _TIMEOUT = 30
+_RETRY_STATUS = {429, 500, 502, 503, 504}
+_MAX_RETRIES = 4
 
 
 # ── HTTP primitives ───────────────────────────────────────────────────────────
@@ -28,13 +31,28 @@ def _request(method: str, path: str, body: dict | None = None, api_key: str | No
     headers: dict[str, str] = {"X-API-Key": key}
     if data:
         headers["Content-Type"] = "application/json"
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:
-            raw = r.read()
-            return json.loads(raw) if raw else {}
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"mem9 API {method} {path} -> {e.code}: {e.read().decode()[:200]}")
+
+    last_err: Exception | None = None
+    for attempt in range(_MAX_RETRIES):
+        req = urllib.request.Request(url, data=data, headers=headers, method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:
+                raw = r.read()
+                return json.loads(raw) if raw else {}
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode()[:200]
+            if e.code in _RETRY_STATUS and attempt < _MAX_RETRIES - 1:
+                time.sleep(0.6 * (2 ** attempt))  # 0.6s, 1.2s, 2.4s backoff
+                last_err = RuntimeError(f"mem9 API {method} {path} -> {e.code}: {detail}")
+                continue
+            raise RuntimeError(f"mem9 API {method} {path} -> {e.code}: {detail}")
+        except urllib.error.URLError as e:
+            if attempt < _MAX_RETRIES - 1:
+                time.sleep(0.6 * (2 ** attempt))
+                last_err = RuntimeError(f"mem9 API {method} {path} -> {e}")
+                continue
+            raise RuntimeError(f"mem9 API {method} {path} -> {e}")
+    raise last_err or RuntimeError(f"mem9 API {method} {path} failed")
 
 
 def _get(path: str, api_key: str | None = None) -> dict:
@@ -81,18 +99,30 @@ def reset_db(team_name: str | None = None, repos: list[str] | None = None) -> No
 
 
 def _clear_namespace(app_id: str, api_key: str | None = None) -> int:
-    """Delete every memory in a namespace. Returns count deleted."""
+    """Delete every memory in a namespace until a fetch returns none.
+
+    The mem9 list endpoint caps page size and ranks results, so we must loop
+    until the namespace is genuinely empty rather than stopping on the first
+    short page. Already-deleted ids (404) are tolerated so concurrent or
+    eventually-consistent deletes don't abort the purge.
+    """
     deleted = 0
-    limit = 50
-    while True:
-        data = _get(f"/v1alpha2/mem9s/memories?appId={app_id}&limit={limit}", api_key=api_key)
+    for _ in range(500):  # generous guard against runaway loops
+        data = _get(f"/v1alpha2/mem9s/memories?appId={app_id}&limit=100", api_key=api_key)
         memories = data.get("memories", [])
         if not memories:
             break
+        progressed = False
         for m in memories:
-            _delete(f"/v1alpha2/mem9s/memories/{m['id']}", api_key=api_key)
-            deleted += 1
-        if len(memories) < limit:
+            try:
+                _delete(f"/v1alpha2/mem9s/memories/{m['id']}", api_key=api_key)
+                deleted += 1
+                progressed = True
+            except RuntimeError as exc:
+                if "404" in str(exc):
+                    continue  # already gone
+                raise
+        if not progressed:
             break
     return deleted
 
@@ -240,49 +270,169 @@ def query(q: str, team_name: str | None = None, repos: list[str] | None = None) 
     return search_cross_repo(repos, q, k=20, team_name=team_name)
 
 
-# ── Dependency traversal (metadata-based, not SQL CTE) ────────────────────────
+# ── Dependency traversal (real multi-hop / transitive, recursive-CTE style) ───
+#
+# The KB is a directed dependency graph: every "X depends_on Y" plus every
+# explicit edge (from -> to) is an arc. Transitive reachability over that graph
+# is exactly what a recursive CTE computes in SQL; we do the BFS/DFS in process.
+# Both directions are supported:
+#   · dependencies(X)  = forward reachability  (everything X needs, downstream)
+#   · blast_radius(X)   = reverse reachability  (everything that breaks if X
+#                         changes, upstream)
+#
+# Graph SOURCE: the manifest is the authoritative, complete structure (it is
+# exactly what was ingested into mem9). mem9's recall is a ranked/semantic store
+# whose list reads are lossy for a complete edge set, so we build the backbone
+# from the manifest and OVERLAY any live, agent-added components from mem9 (which
+# reliably surface by name) on top. Net: a complete graph that still reflects
+# live writes during the demo.
+
+_GRAPH_CACHE: dict[str, tuple[float, dict]] = {}
+_GRAPH_TTL = 2.0  # seconds; the dashboard polls ~every 2s, so coalesce overlay reads
+
+
+def _load_graph(repo: str, team_name: str | None = None) -> dict:
+    """Build the directed dependency graph: manifest backbone + live mem9 overlay."""
+    import importlib
+    from src.repos import load_manifest
+
+    app = database_for(repo, team_name)
+    cached = _GRAPH_CACHE.get(app)
+    if cached and (time.time() - cached[0]) < _GRAPH_TTL:
+        return cached[1]
+    meta_by_name: dict[str, dict] = {}
+    fwd: dict[str, list[tuple[str, str]]] = {}
+    rev: dict[str, list[tuple[str, str]]] = {}
+
+    def add_arc(a: str, b: str, rel: str) -> None:
+        if not a or not b or a == b:
+            return
+        fwd.setdefault(a, [])
+        rev.setdefault(b, [])
+        if (b, rel) not in fwd[a]:
+            fwd[a].append((b, rel))
+        if (a, rel) not in rev[b]:
+            rev[b].append((a, rel))
+
+    def remember(name: str, meta: dict) -> None:
+        if name and name not in meta_by_name:
+            meta_by_name[name] = {
+                "type": meta.get("type", ""), "env": meta.get("env", ""),
+                "repo": meta.get("repo", repo), "summary": meta.get("summary", ""),
+            }
+
+    # 1) Manifest backbone — complete and deterministic.
+    try:
+        for c in load_manifest(repo):
+            remember(c["name"], c)
+            if c.get("depends_on"):
+                add_arc(c["name"], c["depends_on"], c.get("relationship", "uses"))
+        mod = importlib.import_module(topology.REPOS[repo]["manifest"])
+        for edge in getattr(mod, "EDGES", []):
+            add_arc(edge[0], edge[1], edge[2] if len(edge) > 2 else "uses")
+    except Exception:
+        pass
+
+    # 2) Live overlay — agent-added components written to mem9 during the demo.
+    try:
+        for m in recall(app, limit=200):
+            meta = m.get("metadata", {})
+            if meta.get("edge"):
+                add_arc(meta.get("from", ""), meta.get("to", ""), meta.get("relationship", "uses"))
+                continue
+            name = meta.get("name")
+            if not name:
+                continue
+            remember(name, {**meta, "summary": m.get("content", "")})
+            if meta.get("depends_on"):
+                add_arc(name, meta["depends_on"], meta.get("relationship", "uses"))
+    except Exception:
+        pass
+
+    result = {"app": app, "meta": meta_by_name, "fwd": fwd, "rev": rev}
+    _GRAPH_CACHE[app] = (time.time(), result)
+    return result
+
+
+def _traverse(repo: str, name: str, mode: str, team_name: str | None = None,
+              max_depth: int = 8, max_nodes: int = 200) -> dict:
+    g = _load_graph(repo, team_name)
+    adj = g["fwd"] if mode == "dependencies" else g["rev"]
+    meta = g["meta"]
+
+    # ── BFS for depth + the set of traversed arcs ──
+    depth: dict[str, int] = {name: 0}
+    rows: list[dict] = []
+    queue: list[str] = [name]
+    seen_arc: set[tuple[str, str]] = set()
+    while queue and len(depth) < max_nodes:
+        cur = queue.pop(0)
+        d = depth[cur]
+        if d >= max_depth:
+            continue
+        for nxt, rel in adj.get(cur, []):
+            # real arc direction is always from -> to in the dependency graph
+            frm, to = (cur, nxt) if mode == "dependencies" else (nxt, cur)
+            far = nxt
+            if (frm, to) not in seen_arc:
+                seen_arc.add((frm, to))
+                rows.append({
+                    "depth": d + 1,
+                    "from_name": frm,
+                    "to_name": to,
+                    "relationship": rel,
+                    "component_type": meta.get(far, {}).get("type", ""),
+                    "environment": meta.get(far, {}).get("env", ""),
+                })
+            if far not in depth:
+                depth[far] = d + 1
+                queue.append(far)
+
+    # ── DFS for ordered root→leaf chains (the readable "sentences") ──
+    paths: list[list[str]] = []
+
+    def walk(node: str, trail: list[str]) -> None:
+        if len(paths) >= 80 or len(trail) > max_depth + 1:
+            return
+        nexts = [nxt for nxt, _ in adj.get(node, []) if nxt not in trail]
+        if not nexts:
+            if len(trail) > 1:
+                paths.append(list(trail))
+            return
+        for nxt in nexts:
+            walk(nxt, trail + [nxt])
+
+    walk(name, [name])
+    paths.sort(key=len, reverse=True)
+
+    nodes_meta = [
+        {"name": n, "depth": d, "type": meta.get(n, {}).get("type", ""),
+         "env": meta.get(n, {}).get("env", "")}
+        for n, d in sorted(depth.items(), key=lambda kv: kv[1])
+    ]
+    max_d = max(depth.values()) if depth else 0
+    verb = "needs" if mode == "dependencies" else "is needed by"
+    note = (f"{'Dependencies' if mode == 'dependencies' else 'Blast radius'} of "
+            f"'{name}': {len(depth) - 1} components across {max_d} hop(s), "
+            f"transitively ({name} {verb} ...). Graph reachability over mem9 "
+            f"(appId={g['app']}).")
+
+    return {
+        "root": name, "mode": mode, "note": note,
+        "rows": rows, "nodes": [n["name"] for n in nodes_meta],
+        "nodes_meta": nodes_meta, "paths": paths,
+        "max_depth": max_d, "count": len(depth) - 1,
+    }
+
 
 def cte_dependencies(repo: str, name: str, team_name: str | None = None) -> dict:
-    """Find what a component depends on via metadata search."""
-    app = database_for(repo, team_name)
-    memories = recall(app, f"depends_on {name}", limit=30)
-    rows = []
-    for m in memories:
-        meta = m.get("metadata", {})
-        if meta.get("name") == name and meta.get("depends_on"):
-            rows.append({
-                "depth": 1,
-                "from_name": name,
-                "relationship": meta.get("relationship", "uses"),
-                "to_name": meta["depends_on"],
-                "component_type": meta.get("type", ""),
-                "environment": meta.get("env", ""),
-            })
-    note = f"Dependencies of '{name}' via mem9 metadata search (appId={app})."
-    return {"note": note, "rows": rows, "nodes": list({name} | {r["to_name"] for r in rows})}
+    """Transitive forward reachability: everything `name` depends on (multi-hop)."""
+    return _traverse(repo, name, "dependencies", team_name)
 
 
 def cte_blast_radius(repo: str, name: str, team_name: str | None = None) -> dict:
-    """Find what depends on a component (reverse dependency) via metadata search."""
-    app = database_for(repo, team_name)
-    memories = recall(app, name, limit=50)
-    rows = []
-    for m in memories:
-        meta = m.get("metadata", {})
-        dep = meta.get("depends_on", "")
-        if dep and dep == name:
-            comp_name = meta.get("name", "")
-            if comp_name:
-                rows.append({
-                    "depth": 1,
-                    "from_name": comp_name,
-                    "relationship": meta.get("relationship", "uses"),
-                    "to_name": name,
-                    "component_type": meta.get("type", ""),
-                    "environment": meta.get("env", ""),
-                })
-    note = f"Blast radius of '{name}' via mem9 metadata search (appId={app})."
-    return {"note": note, "rows": rows, "nodes": list({name} | {r["from_name"] for r in rows})}
+    """Transitive reverse reachability: everything that breaks if `name` changes."""
+    return _traverse(repo, name, "blast-radius", team_name)
 
 
 # ── Team isolation check helper ────────────────────────────────────────────────

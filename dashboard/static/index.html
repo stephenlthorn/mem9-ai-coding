@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>mem9 · shared memory for coding agents</title>
+  <title>mem9 · infra knowledge base</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/styles.css?v=20" />
+  <link rel="stylesheet" href="/static/styles.css?v=25" />
 </head>
 <body>
   <div id="app">
@@ -26,216 +26,20 @@
         </div>
       </div>
       <nav class="tabs">
-        <button class="tab active" data-tab="scenario">Overview</button>
-        <button class="tab" data-tab="teams">Teams</button>
-        <button class="tab" data-tab="architecture">Architecture</button>
-        <button class="tab" data-tab="sysprompt">Config</button>
-        <button class="tab" data-tab="live">Live</button>
+        <button class="tab active" data-tab="live">Live</button>
         <button class="tab" data-tab="cte">Dependencies</button>
         <button class="tab" data-tab="search">Search</button>
-        <button class="tab" data-tab="scenarios">Why mem9</button>
+        <button class="tab" data-tab="sysprompt">Config</button>
       </nav>
     </header>
 
     <main class="main">
 
-      <!-- ─────────────── OVERVIEW ─────────────── -->
-      <section class="view active" data-view="scenario">
-        <div class="hero">
-          <span class="eyebrow">TiDB Cloud · mem9</span>
-          <h1 class="hero-title">One brain for every coding agent.</h1>
-          <p class="hero-sub">Three AI tools share one queryable memory. Each reads before it builds and writes back when it's done — so none starts cold or repeats another's work.</p>
-          <div class="hero-tools">
-            <span class="tool-pill tool-claude-code">Claude Code</span>
-            <span class="tool-pill tool-codex">Codex</span>
-            <span class="tool-pill tool-cursor">Cursor</span>
-            <span class="hero-arrow">→</span>
-            <span class="tool-pill tool-mem9">one mem9 space</span>
-          </div>
-        </div>
-
-        <div class="section-label">Without shared memory</div>
-        <div class="fail-grid">
-          <div class="fail-card">
-            <span class="fail-icon">⧉</span>
-            <div class="fail-name">Duplication</div>
-            <div class="fail-line">Rebuilds components that already exist.</div>
-          </div>
-          <div class="fail-card">
-            <span class="fail-icon">⚠</span>
-            <div class="fail-name">Raw resources</div>
-            <div class="fail-line">Skips the library wrapper, breaks conventions.</div>
-          </div>
-          <div class="fail-card">
-            <span class="fail-icon">◎</span>
-            <div class="fail-name">Hidden blast radius</div>
-            <div class="fail-line">Breaks dependents two hops away.</div>
-          </div>
-          <div class="fail-card">
-            <span class="fail-icon">❄</span>
-            <div class="fail-name">Cold starts</div>
-            <div class="fail-line">Re-derives context every session.</div>
-          </div>
-        </div>
-
-        <div class="fix-banner">
-          <span class="fix-mark">✓</span>
-          <div><b>With mem9</b> — one shared memory in TiDB Cloud. Query first, compose libraries, write back.</div>
-        </div>
-      </section>
-
-      <!-- ─────────────── TEAMS & REPOS ─────────────── -->
-      <section class="view" data-view="teams">
-        <div class="lead">
-          <h2 class="lead-title">Team = space. Repo = namespace.</h2>
-          <p class="lead-sub">Each team gets an isolated mem9 space. Repos are <code>appId</code> namespaces inside it — same cluster, separate recall scope.</p>
-        </div>
-
-        <div class="teams-grid">
-          <div class="team-card">
-            <div class="team-header">
-              <span class="team-badge">acme</span>
-              <span class="team-hint">one space · one cluster</span>
-            </div>
-            <div class="repos-row">
-              <div class="repo-card">
-                <div class="repo-name"><span class="repo-dot dot-pulumi"></span>pulumi</div>
-                <div class="repo-count" id="repo-count-pulumi">—</div>
-                <div class="repo-appid">acme_pulumi_kb</div>
-                <div class="repo-types">AWS · Cloudflare · Okta</div>
-              </div>
-              <div class="repo-card">
-                <div class="repo-name"><span class="repo-dot dot-lza"></span>lza</div>
-                <div class="repo-count" id="repo-count-lza">—</div>
-                <div class="repo-appid">acme_lza_kb</div>
-                <div class="repo-types">Accounts · OUs · SCPs · IAM</div>
-              </div>
-            </div>
-            <div class="cross-repo-note">
-              <code>account_ref</code> links LZA accounts to Pulumi stacks — recalled from both namespaces, merged client-side.
-            </div>
-          </div>
-
-          <div class="team-card team-card-isolated">
-            <div class="team-header">
-              <span class="team-badge team-badge-other">globex</span>
-              <span class="team-hint">separate space · separate cluster</span>
-            </div>
-            <div class="isolation-msg">
-              <span class="iso-lock">🔒</span>
-              <span>Different API key, different space. Acme cannot read globex — isolation enforced by mem9, not app code.</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Combined graph</span>
-            <div class="seg">
-              <button class="repo-btn active" data-repo="all">All</button>
-              <button class="repo-btn" data-repo="pulumi"><span class="repo-dot dot-pulumi"></span>pulumi</button>
-              <button class="repo-btn" data-repo="lza"><span class="repo-dot dot-lza"></span>lza</button>
-            </div>
-          </div>
-          <canvas id="teams-canvas" width="780" height="360"></canvas>
-          <div class="legend">
-            <span class="leg lib">Library</span>
-            <span class="leg s3">S3</span>
-            <span class="leg rds">RDS</span>
-            <span class="leg cf">Cloudflare</span>
-            <span class="leg okta">Okta</span>
-            <span class="leg account">Account</span>
-            <span class="leg-hint"><span class="repo-dot dot-pulumi"></span>pulumi&nbsp;&nbsp;<span class="repo-dot dot-lza"></span>lza</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- ─────────────── ARCHITECTURE ─────────────── -->
-      <section class="view" data-view="architecture">
-        <div class="lead">
-          <h2 class="lead-title">Architecture</h2>
-          <p class="lead-sub">Every tool speaks MCP. The dashboard is just a live window on the same store.</p>
-        </div>
-        <div class="card">
-          <div class="arch-wrap">
-            <svg viewBox="0 0 780 320" xmlns="http://www.w3.org/2000/svg" class="arch-svg">
-              <defs>
-                <marker id="dah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5a5a6a"/></marker>
-                <linearGradient id="cyl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3566"/><stop offset="1" stop-color="#161a2e"/></linearGradient>
-              </defs>
-              <g font-family="'Hanken Grotesk', sans-serif" font-size="15" text-anchor="middle">
-                <rect x="20" y="34" width="170" height="48" rx="10" fill="rgba(204,120,92,0.12)" stroke="#CC785C" stroke-width="1.5"/><text x="105" y="64" fill="#CC785C" font-weight="700">Claude Code</text>
-                <rect x="20" y="134" width="170" height="48" rx="10" fill="rgba(16,163,127,0.14)" stroke="#13B583" stroke-width="1.5"/><text x="105" y="164" fill="#13B583" font-weight="700">Codex</text>
-                <rect x="20" y="234" width="170" height="48" rx="10" fill="rgba(91,140,255,0.12)" stroke="#5B8CFF" stroke-width="1.5"/><text x="105" y="264" fill="#5B8CFF" font-weight="700">Cursor</text>
-                <rect x="300" y="120" width="150" height="76" rx="12" fill="#16161c" stroke="#33333d" stroke-width="1.5"/>
-                <text x="375" y="150" fill="#f4f4f6" font-weight="700">MCP</text>
-                <text x="375" y="170" fill="#8a8a97" font-size="12">mem9 client</text>
-                <text x="375" y="186" fill="#8a8a97" font-size="12">infra-kb</text>
-                <ellipse cx="640" cy="120" rx="78" ry="20" fill="#2f3a6e"/>
-                <rect x="562" y="120" width="156" height="96" fill="url(#cyl)"/>
-                <ellipse cx="640" cy="216" rx="78" ry="20" fill="#161a2e"/>
-                <ellipse cx="640" cy="120" rx="78" ry="20" fill="none" stroke="#3a4480"/>
-                <text x="640" y="158" fill="#fff" font-weight="700" font-size="17">TiDB Cloud</text>
-                <text x="640" y="182" fill="#aab0d4" font-size="12">via mem9</text>
-                <rect x="566" y="262" width="148" height="40" rx="9" fill="#131316" stroke="#33333d" stroke-width="1.5"/><text x="640" y="287" fill="#cdd0e8" font-weight="700" font-size="14">Dashboard</text>
-              </g>
-              <g stroke="#5a5a6a" stroke-width="2" fill="none">
-                <path d="M190,58 C250,58 245,150 298,150" marker-end="url(#dah)"/>
-                <path d="M190,158 L298,158" marker-end="url(#dah)"/>
-                <path d="M190,258 C250,258 245,176 298,168" marker-end="url(#dah)"/>
-                <path d="M450,158 L556,150" marker-end="url(#dah)"/>
-                <path d="M640,216 L640,260" marker-end="url(#dah)" stroke-dasharray="4,4"/>
-              </g>
-              <text x="505" y="143" fill="#6a6a76" font-size="12" font-family="'IBM Plex Mono', monospace">REST</text>
-            </svg>
-          </div>
-        </div>
-        <div class="arch-points">
-          <div class="arch-point"><b>MCP is the standard plug.</b> One config, every tool. No custom glue.</div>
-          <div class="arch-point"><b>One store, every pattern.</b> Graph, vector, and full-text in the same memory — no ETL.</div>
-          <div class="arch-point"><b>Just an API key.</b> mem9 manages the TiDB cluster; agents never touch credentials.</div>
-        </div>
-      </section>
-
-      <!-- ─────────────── CONFIG / SYSTEM PROMPT ─────────────── -->
-      <section class="view" data-view="sysprompt">
-        <div class="lead">
-          <h2 class="lead-title">Behavior is configuration, not code.</h2>
-          <p class="lead-sub">One standing instruction in every tool's rules file: <b>query first → compose → write back.</b></p>
-        </div>
-
-        <div class="card">
-          <div class="card-header"><span class="card-title">Standing instruction · CLAUDE.md / AGENTS.md / .cursorrules</span></div>
-          <pre class="code-block">Before writing infrastructure code, query the infra-kb MCP:
-  · what already exists        (don't duplicate)
-  · how things connect         (dependency edges)
-  · what previous sessions did (session log)
-
-Never use raw aws.* / cloudflare.* / okta.* — compose the libs/ wrappers.
-Follow acme-&lt;env&gt;-&lt;name&gt; naming and the required tags.
-
-After any change, record it with write_component so the next
-session — and the next tool — starts warm.</pre>
-        </div>
-
-        <div class="card">
-          <div class="card-header"><span class="card-title">MCP servers · one entry per repo</span></div>
-          <pre class="code-block">{
-  "mcpServers": {
-    "infra-kb-pulumi": { "command": "python", "args": ["-m","src.mcp_server"] },
-    "infra-kb-lza":    { "command": "python", "args": ["-m","src.mcp_server"] }
-  }
-}
-
-query_knowledge_base  ·  write_component   →  hybrid recall + atomic writes</pre>
-        </div>
-      </section>
-
       <!-- ─────────────── LIVE ─────────────── -->
-      <section class="view" data-view="live">
+      <section class="view active" data-view="live">
         <div class="lead">
           <h2 class="lead-title">Three tools, one memory, live.</h2>
-          <p class="lead-sub">Watch the staging gap close as each tool reads the shared log and writes back. The parity strip goes green.</p>
+          <p class="lead-sub">Every query and write from Claude Code, Codex, and Cursor lands in the same mem9 space. Watch the staging gap close as each tool reads the shared log and writes back.</p>
         </div>
 
         <div class="live-split">
@@ -293,7 +97,6 @@ query_knowledge_base  ·  write_component   →  hybrid recall + atomic writes</
               <pre class="rb-cmd">Use the infra-kb MCP. Query the knowledge base: what exists in staging vs production, and what is staging missing? Scaffold the missing staging static-assets bucket and its Cloudflare DNS, composing the S3Bucket and DnsRecord libs — never raw aws.*. Record each with write_component, developer='claude-code'.</pre>
             </div>
           </div>
-
           <div class="rb-step">
             <div class="rb-header">
               <span class="rb-num">2</span>
@@ -306,7 +109,6 @@ query_knowledge_base  ·  write_component   →  hybrid recall + atomic writes</
               <pre class="rb-cmd">Use the infra-kb MCP. Read the recent session log — what did the previous session create? Continue: add acme-staging-admin-dns matching prod, composing DnsRecord. Record it with write_component, developer='codex'.</pre>
             </div>
           </div>
-
           <div class="rb-step">
             <div class="rb-header">
               <span class="rb-num">3</span>
@@ -322,40 +124,40 @@ query_knowledge_base  ·  write_component   →  hybrid recall + atomic writes</
         </div>
       </section>
 
-      <!-- ─────────────── DEPENDENCIES ─────────────── -->
+      <!-- ─────────────── DEPENDENCIES (rail) ─────────────── -->
       <section class="view" data-view="cte">
         <div class="lead">
-          <h2 class="lead-title">The question similarity can't answer.</h2>
-          <p class="lead-sub">What transitively depends on this? <code>S3Bucket</code>'s blast radius reaches RDS two hops away — graph reachability, not vector similarity.</p>
+          <h2 class="lead-title">Transitive dependencies, in one pass.</h2>
+          <p class="lead-sub">Recursive reachability over the dependency graph — the question a vector store can't answer. Pick a component: trace what it <b>needs</b>, or what <b>breaks</b> if it changes. Each hop is a column.</p>
         </div>
-        <div class="cte-controls">
-          <label>Component <select id="cte-node"></select></label>
+
+        <div class="dep-controls">
           <div class="seg">
             <button class="cte-btn active" data-mode="blast-radius">Blast radius</button>
             <button class="cte-btn" data-mode="dependencies">Dependencies</button>
           </div>
-          <button id="cte-run" class="btn btn-primary">Trace</button>
-        </div>
-        <div class="cte-grid">
-          <div class="card">
-            <div class="card-header"><span class="card-title">Traversal</span><span id="cte-summary" class="card-count">—</span></div>
-            <canvas id="cte-canvas" width="640" height="420"></canvas>
-            <div class="legend">
-              <span class="leg-depth d1">depth 1</span>
-              <span class="leg-depth d2">depth 2</span>
-              <span class="leg-depth d3">depth 3+</span>
-              <span class="leg-hint">scroll to zoom · drag to move</span>
-            </div>
+          <select id="cte-node" class="dep-select"></select>
+          <div class="dep-examples">
+            <span class="dep-ex-label">Try</span>
+            <button class="ex-btn" data-node="KmsKey" data-mode="blast-radius">rotate KmsKey →</button>
+            <button class="ex-btn" data-node="acme-prod-portal-svc" data-mode="dependencies">portal-svc needs →</button>
+            <button class="ex-btn" data-node="acme-lza-account-prod" data-mode="dependencies">account-prod →</button>
           </div>
-          <div class="col-side">
-            <div class="card">
-              <div class="card-header"><span class="card-title">How it's resolved</span></div>
-              <pre id="cte-sql" class="code-block"></pre>
-            </div>
-            <div class="card">
-              <div class="card-header"><span class="card-title">Result</span><span id="cte-rowcount" class="card-count">—</span></div>
-              <div id="cte-rows" class="cte-rows"></div>
-            </div>
+          <div class="dep-readout" id="dep-stat">—</div>
+        </div>
+
+        <div class="card">
+          <div id="rail" class="rail"></div>
+        </div>
+
+        <div class="dep-trace">
+          <div class="trace-block">
+            <div class="trace-head">Longest chains</div>
+            <div id="trace-chains" class="trace-chains"></div>
+          </div>
+          <div class="trace-block">
+            <div class="trace-head">How it's resolved</div>
+            <pre id="cte-note" class="code-block"></pre>
           </div>
         </div>
       </section>
@@ -379,7 +181,7 @@ query_knowledge_base  ·  write_component   →  hybrid recall + atomic writes</
         <div class="search-presets">
           <button class="preset-btn" data-q="admin portal access control login">admin portal access control</button>
           <button class="preset-btn" data-q="where do database backups live">where do database backups live</button>
-          <button class="preset-btn" data-q="CDN for user-facing static files">CDN for static files</button>
+          <button class="preset-btn" data-q="what encrypts production data">what encrypts production data</button>
         </div>
         <div class="cte-grid">
           <div class="card">
@@ -395,31 +197,42 @@ query_knowledge_base  ·  write_component   →  hybrid recall + atomic writes</
         </div>
       </section>
 
-      <!-- ─────────────── WHY mem9 ─────────────── -->
-      <section class="view" data-view="scenarios">
+      <!-- ─────────────── CONFIG ─────────────── -->
+      <section class="view" data-view="sysprompt">
         <div class="lead">
-          <h2 class="lead-title">Why mem9 on TiDB.</h2>
-          <p class="lead-sub">One engine for every access pattern — graph, vector, full-text — with ACID across concurrent agent writes.</p>
+          <h2 class="lead-title">Behavior is configuration, not code.</h2>
+          <p class="lead-sub">One standing instruction in every tool's rules file: <b>query first → compose → write back.</b></p>
         </div>
-        <div class="why-grid">
-          <div class="why-card">
-            <div class="why-h">One engine</div>
-            <div class="why-p">SQL + graph + vector + full-text. No ETL between four systems.</div>
-          </div>
-          <div class="why-card">
-            <div class="why-h">ACID state</div>
-            <div class="why-p">Component, edge, and log written in one transaction.</div>
-          </div>
-          <div class="why-card">
-            <div class="why-h">Not a filesystem</div>
-            <div class="why-p">S3 stores artifacts. mem9 is the brain agents query.</div>
-          </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Standing instruction · CLAUDE.md / AGENTS.md / .cursorrules</span></div>
+          <pre class="code-block">Before writing infrastructure code, query the infra-kb MCP:
+  · what already exists        (don't duplicate)
+  · how things connect         (dependency edges)
+  · what previous sessions did (session log)
+
+Never use raw aws.* / cloudflare.* / okta.* — compose the libs/ wrappers.
+Follow acme-&lt;env&gt;-&lt;name&gt; naming and the required tags.
+
+After any change, record it with write_component so the next
+session — and the next tool — starts warm.</pre>
         </div>
-        <div id="scenario-list" class="scenario-list"></div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">MCP servers · one entry per repo</span></div>
+          <pre class="code-block">{
+  "mcpServers": {
+    "infra-kb-pulumi": { "command": "python", "args": ["-m","src.mcp_server"] },
+    "infra-kb-lza":    { "command": "python", "args": ["-m","src.mcp_server"] }
+  }
+}
+
+query_knowledge_base  ·  write_component   →  hybrid recall + atomic writes</pre>
+        </div>
       </section>
 
     </main>
   </div>
-  <script src="/static/app.js?v=20"></script>
+  <script src="/static/app.js?v=25"></script>
 </body>
 </html>

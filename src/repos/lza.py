@@ -38,10 +38,28 @@ COMPONENTS = [
     {"name": "acme-lza-iam-baseline", "type": "IAM", "env": "org", "repo": REPO,
      "repo_path": "lza/accounts.ts", "account_ref": None, "depends_on": "IamBaseline",
      "summary": "Org-wide IAM baseline applied to every account by the AwsAccount factory."},
+
+    # ── Nested-OU chain: a 3-hop org path (account -> workloads OU -> core OU) ──
+    {"name": "acme-lza-ou-core", "type": "OU", "env": "org", "repo": REPO,
+     "repo_path": "lza/ous.ts", "account_ref": None, "depends_on": "OrganizationalUnit",
+     "relationship": "instantiates",
+     "summary": "Core (parent) OU. acme-lza-ou-workloads is nested beneath it; org-wide guardrails SCP "
+                "attached here. Deepens the org chain so account -> workloads OU -> core OU -> library "
+                "is a 3-hop transitive path."},
+    {"name": "acme-lza-scp-guardrails", "type": "SCP", "env": "org", "repo": REPO,
+     "repo_path": "lza/ous.ts", "account_ref": None, "depends_on": "ScpPolicy",
+     "relationship": "instantiates",
+     "summary": "Org-wide guardrails SCP (region lock, deny-leave-org) attached to the core OU. "
+                "Constrains every account beneath core, including everything in the workloads OU."},
 ]
 
 EDGES = [
     ("acme-lza-account-prod", "acme-lza-ou-workloads", "belongs_to", "prod account lives in the workloads OU"),
     ("acme-lza-account-sandbox", "acme-lza-ou-workloads", "belongs_to", "sandbox account lives in the workloads OU"),
     ("acme-lza-scp-deny-root", "acme-lza-ou-workloads", "attached_to", "deny-root SCP is attached to the workloads OU"),
+
+    # ── Nested-OU + guardrails ──
+    ("acme-lza-ou-workloads", "acme-lza-ou-core", "belongs_to", "workloads OU is nested beneath the core OU"),
+    ("acme-lza-scp-guardrails", "acme-lza-ou-core", "attached_to", "guardrails SCP is attached to the core OU"),
+    ("acme-lza-account-prod", "acme-lza-iam-baseline", "applies", "prod account applies the org IAM baseline"),
 ]

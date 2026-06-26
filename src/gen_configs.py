@@ -39,7 +39,20 @@ def _env() -> dict:
         "MEM9_API_KEY": key,
         "MEM9_BASE_URL": os.environ.get("MEM9_BASE_URL", "https://api.mem9.ai"),
         "TEAM": topology.team(),
+        "NS_VERSION": topology.ns_version(),
     }
+
+
+def _kb_env(env: dict, repo: str) -> dict:
+    e = {
+        "MEM9_REPO": repo,
+        "MEM9_TEAM": env["TEAM"],
+        "MEM9_API_KEY": env["MEM9_API_KEY"],
+        "MEM9_BASE_URL": env["MEM9_BASE_URL"],
+    }
+    if env.get("NS_VERSION"):
+        e["MEM9_NS_VERSION"] = env["NS_VERSION"]
+    return e
 
 
 def _kb_server(env: dict, repo: str) -> dict:
@@ -47,12 +60,7 @@ def _kb_server(env: dict, repo: str) -> dict:
         "command": str(VENV_PY),
         "args": ["-m", "src.mcp_server"],
         "cwd": str(ROOT),
-        "env": {
-            "MEM9_REPO": repo,
-            "MEM9_TEAM": env["TEAM"],
-            "MEM9_API_KEY": env["MEM9_API_KEY"],
-            "MEM9_BASE_URL": env["MEM9_BASE_URL"],
-        },
+        "env": _kb_env(env, repo),
     }
 
 
@@ -82,12 +90,10 @@ def write_codex(env: dict) -> Path:
             'args = ["-m", "src.mcp_server"]',
             f'cwd = "{ROOT}"',
             f"[mcp_servers.infra-kb-{repo}.env]",
-            f'MEM9_REPO = "{repo}"',
-            f'MEM9_TEAM = "{env["TEAM"]}"',
-            f'MEM9_API_KEY = "{env["MEM9_API_KEY"]}"',
-            f'MEM9_BASE_URL = "{env["MEM9_BASE_URL"]}"',
-            "",
         ]
+        for k, v in _kb_env(env, repo).items():
+            lines.append(f'{k} = "{v}"')
+        lines.append("")
     out = ROOT / "configs" / "generated" / "codex-config.toml"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text("\n".join(lines))
