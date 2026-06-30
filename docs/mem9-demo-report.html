@@ -105,6 +105,16 @@
   .demo-prompt::before { content: "dev types  "; color: var(--ink-faint); }
   .stage-lead { font-size: 11pt; color: var(--ink); margin: 18px 0 6px; font-weight: 600; }
 
+  /* ── Stepwise flow ── */
+  .step-head { font-family: var(--font-display); font-weight: 800; font-size: 15pt; letter-spacing: -0.3px; margin: 22px 0 7px; display: flex; align-items: center; gap: 10px; page-break-after: avoid; }
+  .step-head .num { font-family: var(--mono); font-size: 8pt; font-weight: 600; color: #fff; background: var(--accent); border-radius: 6px; padding: 3px 9px; letter-spacing: 0.5px; }
+  .flow { margin: 8px 0 6px; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 8px; background: var(--paper); page-break-inside: avoid; }
+  .flow svg { display: block; width: 100%; height: auto; }
+  .flow-cap { font-size: 8pt; font-family: var(--mono); color: var(--ink-faint); padding: 6px 2px 2px; border-top: 1px solid var(--line-soft); margin-top: 4px; }
+  .result-line { font-size: 11pt; color: var(--ink-dim); margin: 7px 0 2px; }
+  .result-line b { color: var(--ink); }
+  .result-line .gap { font-family: var(--mono); font-weight: 600; color: var(--tidb-red); }
+
   /* ── Topology diagram ── */
   .topo { margin: 14px 0 6px; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 6px; background: var(--paper); page-break-inside: avoid; }
   .topo svg { display: block; width: 100%; height: auto; }
@@ -125,10 +135,8 @@
 <div class="cover">
   <div class="cover-lockup">
     <span class="cover-logo"><img src="img/tidb-logo.png" alt="TiDB" /></span>
-    <span class="cover-badge-text">mem9 shared memory · on TiDB Cloud</span>
-    <span class="cover-ver">v3</span>
   </div>
-  <div class="cover-eyebrow">Solution brief · technical evaluation</div>
+  <div class="cover-eyebrow">Solution brief</div>
   <div class="cover-title">Agentic Coding - Shared Memory Layer</div>
   <div class="cover-rule"></div>
 </div>
@@ -172,7 +180,54 @@
   <div class="footer-note">Demonstrated live with three different coding agents - Claude Code, Minimax, and Cursor - against a single TiDB Cloud cluster. The tools are interchangeable; the shared memory is the point.</div>
 </div>
 
-<!-- ─────────────── 2. THE MODEL ─────────────── -->
+<!-- ─────────────── 2. mem9 ON TiDB ─────────────── -->
+<div class="section page">
+  <div class="kicker">Architecture · mem9 on TiDB</div>
+  <h1>mem9 is the memory. TiDB is the engine.</h1>
+  <div class="rule"></div>
+  <p class="lead">mem9 is the agent-facing product - <b>one memory, many agents</b>: a shared, persistent layer every coding agent reads and writes through a single key, with hybrid recall and a human-inspectable dashboard. Underneath it, <b>TiDB Cloud is the core engine</b> - graph relationships, vector embeddings, and full-text indexes all live in one distributed SQL store. mem9's own site says it plainly: <i>"Powered by TiDB Cloud."</i></p>
+
+  <div class="topo keep">
+    <svg viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg" font-family="Hanken Grotesk, sans-serif">
+      <text x="40" y="15" fill="#8089a0" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="0.5">AI CODING AGENTS - one key serves every agent</text>
+      <rect x="60" y="22" width="180" height="40" rx="9" fill="#fbeee8" stroke="#CC785C"/><text x="150" y="47" text-anchor="middle" fill="#b25c3e" font-weight="700" font-size="13">Claude Code</text>
+      <rect x="290" y="22" width="180" height="40" rx="9" fill="#e7f6f1" stroke="#13B583"/><text x="380" y="47" text-anchor="middle" fill="#0a8a62" font-weight="700" font-size="13">Minimax</text>
+      <rect x="520" y="22" width="180" height="40" rx="9" fill="#eaf1fe" stroke="#2f6df6"/><text x="610" y="47" text-anchor="middle" fill="#1f5be0" font-weight="700" font-size="13">Cursor</text>
+      <g stroke="#aab1c9" stroke-width="1.5" fill="none">
+        <path d="M150,62 L150,82" marker-end="url(#a2)"/>
+        <path d="M380,62 L380,82" marker-end="url(#a2)"/>
+        <path d="M610,62 L610,82" marker-end="url(#a2)"/>
+      </g>
+      <rect x="40" y="84" width="680" height="44" rx="10" fill="#f6f7fb" stroke="#dfe3ee"/>
+      <text x="380" y="111" text-anchor="middle" fill="#44485a" font-size="11">ACCESS  ·  MCP server (one per repo)  ·  mem9 REST API  ·  one API key per memory space</text>
+      <path d="M380,128 L380,150" stroke="#aab1c9" stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
+      <rect x="40" y="150" width="680" height="120" rx="12" fill="#ffffff" stroke="#0e83c8" stroke-width="1.5"/>
+      <rect x="40" y="150" width="5" height="120" rx="2" fill="#0e83c8"/>
+      <text x="62" y="177" fill="#0e83c8" font-weight="800" font-size="15">mem9 · shared memory</text>
+      <text x="62" y="196" fill="#5b6478" font-size="10.5">one memory, many agents · Persist · Share · Inspect</text>
+      <rect x="62" y="208" width="200" height="38" rx="8" fill="#f6f7fb" stroke="#e4e7ef"/><text x="74" y="226" fill="#14161c" font-weight="700" font-size="11">Graph</text><text x="74" y="240" fill="#7b8196" font-size="9">depends_on traversal</text>
+      <rect x="272" y="208" width="200" height="38" rx="8" fill="#f6f7fb" stroke="#e4e7ef"/><text x="284" y="226" fill="#14161c" font-weight="700" font-size="11">Vector</text><text x="284" y="240" fill="#7b8196" font-size="9">semantic recall · HNSW</text>
+      <rect x="482" y="208" width="200" height="38" rx="8" fill="#f6f7fb" stroke="#e4e7ef"/><text x="494" y="226" fill="#14161c" font-weight="700" font-size="11">Full-text</text><text x="494" y="240" fill="#7b8196" font-size="9">keyword · BM25</text>
+      <text x="62" y="262" fill="#0e83c8" font-size="9.5" font-family="IBM Plex Mono, monospace">vector + full-text fused by Reciprocal Rank Fusion (RRF)</text>
+      <path d="M380,270 L380,296" stroke="#aab1c9" stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
+      <text x="392" y="287" fill="#8089a0" font-size="9" font-family="IBM Plex Mono, monospace">one SQL surface · reads + writes</text>
+      <rect x="22" y="296" width="716" height="158" rx="13" fill="#0a1f3a"/>
+      <text x="44" y="326" fill="#ffffff" font-weight="800" font-size="15">TiDB Cloud · TiDB X</text>
+      <text x="44" y="345" fill="#5cc0f3" font-size="10">the core engine - graph, vector &amp; full-text in one distributed SQL store</text>
+      <rect x="540" y="312" width="176" height="26" rx="13" fill="none" stroke="#2caeef"/><text x="628" y="329" text-anchor="middle" fill="#2caeef" font-size="9.5" font-weight="600">Powered by TiDB Cloud</text>
+      <rect x="44" y="362" width="104" height="74" rx="8" fill="#0c2a4a"/><text x="56" y="386" fill="#cfe6f6" font-weight="700" font-size="10.5">SQL layer</text><text x="56" y="402" fill="#7fa6c8" font-size="8.5">stateless</text><text x="56" y="414" fill="#7fa6c8" font-size="8.5">MySQL-compat</text>
+      <rect x="157" y="362" width="104" height="74" rx="8" fill="#0c2a4a"/><text x="169" y="386" fill="#cfe6f6" font-weight="700" font-size="10.5">TiKV</text><text x="169" y="402" fill="#7fa6c8" font-size="8.5">Raft · ACID</text><text x="169" y="414" fill="#7fa6c8" font-size="8.5">row store</text>
+      <rect x="270" y="362" width="104" height="74" rx="8" fill="#0c2a4a"/><text x="282" y="386" fill="#cfe6f6" font-weight="700" font-size="10.5">Vector</text><text x="282" y="402" fill="#7fa6c8" font-size="8.5">HNSW index</text><text x="282" y="414" fill="#7fa6c8" font-size="8.5">cosine distance</text>
+      <rect x="383" y="362" width="104" height="74" rx="8" fill="#0c2a4a"/><text x="395" y="386" fill="#cfe6f6" font-weight="700" font-size="10.5">Full-text</text><text x="395" y="402" fill="#7fa6c8" font-size="8.5">BM25 · TiCI</text><text x="395" y="414" fill="#7fa6c8" font-size="8.5">tantivy</text>
+      <rect x="496" y="362" width="104" height="74" rx="8" fill="#0c2a4a"/><text x="508" y="386" fill="#cfe6f6" font-weight="700" font-size="10.5">TiFlash</text><text x="508" y="402" fill="#7fa6c8" font-size="8.5">columnar</text><text x="508" y="414" fill="#7fa6c8" font-size="8.5">HTAP scans</text>
+      <rect x="609" y="362" width="107" height="74" rx="8" fill="#0c2a4a"/><text x="621" y="386" fill="#cfe6f6" font-weight="700" font-size="10.5">Branching</text><text x="621" y="402" fill="#7fa6c8" font-size="8.5">per-team</text><text x="621" y="414" fill="#7fa6c8" font-size="8.5">copy-on-write</text>
+      <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#aab1c9"/></marker></defs>
+    </svg>
+    <div class="topo-cap">One store, not four. mem9 hands every agent a simple memory API; TiDB Cloud serves the graph traversal, vector search, and full-text behind it - fused by reciprocal-rank fusion, with ACID writes and per-team isolation. No separate vector database, no ETL, no sync layer.</div>
+  </div>
+</div>
+
+<!-- ─────────────── 3. THE MODEL ─────────────── -->
 <div class="section page">
   <div class="kicker">The model</div>
   <h1>Team = cluster. Repo = namespace.</h1>
@@ -235,47 +290,91 @@
   <div class="callout keep"><b>Why it matters.</b> The agent doesn't need to be told which repo owns what. It routes each write to the right namespace and records the cross-repo link, so the next session - in either repo - already knows the account and its bucket belong together.</div>
 </div>
 
-<!-- ─────────────── 4. THE COLLABORATION ─────────────── -->
+<!-- ─────────────── 5. THE COLLABORATION ─────────────── -->
 <div class="section page">
   <div class="kicker">The collaboration</div>
   <h1>Three tools, one memory, warm hand-offs.</h1>
   <div class="rule"></div>
-  <p class="lead">A common scenario: production is complete, staging has drifted by four components. Three different agents bring it back to parity - each reading the shared memory before it builds and writing back when done. The developer only states the goal; the standing instruction does the rest.</p>
+  <p class="lead">Production is complete; staging has drifted by four components. Three different agents bring it back to parity - the developer only states the goal. Every agent's rules file (<code>CLAUDE.md</code> / <code>AGENTS.md</code> / <code>.cursorrules</code>) makes the same first move non-negotiable: <b>query mem9 before writing anything</b>. So each step below runs the same shape - recall, compose, write back.</p>
 
-  <div class="grid-3">
-    <div class="card keep">
-      <h3 style="color:#b25c3e;">1 · Claude Code</h3>
-      <p class="demo-prompt">"Bring staging up to parity with production - start with the static-assets bucket and its CDN."</p>
-      <p>Queries the KB, finds the gap, composes the libraries, writes both back. <b>Gap 4 → 2.</b></p>
-    </div>
-    <div class="card keep">
-      <h3 style="color:#0a8a62;">2 · Minimax</h3>
-      <p class="demo-prompt">"Keep bringing staging to parity with prod - it still needs the admin-portal DNS."</p>
-      <p>Opens cold. Reads the shared session log, sees what was just built, continues with admin-DNS. <b>Gap 2 → 1.</b></p>
-    </div>
-    <div class="card keep">
-      <h3 style="color:#1f5be0;">3 · Cursor</h3>
-      <p class="demo-prompt">"Finish bringing staging to parity - add the admin SSO app."</p>
-      <p>Traces what prod's admin-SSO depends on, confirms it redirects to a DnsRecord, builds the SSO app. <b>Gap 1 → 0.</b></p>
-    </div>
-  </div>
-
-  <div class="stage-lead">The gap closing - real writes to mem9, each tool credited:</div>
   <figure class="shot">
     <img src="img/demo-1-clean.png" alt="Live tab baseline, four components missing in staging" />
-    <figcaption><span class="tag">Start</span><span>Feed empty; staging-parity strip shows <b>4 missing</b>.</span></figcaption>
+    <figcaption><span class="tag">Starting point</span><span>Feed empty; the staging-parity strip shows <b>4 missing</b>.</span></figcaption>
   </figure>
+
+  <!-- STEP 1 -->
+  <div class="step-head"><span class="num">STEP 1</span> <span style="color:#b25c3e;">Claude Code</span></div>
+  <p class="demo-prompt">"Bring staging up to parity with production - start with the static-assets bucket and its CDN."</p>
+  <div class="flow keep">
+    <svg viewBox="0 0 760 150" xmlns="http://www.w3.org/2000/svg" font-family="Hanken Grotesk, sans-serif">
+      <text x="6" y="13" fill="#8089a0" font-family="IBM Plex Mono, monospace" font-size="8">QUERY-FIRST - the rules file requires a recall before any write</text>
+      <rect x="6" y="50" width="118" height="54" rx="9" fill="#fbeee8" stroke="#CC785C"/><text x="65" y="81" text-anchor="middle" fill="#b25c3e" font-weight="700" font-size="12">Claude Code</text>
+      <g stroke="#aab1c9" stroke-width="1.5" fill="none"><path d="M124,77 L146,77" marker-end="url(#fa1)"/><path d="M324,77 L344,77" marker-end="url(#fa1)"/><path d="M494,77 L516,77" marker-end="url(#fa1)"/><path d="M668,77 L688,77" marker-end="url(#fa1)"/></g>
+      <rect x="146" y="34" width="178" height="88" rx="9" fill="#e4f3fc" stroke="#0e83c8"/><text x="160" y="55" fill="#0e83c8" font-weight="700" font-size="11">① Query mem9</text>
+      <text x="160" y="73" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">recall: acme_pulumi_kb</text><text x="160" y="87" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">staging 2 · prod 6</text><text x="160" y="101" fill="#0e83c8" font-family="IBM Plex Mono, monospace" font-size="8">→ missing DNS + SSO</text>
+      <rect x="344" y="34" width="150" height="88" rx="9" fill="#f6f7fb" stroke="#dfe3ee"/><text x="358" y="55" fill="#14161c" font-weight="700" font-size="11">② Compose</text>
+      <text x="358" y="73" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">S3Bucket library</text><text x="358" y="87" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">+ DnsRecord (proxied)</text>
+      <rect x="516" y="34" width="152" height="88" rx="9" fill="#fde7eb" stroke="#e30c34"/><text x="530" y="55" fill="#c20a2c" font-weight="700" font-size="11">③ Write back</text>
+      <text x="530" y="73" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">+ static-assets (S3)</text><text x="530" y="87" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">+ assets-dns (CDN)</text><text x="530" y="101" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">edge: dns → bucket</text>
+      <rect x="688" y="50" width="66" height="54" rx="9" fill="#0a1f3a"/><text x="721" y="74" text-anchor="middle" fill="#fff" font-weight="700" font-size="10">mem9</text><text x="721" y="90" text-anchor="middle" fill="#5cc0f3" font-size="7.5">on TiDB</text>
+      <defs><marker id="fa1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#aab1c9"/></marker></defs>
+    </svg>
+    <div class="flow-cap">recall the gap → compose the S3 + DNS libraries → write both components back, with the dns-fronts-bucket edge.</div>
+  </div>
+  <p class="result-line"><b>Result.</b> Staging gains the <b>static-assets</b> bucket and its <b>CDN</b>. <span class="gap">Gap 4 → 2.</span></p>
   <figure class="shot">
-    <img src="img/demo-2-claude.png" alt="Live tab after Claude Code writes static-assets and its CDN" />
-    <figcaption><span class="tag">1 · Claude Code</span><span>Reads the KB, composes <b>static-assets</b> and its CDN, writes both back. Gap <b>4 → 2</b>.</span></figcaption>
+    <img src="img/demo-2-claude.png" alt="Live feed after Claude Code writes static-assets and its CDN" />
+    <figcaption><span class="tag">Result · Claude Code</span><span>Both writes land in the shared feed; the parity strip drops to <b>2 missing</b>.</span></figcaption>
   </figure>
+
+  <!-- STEP 2 -->
+  <div class="step-head"><span class="num">STEP 2</span> <span style="color:#0a8a62;">Minimax</span></div>
+  <p class="demo-prompt">"Keep bringing staging to parity with prod - it still needs the admin-portal DNS."</p>
+  <div class="flow keep">
+    <svg viewBox="0 0 760 150" xmlns="http://www.w3.org/2000/svg" font-family="Hanken Grotesk, sans-serif">
+      <text x="6" y="13" fill="#8089a0" font-family="IBM Plex Mono, monospace" font-size="8">QUERY-FIRST - Minimax opens cold and reads the shared log before it builds</text>
+      <rect x="6" y="50" width="118" height="54" rx="9" fill="#e7f6f1" stroke="#13B583"/><text x="65" y="81" text-anchor="middle" fill="#0a8a62" font-weight="700" font-size="12">Minimax</text>
+      <g stroke="#aab1c9" stroke-width="1.5" fill="none"><path d="M124,77 L146,77" marker-end="url(#fa2)"/><path d="M324,77 L344,77" marker-end="url(#fa2)"/><path d="M494,77 L516,77" marker-end="url(#fa2)"/><path d="M668,77 L688,77" marker-end="url(#fa2)"/></g>
+      <rect x="146" y="34" width="178" height="88" rx="9" fill="#e4f3fc" stroke="#0e83c8"/><text x="160" y="55" fill="#0e83c8" font-weight="700" font-size="11">① Query mem9</text>
+      <text x="160" y="73" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">recall: session log</text><text x="160" y="87" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">Claude built 2 comps</text><text x="160" y="101" fill="#0e83c8" font-family="IBM Plex Mono, monospace" font-size="8">→ continue, no re-brief</text>
+      <rect x="344" y="34" width="150" height="88" rx="9" fill="#f6f7fb" stroke="#dfe3ee"/><text x="358" y="55" fill="#14161c" font-weight="700" font-size="11">② Compose</text>
+      <text x="358" y="73" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">DnsRecord</text><text x="358" y="87" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">prod admin pattern</text>
+      <rect x="516" y="34" width="152" height="88" rx="9" fill="#fde7eb" stroke="#e30c34"/><text x="530" y="55" fill="#c20a2c" font-weight="700" font-size="11">③ Write back</text>
+      <text x="530" y="73" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">+ admin-dns (CDN)</text>
+      <rect x="688" y="50" width="66" height="54" rx="9" fill="#0a1f3a"/><text x="721" y="74" text-anchor="middle" fill="#fff" font-weight="700" font-size="10">mem9</text><text x="721" y="90" text-anchor="middle" fill="#5cc0f3" font-size="7.5">on TiDB</text>
+      <defs><marker id="fa2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#aab1c9"/></marker></defs>
+    </svg>
+    <div class="flow-cap">recall the shared session log (what Claude just built) → compose the admin DnsRecord → write it back. No re-briefing.</div>
+  </div>
+  <p class="result-line"><b>Result.</b> The admin-portal <b>DNS</b> lands - Minimax never had to be re-briefed. <span class="gap">Gap 2 → 1.</span></p>
   <figure class="shot">
-    <img src="img/demo-3-minimax.png" alt="Live tab after Minimax cold start continues admin DNS" />
-    <figcaption><span class="tag">2 · Minimax</span><span>Opens cold, reads the shared log first ("continuing staging work"), then builds <b>admin-DNS</b> - no re-briefing. Gap <b>2 → 1</b>.</span></figcaption>
+    <img src="img/demo-3-minimax.png" alt="Live feed after Minimax cold-starts and continues with admin DNS" />
+    <figcaption><span class="tag">Result · Minimax</span><span>Its query ("continuing staging work") and write join the same timeline as Claude Code's. <b>1 missing</b>.</span></figcaption>
   </figure>
+
+  <!-- STEP 3 -->
+  <div class="step-head"><span class="num">STEP 3</span> <span style="color:#1f5be0;">Cursor</span></div>
+  <p class="demo-prompt">"Finish bringing staging to parity - add the admin SSO app."</p>
+  <div class="flow keep">
+    <svg viewBox="0 0 760 150" xmlns="http://www.w3.org/2000/svg" font-family="Hanken Grotesk, sans-serif">
+      <text x="6" y="13" fill="#8089a0" font-family="IBM Plex Mono, monospace" font-size="8">QUERY-FIRST - Cursor traces the dependency chain before it builds</text>
+      <rect x="6" y="50" width="118" height="54" rx="9" fill="#eaf1fe" stroke="#2f6df6"/><text x="65" y="81" text-anchor="middle" fill="#1f5be0" font-weight="700" font-size="12">Cursor</text>
+      <g stroke="#aab1c9" stroke-width="1.5" fill="none"><path d="M124,77 L146,77" marker-end="url(#fa3)"/><path d="M324,77 L344,77" marker-end="url(#fa3)"/><path d="M494,77 L516,77" marker-end="url(#fa3)"/><path d="M668,77 L688,77" marker-end="url(#fa3)"/></g>
+      <rect x="146" y="34" width="178" height="88" rx="9" fill="#e4f3fc" stroke="#0e83c8"/><text x="160" y="55" fill="#0e83c8" font-weight="700" font-size="11">① Query mem9</text>
+      <text x="160" y="73" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">search: admin-sso</text><text x="160" y="87" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">depends_on SsoApp</text><text x="160" y="101" fill="#0e83c8" font-family="IBM Plex Mono, monospace" font-size="8">→ redirects_to admin-dns</text>
+      <rect x="344" y="34" width="150" height="88" rx="9" fill="#f6f7fb" stroke="#dfe3ee"/><text x="358" y="55" fill="#14161c" font-weight="700" font-size="11">② Compose</text>
+      <text x="358" y="73" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">SsoApplication</text><text x="358" y="87" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">redirectUris → dns</text>
+      <rect x="516" y="34" width="152" height="88" rx="9" fill="#fde7eb" stroke="#e30c34"/><text x="530" y="55" fill="#c20a2c" font-weight="700" font-size="11">③ Write back</text>
+      <text x="530" y="73" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">+ admin-sso (Okta)</text><text x="530" y="87" fill="#44485a" font-family="IBM Plex Mono, monospace" font-size="8">edge: redirects_to dns</text><text x="530" y="101" fill="#0a8a62" font-family="IBM Plex Mono, monospace" font-size="8">→ parity reached</text>
+      <rect x="688" y="50" width="66" height="54" rx="9" fill="#0a1f3a"/><text x="721" y="74" text-anchor="middle" fill="#fff" font-weight="700" font-size="10">mem9</text><text x="721" y="90" text-anchor="middle" fill="#5cc0f3" font-size="7.5">on TiDB</text>
+      <defs><marker id="fa3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#aab1c9"/></marker></defs>
+    </svg>
+    <div class="flow-cap">hybrid-search the prod SSO app → trace its depends_on / redirects_to chain → compose and write the matching staging SSO app.</div>
+  </div>
+  <p class="result-line"><b>Result.</b> The SSO app's redirect URI points at the admin DNS; staging reaches <b>parity</b>. <span class="gap">Gap 1 → 0.</span></p>
   <figure class="shot">
-    <img src="img/demo-4-cursor.png" alt="Live tab at parity, all three tools in one feed" />
-    <figcaption><span class="tag">3 · Cursor</span><span>Traces what admin-SSO depends on, builds the <b>SSO app</b>; the last write reads "Staging is now at parity with production." Gap <b>1 → 0</b>.</span></figcaption>
+    <img src="img/demo-4-cursor.png" alt="Live feed at parity, all three tools in one timeline" />
+    <figcaption><span class="tag">Result · Cursor</span><span>One timeline now spans all three tools; the final write reads "Staging is now at parity with production." <b>0 missing</b>.</span></figcaption>
   </figure>
 </div>
 
