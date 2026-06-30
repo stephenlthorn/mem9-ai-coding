@@ -185,45 +185,40 @@
   <div class="kicker">Architecture · mem9 on TiDB</div>
   <h1>mem9 is the memory. TiDB is the engine.</h1>
   <div class="rule"></div>
-  <p class="lead">mem9 is the agent-facing product - <b>one memory, many agents</b>: a shared, persistent layer every coding agent reads and writes through a single key, with hybrid recall and a human-inspectable dashboard. Underneath it, <b>TiDB Cloud is the core engine</b> - graph relationships, vector embeddings, and full-text indexes all live in one distributed SQL store. mem9's own site says it plainly: <i>"Powered by TiDB Cloud."</i></p>
+  <p class="lead">mem9 is the agent-facing product - <b>one memory, many agents</b>: a shared, persistent layer every coding agent reads and writes through a single key, with hybrid recall and a human-inspectable dashboard. An agent reaches it through two layers - its <b>MCP server</b>, which calls the <b>mem9 REST API</b>. And mem9 <i>is</i> TiDB Cloud at its core: the SQL layer, TiKV, vector and full-text search, TiFlash, and branching that store and serve every memory all run inside it - one engine, no separate vector database or sync layer.</p>
 
   <div class="topo keep">
-    <svg viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg" font-family="Hanken Grotesk, sans-serif">
+    <svg viewBox="0 0 760 466" xmlns="http://www.w3.org/2000/svg" font-family="Hanken Grotesk, sans-serif">
       <text x="40" y="15" fill="#8089a0" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="0.5">AI CODING AGENTS - one key serves every agent</text>
       <rect x="60" y="22" width="180" height="40" rx="9" fill="#fbeee8" stroke="#CC785C"/><text x="150" y="47" text-anchor="middle" fill="#b25c3e" font-weight="700" font-size="13">Claude Code</text>
       <rect x="290" y="22" width="180" height="40" rx="9" fill="#e7f6f1" stroke="#13B583"/><text x="380" y="47" text-anchor="middle" fill="#0a8a62" font-weight="700" font-size="13">Minimax</text>
       <rect x="520" y="22" width="180" height="40" rx="9" fill="#eaf1fe" stroke="#2f6df6"/><text x="610" y="47" text-anchor="middle" fill="#1f5be0" font-weight="700" font-size="13">Cursor</text>
       <g stroke="#aab1c9" stroke-width="1.5" fill="none">
-        <path d="M150,62 L150,82" marker-end="url(#a2)"/>
-        <path d="M380,62 L380,82" marker-end="url(#a2)"/>
-        <path d="M610,62 L610,82" marker-end="url(#a2)"/>
+        <path d="M150,62 L150,80" marker-end="url(#a2)"/>
+        <path d="M380,62 L380,80" marker-end="url(#a2)"/>
+        <path d="M610,62 L610,80" marker-end="url(#a2)"/>
       </g>
-      <rect x="40" y="84" width="680" height="44" rx="10" fill="#f6f7fb" stroke="#dfe3ee"/>
-      <text x="380" y="111" text-anchor="middle" fill="#44485a" font-size="11">ACCESS  ·  MCP server (one per repo)  ·  mem9 REST API  ·  one API key per memory space</text>
-      <path d="M380,128 L380,150" stroke="#aab1c9" stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
-      <rect x="40" y="150" width="680" height="120" rx="12" fill="#ffffff" stroke="#0e83c8" stroke-width="1.5"/>
-      <rect x="40" y="150" width="5" height="120" rx="2" fill="#0e83c8"/>
-      <text x="62" y="177" fill="#0e83c8" font-weight="800" font-size="15">mem9 · shared memory</text>
-      <text x="62" y="196" fill="#5b6478" font-size="10.5">one memory, many agents · Persist · Share · Inspect</text>
-      <rect x="62" y="208" width="200" height="38" rx="8" fill="#f6f7fb" stroke="#e4e7ef"/><text x="74" y="226" fill="#14161c" font-weight="700" font-size="11">Graph</text><text x="74" y="240" fill="#7b8196" font-size="9">depends_on traversal</text>
-      <rect x="272" y="208" width="200" height="38" rx="8" fill="#f6f7fb" stroke="#e4e7ef"/><text x="284" y="226" fill="#14161c" font-weight="700" font-size="11">Vector</text><text x="284" y="240" fill="#7b8196" font-size="9">semantic recall · HNSW</text>
-      <rect x="482" y="208" width="200" height="38" rx="8" fill="#f6f7fb" stroke="#e4e7ef"/><text x="494" y="226" fill="#14161c" font-weight="700" font-size="11">Full-text</text><text x="494" y="240" fill="#7b8196" font-size="9">keyword · BM25</text>
-      <text x="62" y="262" fill="#0e83c8" font-size="9.5" font-family="IBM Plex Mono, monospace">vector + full-text fused by Reciprocal Rank Fusion (RRF)</text>
-      <path d="M380,270 L380,296" stroke="#aab1c9" stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
-      <text x="392" y="287" fill="#8089a0" font-size="9" font-family="IBM Plex Mono, monospace">one SQL surface · reads + writes</text>
-      <rect x="22" y="296" width="716" height="158" rx="13" fill="#0a1f3a"/>
-      <text x="44" y="326" fill="#ffffff" font-weight="800" font-size="15">TiDB Cloud · TiDB X</text>
-      <text x="44" y="345" fill="#5cc0f3" font-size="10">the core engine - graph, vector &amp; full-text in one distributed SQL store</text>
-      <rect x="540" y="312" width="176" height="26" rx="13" fill="none" stroke="#2caeef"/><text x="628" y="329" text-anchor="middle" fill="#2caeef" font-size="9.5" font-weight="600">Powered by TiDB Cloud</text>
-      <rect x="44" y="362" width="104" height="74" rx="8" fill="#0c2a4a"/><text x="56" y="386" fill="#cfe6f6" font-weight="700" font-size="10.5">SQL layer</text><text x="56" y="402" fill="#7fa6c8" font-size="8.5">stateless</text><text x="56" y="414" fill="#7fa6c8" font-size="8.5">MySQL-compat</text>
-      <rect x="157" y="362" width="104" height="74" rx="8" fill="#0c2a4a"/><text x="169" y="386" fill="#cfe6f6" font-weight="700" font-size="10.5">TiKV</text><text x="169" y="402" fill="#7fa6c8" font-size="8.5">Raft · ACID</text><text x="169" y="414" fill="#7fa6c8" font-size="8.5">row store</text>
-      <rect x="270" y="362" width="104" height="74" rx="8" fill="#0c2a4a"/><text x="282" y="386" fill="#cfe6f6" font-weight="700" font-size="10.5">Vector</text><text x="282" y="402" fill="#7fa6c8" font-size="8.5">HNSW index</text><text x="282" y="414" fill="#7fa6c8" font-size="8.5">cosine distance</text>
-      <rect x="383" y="362" width="104" height="74" rx="8" fill="#0c2a4a"/><text x="395" y="386" fill="#cfe6f6" font-weight="700" font-size="10.5">Full-text</text><text x="395" y="402" fill="#7fa6c8" font-size="8.5">BM25 · TiCI</text><text x="395" y="414" fill="#7fa6c8" font-size="8.5">tantivy</text>
-      <rect x="496" y="362" width="104" height="74" rx="8" fill="#0c2a4a"/><text x="508" y="386" fill="#cfe6f6" font-weight="700" font-size="10.5">TiFlash</text><text x="508" y="402" fill="#7fa6c8" font-size="8.5">columnar</text><text x="508" y="414" fill="#7fa6c8" font-size="8.5">HTAP scans</text>
-      <rect x="609" y="362" width="107" height="74" rx="8" fill="#0c2a4a"/><text x="621" y="386" fill="#cfe6f6" font-weight="700" font-size="10.5">Branching</text><text x="621" y="402" fill="#7fa6c8" font-size="8.5">per-team</text><text x="621" y="414" fill="#7fa6c8" font-size="8.5">copy-on-write</text>
+      <rect x="40" y="82" width="680" height="40" rx="10" fill="#f6f7fb" stroke="#dfe3ee"/>
+      <text x="380" y="106" text-anchor="middle" fill="#44485a" font-size="11"><tspan font-weight="700" fill="#14161c">MCP server</tspan>  ·  infra-kb · one server per repo</text>
+      <path d="M380,122 L380,140" stroke="#aab1c9" stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
+      <text x="390" y="135" fill="#8089a0" font-size="8" font-family="IBM Plex Mono, monospace">calls</text>
+      <rect x="40" y="142" width="680" height="40" rx="10" fill="#f6f7fb" stroke="#dfe3ee"/>
+      <text x="380" y="166" text-anchor="middle" fill="#44485a" font-size="11"><tspan font-weight="700" fill="#14161c">mem9 REST API</tspan>  ·  one key per memory space</text>
+      <path d="M380,182 L380,202" stroke="#aab1c9" stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
+      <rect x="30" y="204" width="700" height="248" rx="14" fill="#f6f7fb" stroke="#0e83c8" stroke-width="1.6"/>
+      <text x="52" y="232" fill="#0e83c8" font-weight="800" font-size="16">mem9 · shared memory</text>
+      <text x="52" y="251" fill="#5b6478" font-size="10.5">one memory, many agents · Persist · Share · Inspect</text>
+      <rect x="50" y="262" width="660" height="176" rx="11" fill="#0a1f3a"/>
+      <text x="70" y="290" fill="#ffffff" font-weight="800" font-size="15">TiDB Cloud · TiDB X</text>
+      <rect x="70" y="304" width="96" height="106" rx="9" fill="#0c2a4a"/><text x="118" y="362" text-anchor="middle" fill="#cfe6f6" font-weight="700" font-size="11.5">SQL layer</text>
+      <rect x="176" y="304" width="96" height="106" rx="9" fill="#0c2a4a"/><text x="224" y="362" text-anchor="middle" fill="#cfe6f6" font-weight="700" font-size="11.5">TiKV</text>
+      <rect x="282" y="304" width="96" height="106" rx="9" fill="#0c2a4a"/><text x="330" y="362" text-anchor="middle" fill="#cfe6f6" font-weight="700" font-size="11.5">Vector</text>
+      <rect x="388" y="304" width="96" height="106" rx="9" fill="#0c2a4a"/><text x="436" y="362" text-anchor="middle" fill="#cfe6f6" font-weight="700" font-size="11.5">FTS</text>
+      <rect x="494" y="304" width="96" height="106" rx="9" fill="#0c2a4a"/><text x="542" y="362" text-anchor="middle" fill="#cfe6f6" font-weight="700" font-size="11.5">TiFlash</text>
+      <rect x="600" y="304" width="96" height="106" rx="9" fill="#0c2a4a"/><text x="648" y="362" text-anchor="middle" fill="#cfe6f6" font-weight="700" font-size="11.5">Branching</text>
       <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#aab1c9"/></marker></defs>
     </svg>
-    <div class="topo-cap">One store, not four. mem9 hands every agent a simple memory API; TiDB Cloud serves the graph traversal, vector search, and full-text behind it - fused by reciprocal-rank fusion, with ACID writes and per-team isolation. No separate vector database, no ETL, no sync layer.</div>
+    <div class="topo-cap">An agent reaches mem9 through two layers - its MCP server, which calls the mem9 REST API. Inside mem9, a single TiDB Cloud engine holds the relational state, the dependency graph, vector embeddings, and full-text - the same store that computes the blast radius. One engine, no separate vector database, no ETL, no sync layer.</div>
   </div>
 </div>
 
