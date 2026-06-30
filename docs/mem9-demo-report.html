@@ -148,7 +148,7 @@
   <div class="rule"></div>
 
   <div class="bluf">
-    <b>Bottom line.</b> mem9 gives a team of AI coding agents one shared, queryable memory on TiDB Cloud. Agents read before they build and write back when done - so none starts cold or duplicates work. It is isolated per team, an agent can work across repos in a single session, and it answers the one question a vector store cannot: the transitive blast radius of a change. Every screenshot in this brief is a live read or write against TiDB Cloud.
+    <b>Bottom line.</b> mem9 gives a team of AI coding agents <b>one shared, queryable memory</b> on TiDB Cloud: agents read before they build and write back when done, so none starts cold or duplicates work - across sessions, tools, and repos. That shared memory is the product. What makes it work is the engine underneath: because mem9 runs on TiDB, not a bolt-on vector store, the same memory also answers the one question similarity search cannot - the transitive blast radius of a change. Isolated per team, and every screenshot in this brief is a live read or write against TiDB Cloud.
   </div>
 
   <table class="qa keep">
@@ -160,13 +160,13 @@
         <td class="where">§ The model</td>
       </tr>
       <tr>
-        <td class="q">One integration should serve many repositories, not one wiring per repo.</td>
-        <td class="ans">Within a team, repos are <code>appId</code> namespaces on one cluster and the agent <b>routes to the right one</b>. Across teams, separate keys mean separate clusters.</td>
+        <td class="q">The same integration should work for every tool and every repo - no custom glue.</td>
+        <td class="ans">One MCP pattern: each repo is a <b>named server scoped to its <code>appId</code> namespace</b>, and the agent routes to the right one. The same wiring serves Claude Code, Minimax, and Cursor; across teams, separate keys mean separate clusters.</td>
         <td class="where">§ The model</td>
       </tr>
       <tr>
         <td class="q">A single task often spans repos - create a resource in one, the dependent resource in another.</td>
-        <td class="ans">One agent session writes to <b>each repo's namespace</b> and links the records by <code>account_ref</code> - one integration, two repos, no manual hand-off.</td>
+        <td class="ans">One agent session writes to <b>each repo's namespace</b> and links the records by <code>account_ref</code> - one session, two repos, no manual hand-off.</td>
         <td class="where">§ One task, two repos</td>
       </tr>
       <tr>
@@ -290,7 +290,7 @@
   <div class="kicker">The collaboration</div>
   <h1>Three tools, one memory, warm hand-offs.</h1>
   <div class="rule"></div>
-  <p class="lead">Production is complete; staging has drifted by four components. Three different agents bring it back to parity - the developer only states the goal. Every agent's rules file (<code>CLAUDE.md</code> / <code>AGENTS.md</code> / <code>.cursorrules</code>) makes the same first move non-negotiable: <b>query mem9 before writing anything</b>. So each step below runs the same shape - recall, compose, write back.</p>
+  <p class="lead">Production is complete; staging has drifted by four components. Three different agents bring it back to parity - the developer only states the goal. Every agent's rules file (<code>CLAUDE.md</code> / <code>AGENTS.md</code> / <code>.cursorrules</code>) makes the same first move non-negotiable: <b>query mem9 before writing anything</b>. So each step below runs the same shape - recall, compose, write back. Each <b>write</b> records the component and its dependency edges in the shared memory - the knowledge base the next agent reads - alongside the code the agent generates in the repo.</p>
 
   <figure class="shot">
     <img src="img/demo-1-clean.png" alt="Live tab baseline, four components missing in staging" />
@@ -378,7 +378,7 @@
   <div class="kicker">Why TiDB</div>
   <h1>The question similarity can't answer.</h1>
   <div class="rule"></div>
-  <p class="lead">A vector store finds things that <i>look</i> related. It cannot compute a transitive closure - "what, exactly, breaks if I change this?" That is graph reachability. mem9 records every <code>depends_on</code> and composition edge; one recursive traversal walks the chain to any depth.</p>
+  <p class="lead">A vector store finds things that <i>look</i> related. It cannot compute a transitive closure - "what, exactly, breaks if I change this?" That is graph reachability. mem9 records every <code>depends_on</code> and composition edge - <b>the agents write the edges as they compose</b> (the same write that records a component records its links), so the graph stays current with the code. One recursive traversal then walks the chain to any depth.</p>
 
   <div class="chain keep">
     <span class="node">portal-svc</span><span class="verb">authenticates_via</span><span class="arr">→</span>
@@ -405,7 +405,7 @@
       <tr><td class="mono-cell" style="color:var(--accent);font-weight:600;">mem9 → TiDB Cloud</td><td style="color:var(--green);">recursive traversal</td><td style="color:var(--green);">vector + full-text</td><td style="color:var(--green);">one transaction</td></tr>
     </tbody>
   </table>
-  <p style="margin-top:6px;">Graph, vector embeddings, and full-text live in the same store - the same recall that answers <i>"what encrypts production data"</i> also computes the blast radius above. No separate vector DB, no ETL, consistent across concurrent writes from all three tools.</p>
+  <p style="margin-top:6px;">Graph, vector embeddings, and full-text live in the same store - the same recall that answers <i>"what encrypts production data"</i> also computes the blast radius above. No separate vector DB, no ETL; every tool's write lands atomically in one transaction.</p>
 
   <div class="callout keep"><b>S3 is the filing cabinet for artifacts. mem9 is the brain agents query.</b></div>
 </div>
@@ -459,6 +459,17 @@
     <li><b>TiDB Cloud (shown here):</b> graph + vector + full-text, fully managed; nothing to host.</li>
     <li><b>Self-hosted:</b> available - vector and graph run on-prem. Full-text search is TiDB Cloud only today, so this brief uses Cloud to show hybrid recall end to end.</li>
   </ul>
+
+  <div class="keep">
+    <h2>From brief to adoption</h2>
+    <p>This brief shows the <i>what</i> and the <i>why</i> on live infrastructure. The technical deep-dive covers the proof an evaluator needs next:</p>
+    <div class="grid-2">
+      <div class="card wash"><h3>Proof it works</h3><p>The same staging-parity task run <b>with and without</b> mem9, plus raw agent traces - prompt, recall, write-back, and the resulting repo diff.</p></div>
+      <div class="card wash"><h3>Security &amp; tenancy</h3><p>API-key scoping, audit logging, and where isolation is enforced - exactly what one key can read and write inside a team.</p></div>
+      <div class="card wash"><h3>Scale &amp; cost</h3><p>Read, write, and traversal latency; RU / RCU sizing; and the economics of a cluster per team at fleet scale.</p></div>
+      <div class="card wash"><h3>Correctness over time</h3><p>How edges are written and validated, how stale memory is detected, and how concurrent or conflicting writes reconcile.</p></div>
+    </div>
+  </div>
 
   <div class="footer-note">mem9 · TiDB Cloud - shared memory for AI coding agents · v3. Live demo: Claude Code · Minimax · Cursor over team acme (repos pulumi + lza). Every figure is a live read/write against TiDB Cloud.</div>
 </div>
