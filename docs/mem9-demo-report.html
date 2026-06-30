@@ -2,17 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>mem9 - Shared Memory for AI Coding Agents (v3)</title>
+<title>Agentic Coding - Shared Memory Layer (v3)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --ink: #14161c; --ink-dim: #44485a; --ink-faint: #7b8196;
-    --line: #e4e7ef; --line-soft: #eef0f6; --paper: #ffffff; --wash: #f7f8fc;
-    --accent: #2f6df6; --accent-soft: #eaf1fe; --teal: #0b9d8e; --teal-soft: #e3f7f4;
+    --ink: #15161a; --ink-dim: #44485a; --ink-faint: #7b8196;
+    --line: #e4e7ef; --line-soft: #eef0f6; --paper: #ffffff; --wash: #f6f7fb;
+    --accent: #0e83c8; --accent-bright: #2caeef; --accent-soft: #e4f3fc;
+    --tidb-red: #e30c34; --tidb-red-soft: #fde7eb;
+    --teal: #0b9d8e; --teal-soft: #e3f7f4;
     --amber: #c77a12; --red: #d6455d; --violet: #7b59e0; --green: #15976b;
-    --d1: #2f6df6; --d2: #7b59e0; --d3: #d6455d;
+    --d1: #0e83c8; --d2: #7b59e0; --d3: #e30c34;
     --font-display: "Bricolage Grotesque", Georgia, serif;
     --font: "Hanken Grotesk", -apple-system, sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -29,15 +31,15 @@
   .keep { page-break-inside: avoid; }
 
   /* ── Cover ── */
-  .cover { height: 100vh; min-height: 980px; background: linear-gradient(150deg, #0a0c14 0%, #131a30 55%, #0d2b2a 100%); color: #fff; padding: 26mm 20mm; display: flex; flex-direction: column; }
-  .cover-badge { display: inline-flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 11pt; letter-spacing: 0.5px; }
-  .cover-dot { width: 12px; height: 12px; border-radius: 4px; background: linear-gradient(135deg, #4d8bff, #1ad0bd); }
-  .cover-ver { margin-left: 10px; font-family: var(--mono); font-size: 9pt; font-weight: 600; letter-spacing: 1px; color: #07121f; background: linear-gradient(135deg, #4d8bff, #1ad0bd); padding: 2px 9px; border-radius: 20px; }
-  .cover-eyebrow { font-family: var(--mono); font-size: 9.5pt; letter-spacing: 2.5px; text-transform: uppercase; color: #6f86c9; margin-top: 66mm; }
-  .cover-title { font-family: var(--font-display); font-weight: 800; font-size: 42pt; line-height: 1.02; letter-spacing: -1.4px; margin: 10px 0 16px; max-width: 16em; }
-  .cover-sub { font-size: 14.5pt; line-height: 1.5; color: #c4cce4; max-width: 30em; }
-  .cover-foot { margin-top: auto; display: flex; gap: 26px; font-family: var(--mono); font-size: 9.5pt; color: #8893b8; flex-wrap: wrap; }
-  .cover-foot b { color: #dfe6fb; font-weight: 600; }
+  .cover { height: 100vh; min-height: 980px; background: linear-gradient(150deg, #06101e 0%, #0c2238 55%, #0a3152 100%); color: #fff; padding: 26mm 20mm; display: flex; flex-direction: column; }
+  .cover-lockup { display: inline-flex; align-items: center; gap: 14px; }
+  .cover-logo { background: #fff; border-radius: 9px; padding: 8px 13px; display: inline-flex; align-items: center; }
+  .cover-logo img { height: 22px; display: block; }
+  .cover-badge-text { font-family: var(--mono); font-size: 10.5pt; letter-spacing: 0.4px; color: #cfe6f6; }
+  .cover-ver { font-family: var(--mono); font-size: 9pt; font-weight: 600; letter-spacing: 1px; color: #06101e; background: var(--accent-bright); padding: 2px 9px; border-radius: 20px; }
+  .cover-eyebrow { font-family: var(--mono); font-size: 9.5pt; letter-spacing: 2.5px; text-transform: uppercase; color: #69b8e6; margin-top: 64mm; }
+  .cover-title { font-family: var(--font-display); font-weight: 800; font-size: 46pt; line-height: 1.03; letter-spacing: -1.6px; margin: 10px 0 0; max-width: 15em; }
+  .cover-rule { height: 4px; width: 66px; background: var(--tidb-red); border-radius: 3px; margin-top: 22px; }
 
   /* ── Headings ── */
   .kicker { font-family: var(--mono); font-size: 9pt; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
@@ -73,7 +75,7 @@
   .qa td { font-size: 10pt; }
   .qa td.q { color: var(--ink); font-weight: 600; width: 31%; }
   .qa td.ans { color: var(--ink-dim); }
-  .qa td.ans b { color: var(--green); }
+  .qa td.ans b { color: var(--ink); }
   .qa td.where { font-family: var(--mono); font-size: 8pt; color: var(--accent); white-space: nowrap; width: 16%; }
 
   .pill { display: inline-block; font-family: var(--mono); font-size: 8pt; font-weight: 600; padding: 1px 7px; border-radius: 20px; }
@@ -121,22 +123,20 @@
 
 <!-- ─────────────── COVER ─────────────── -->
 <div class="cover">
-  <div class="cover-badge"><span class="cover-dot"></span> mem9 · TiDB Cloud <span class="cover-ver">v3</span></div>
-  <div class="cover-eyebrow">Solution brief · technical evaluation</div>
-  <div class="cover-title">Shared memory for every AI coding agent.</div>
-  <div class="cover-sub">Claude Code, Minimax, and Cursor working a real Pulumi + AWS Landing Zone estate from one queryable memory on TiDB Cloud - isolated per team, spanning repos, answering what a vector store can't.</div>
-  <div class="cover-foot">
-    <div><b>Audience</b> platform engineering</div>
-    <div><b>Store</b> mem9 → TiDB Cloud</div>
-    <div><b>Access</b> Model Context Protocol</div>
-    <div><b>Scope</b> team acme · repos pulumi + lza</div>
+  <div class="cover-lockup">
+    <span class="cover-logo"><img src="img/tidb-logo.png" alt="TiDB" /></span>
+    <span class="cover-badge-text">mem9 shared memory · on TiDB Cloud</span>
+    <span class="cover-ver">v3</span>
   </div>
+  <div class="cover-eyebrow">Solution brief · technical evaluation</div>
+  <div class="cover-title">Agentic Coding - Shared Memory Layer</div>
+  <div class="cover-rule"></div>
 </div>
 
 <!-- ─────────────── 1. EXECUTIVE SUMMARY ─────────────── -->
 <div class="section page">
   <div class="kicker">Executive summary</div>
-  <h1>What you asked, answered.</h1>
+  <h1>One shared memory for a team of agents.</h1>
   <div class="rule"></div>
 
   <div class="bluf">
@@ -144,26 +144,26 @@
   </div>
 
   <table class="qa keep">
-    <thead><tr><th>Your question on the call</th><th>The answer</th><th>Shown in</th></tr></thead>
+    <thead><tr><th>The problem</th><th>How mem9 solves it</th><th>Shown in</th></tr></thead>
     <tbody>
       <tr>
-        <td class="q">Can teams keep isolated knowledge bases - no team reading another's?</td>
-        <td class="ans"><b>Yes.</b> One TiDB cluster per team (a mem9 space). A team's key reaches only its own memory; isolation is enforced by the platform, not app code.</td>
+        <td class="q">Each team's knowledge must stay private - no team reading another's.</td>
+        <td class="ans">One <b>TiDB Cloud cluster per team</b> (a mem9 space). A team's key reaches only its own memory; isolation is enforced by the platform, not application code.</td>
         <td class="where">§ The model</td>
       </tr>
       <tr>
-        <td class="q">One MCP across multiple repos / clusters?</td>
-        <td class="ans"><b>Yes.</b> Within a team, repos are <code>appId</code> namespaces on one cluster and the agent routes to the right one. Across teams, separate keys = separate clusters.</td>
+        <td class="q">One integration should serve many repositories, not one wiring per repo.</td>
+        <td class="ans">Within a team, repos are <code>appId</code> namespaces on one cluster and the agent <b>routes to the right one</b>. Across teams, separate keys mean separate clusters.</td>
         <td class="where">§ The model</td>
       </tr>
       <tr>
-        <td class="q">Can one task span both repos - new AWS account in LZA <i>and</i> an S3 bucket for it in Pulumi?</td>
-        <td class="ans"><b>Yes.</b> A single agent session writes the account to the LZA namespace and the bucket to the Pulumi namespace, joined by <code>account_ref</code> - one MCP, two repos.</td>
+        <td class="q">A single task often spans repos - create a resource in one, the dependent resource in another.</td>
+        <td class="ans">One agent session writes to <b>each repo's namespace</b> and links the records by <code>account_ref</code> - one integration, two repos, no manual hand-off.</td>
         <td class="where">§ One task, two repos</td>
       </tr>
       <tr>
-        <td class="q">Self-hosted option?</td>
-        <td class="ans"><b>Yes,</b> with one caveat - full-text search is TiDB Cloud only today; vector + graph run self-hosted.</td>
+        <td class="q">Some teams require a self-hosted deployment.</td>
+        <td class="ans"><b>Supported.</b> Vector and graph run self-hosted; full-text search is TiDB Cloud only today.</td>
         <td class="where">§ Deployment</td>
       </tr>
     </tbody>
@@ -181,13 +181,13 @@
 
   <div class="topo keep">
     <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="Hanken Grotesk, sans-serif">
-      <rect x="16" y="52" width="468" height="220" rx="14" fill="#f7f8fc" stroke="#2f6df6" stroke-width="1.5"/>
-      <text x="34" y="80" fill="#2f6df6" font-weight="700" font-size="15">team · acme</text>
+      <rect x="16" y="52" width="468" height="220" rx="14" fill="#f6f7fb" stroke="#0e83c8" stroke-width="1.5"/>
+      <text x="34" y="80" fill="#0e83c8" font-weight="700" font-size="15">team · acme</text>
       <text x="34" y="99" fill="#5b6478" font-size="11">one mem9 space  →  one TiDB Cloud cluster</text>
 
       <rect x="34" y="120" width="186" height="132" rx="10" fill="#ffffff" stroke="#dfe3ee" stroke-width="1"/>
-      <rect x="34" y="120" width="4" height="132" rx="2" fill="#2f6df6"/>
-      <text x="52" y="146" fill="#2f6df6" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600">acme_pulumi_kb</text>
+      <rect x="34" y="120" width="4" height="132" rx="2" fill="#0e83c8"/>
+      <text x="52" y="146" fill="#0e83c8" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600">acme_pulumi_kb</text>
       <text x="52" y="165" fill="#5b6478" font-size="10.5">Pulumi infra-as-code</text>
       <text x="52" y="214" fill="#1a1d27" font-family="Bricolage Grotesque, serif" font-weight="800" font-size="30">21</text>
       <text x="92" y="214" fill="#8089a0" font-size="10">components</text>
@@ -197,8 +197,8 @@
       <text x="251" y="178" fill="#8089a0" font-family="IBM Plex Mono, monospace" font-size="8" text-anchor="middle">account_ref</text>
 
       <rect x="282" y="120" width="186" height="132" rx="10" fill="#ffffff" stroke="#dfe3ee" stroke-width="1"/>
-      <rect x="282" y="120" width="4" height="132" rx="2" fill="#0b9d8e"/>
-      <text x="300" y="146" fill="#0b9d8e" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600">acme_lza_kb</text>
+      <rect x="282" y="120" width="4" height="132" rx="2" fill="#e30c34"/>
+      <text x="300" y="146" fill="#e30c34" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600">acme_lza_kb</text>
       <text x="300" y="165" fill="#5b6478" font-size="10.5">AWS Landing Zone</text>
       <text x="300" y="214" fill="#1a1d27" font-family="Bricolage Grotesque, serif" font-weight="800" font-size="30">11</text>
       <text x="340" y="214" fill="#8089a0" font-size="10">components</text>
@@ -222,10 +222,10 @@
 
 <!-- ─────────────── 3. HEADLINE: ONE TASK, TWO REPOS ─────────────── -->
 <div class="section page">
-  <div class="kicker">Headline · the scenario you described</div>
+  <div class="kicker">Headline · one task, two repos</div>
   <h1>One task, two repos.</h1>
   <div class="rule"></div>
-  <p class="lead">You asked whether one session could create a new AWS account in the LZA repo <i>and</i> the S3 bucket for it in the Pulumi repo. It can. A single agent, given one plain-language request, writes the account to <code>acme_lza_kb</code> and the bucket to <code>acme_pulumi_kb</code> - two separate namespaces - and links them with <code>account_ref</code>. No second session, no manual hand-off.</p>
+  <p class="lead">A single task often spans repos - create a new AWS account in the LZA repo <i>and</i> the S3 bucket for it in the Pulumi repo. One agent, given one plain-language request, writes the account to <code>acme_lza_kb</code> and the bucket to <code>acme_pulumi_kb</code> - two separate namespaces - and links them with <code>account_ref</code>. No second session, no manual hand-off.</p>
 
   <figure class="shot">
     <img src="img/xrepo.png" alt="Cross-repo tab: one agent writes a new LZA account and a Pulumi bucket, joined by account_ref" />
@@ -240,7 +240,7 @@
   <div class="kicker">The collaboration</div>
   <h1>Three tools, one memory, warm hand-offs.</h1>
   <div class="rule"></div>
-  <p class="lead">A second scenario, the one in the video: production is complete, staging has drifted by four components. Three different agents bring it back to parity - each reading the shared memory before it builds and writing back when done. The developer only states the goal; the standing instruction does the rest.</p>
+  <p class="lead">A common scenario: production is complete, staging has drifted by four components. Three different agents bring it back to parity - each reading the shared memory before it builds and writing back when done. The developer only states the goal; the standing instruction does the rest.</p>
 
   <div class="grid-3">
     <div class="card keep">
@@ -260,18 +260,22 @@
     </div>
   </div>
 
-  <div class="stage-lead">The gap closing - real writes to mem9:</div>
+  <div class="stage-lead">The gap closing - real writes to mem9, each tool credited:</div>
   <figure class="shot">
     <img src="img/demo-1-clean.png" alt="Live tab baseline, four components missing in staging" />
     <figcaption><span class="tag">Start</span><span>Feed empty; staging-parity strip shows <b>4 missing</b>.</span></figcaption>
   </figure>
   <figure class="shot">
-    <img src="img/demo-3-minimax.png" alt="Live tab after Minimax cold start, gap one" />
-    <figcaption><span class="tag">Warm hand-off</span><span>Minimax opens cold, reads the shared log first ("continuing staging work"), then builds - no re-briefing. Gap <b>1</b>.</span></figcaption>
+    <img src="img/demo-2-claude.png" alt="Live tab after Claude Code writes static-assets and its CDN" />
+    <figcaption><span class="tag">1 · Claude Code</span><span>Reads the KB, composes <b>static-assets</b> and its CDN, writes both back. Gap <b>4 → 2</b>.</span></figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="img/demo-3-minimax.png" alt="Live tab after Minimax cold start continues admin DNS" />
+    <figcaption><span class="tag">2 · Minimax</span><span>Opens cold, reads the shared log first ("continuing staging work"), then builds <b>admin-DNS</b> - no re-briefing. Gap <b>2 → 1</b>.</span></figcaption>
   </figure>
   <figure class="shot">
     <img src="img/demo-4-cursor.png" alt="Live tab at parity, all three tools in one feed" />
-    <figcaption><span class="tag">Parity</span><span>One timeline across all three tools; the last write reads "Staging is now at parity with production." Gap <b>0</b>.</span></figcaption>
+    <figcaption><span class="tag">3 · Cursor</span><span>Traces what admin-SSO depends on, builds the <b>SSO app</b>; the last write reads "Staging is now at parity with production." Gap <b>1 → 0</b>.</span></figcaption>
   </figure>
 </div>
 
@@ -304,7 +308,7 @@
       <tr><td class="mono-cell">S3 / filesystem</td><td>no traversal</td><td>no</td><td>no transactions</td></tr>
       <tr><td class="mono-cell">Vector DB only</td><td>similarity ≠ reachability</td><td>yes</td><td>no</td></tr>
       <tr><td class="mono-cell">Four separate systems</td><td>partial, with ETL</td><td>yes</td><td>no cross-system atomicity</td></tr>
-      <tr><td class="mono-cell" style="color:var(--teal);font-weight:600;">mem9 → TiDB Cloud</td><td style="color:var(--green);">recursive traversal</td><td style="color:var(--green);">vector + full-text</td><td style="color:var(--green);">one transaction</td></tr>
+      <tr><td class="mono-cell" style="color:var(--accent);font-weight:600;">mem9 → TiDB Cloud</td><td style="color:var(--green);">recursive traversal</td><td style="color:var(--green);">vector + full-text</td><td style="color:var(--green);">one transaction</td></tr>
     </tbody>
   </table>
   <p style="margin-top:6px;">Graph, vector embeddings, and full-text live in the same store - the same recall that answers <i>"what encrypts production data"</i> also computes the blast radius above. No separate vector DB, no ETL, consistent across concurrent writes from all three tools.</p>
@@ -328,9 +332,9 @@
       <text x="355" y="118" text-anchor="middle" fill="#14161c" font-weight="700" font-size="13">MCP</text>
       <text x="355" y="138" text-anchor="middle" fill="#7b8196" font-size="10">infra-kb · one per repo</text>
 
-      <rect x="556" y="78" width="190" height="94" rx="12" fill="#0d2b2a"/>
+      <rect x="556" y="78" width="190" height="94" rx="12" fill="#0a1f3a"/>
       <text x="651" y="116" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">mem9 → TiDB Cloud</text>
-      <text x="651" y="138" text-anchor="middle" fill="#8fe6da" font-size="10">graph · vector · full-text</text>
+      <text x="651" y="138" text-anchor="middle" fill="#5cc0f3" font-size="10">graph · vector · full-text</text>
 
       <g stroke="#aab1c9" stroke-width="1.6" fill="none">
         <path d="M164,40 C230,40 220,120 278,122" marker-end="url(#ar)"/>
