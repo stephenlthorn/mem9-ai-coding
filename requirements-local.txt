@@ -1,0 +1,3 @@
+# Local tiup-playground target only: client-side embeddings for vector search.
+# Cloud (mem9.ai) embeds server-side with EMBED_TEXT and does NOT need this.
+fastembed>=0.3.0

@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mem9-ai-coding",
+      "runtimeExecutable": "/Users/stephen/GitHub/mem9-ai-coding/.venv/bin/uvicorn",
+      "runtimeArgs": ["dashboard.server:app", "--host", "0.0.0.0", "--port", "7001"],
+      "cwd": "/Users/stephen/GitHub/mem9-ai-coding",
+      "port": 7001
+    }
+  ]
+}

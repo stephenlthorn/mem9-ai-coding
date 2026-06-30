@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>mem9 - Shared Memory for AI Coding Agents (v3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #14161c; --ink-dim: #44485a; --ink-faint: #7b8196;
+    --line: #e4e7ef; --line-soft: #eef0f6; --paper: #ffffff; --wash: #f7f8fc;
+    --accent: #2f6df6; --accent-soft: #eaf1fe; --teal: #0b9d8e; --teal-soft: #e3f7f4;
+    --amber: #c77a12; --red: #d6455d; --violet: #7b59e0; --green: #15976b;
+    --d1: #2f6df6; --d2: #7b59e0; --d3: #d6455d;
+    --font-display: "Bricolage Grotesque", Georgia, serif;
+    --font: "Hanken Grotesk", -apple-system, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: var(--font); color: var(--ink); background: var(--paper); font-size: 11pt; line-height: 1.55; }
+
+  @page { size: Letter; margin: 16mm 16mm 18mm; }
+  @page :first { margin: 0; }
+
+  .page { padding: 0; }
+  .section { page-break-before: always; padding-top: 4mm; }
+  .keep { page-break-inside: avoid; }
+
+  /* ── Cover ── */
+  .cover { height: 100vh; min-height: 980px; background: linear-gradient(150deg, #0a0c14 0%, #131a30 55%, #0d2b2a 100%); color: #fff; padding: 26mm 20mm; display: flex; flex-direction: column; }
+  .cover-badge { display: inline-flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 11pt; letter-spacing: 0.5px; }
+  .cover-dot { width: 12px; height: 12px; border-radius: 4px; background: linear-gradient(135deg, #4d8bff, #1ad0bd); }
+  .cover-ver { margin-left: 10px; font-family: var(--mono); font-size: 9pt; font-weight: 600; letter-spacing: 1px; color: #07121f; background: linear-gradient(135deg, #4d8bff, #1ad0bd); padding: 2px 9px; border-radius: 20px; }
+  .cover-eyebrow { font-family: var(--mono); font-size: 9.5pt; letter-spacing: 2.5px; text-transform: uppercase; color: #6f86c9; margin-top: 66mm; }
+  .cover-title { font-family: var(--font-display); font-weight: 800; font-size: 42pt; line-height: 1.02; letter-spacing: -1.4px; margin: 10px 0 16px; max-width: 16em; }
+  .cover-sub { font-size: 14.5pt; line-height: 1.5; color: #c4cce4; max-width: 30em; }
+  .cover-foot { margin-top: auto; display: flex; gap: 26px; font-family: var(--mono); font-size: 9.5pt; color: #8893b8; flex-wrap: wrap; }
+  .cover-foot b { color: #dfe6fb; font-weight: 600; }
+
+  /* ── Headings ── */
+  .kicker { font-family: var(--mono); font-size: 9pt; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 26pt; letter-spacing: -0.8px; line-height: 1.05; margin-bottom: 10px; }
+  h2 { font-family: var(--font-display); font-weight: 700; font-size: 15pt; letter-spacing: -0.3px; margin: 20px 0 8px; }
+  p { margin-bottom: 9px; color: var(--ink-dim); }
+  p.lead { font-size: 12.5pt; color: var(--ink); max-width: 40em; }
+  b, strong { color: var(--ink); font-weight: 600; }
+  code { font-family: var(--mono); font-size: 0.86em; background: var(--wash); color: var(--accent); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line-soft); }
+  .rule { height: 3px; width: 52px; background: var(--accent); border-radius: 3px; margin: 14px 0 18px; }
+
+  /* ── Cards / grids ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .card { border: 1px solid var(--line); border-radius: 11px; padding: 15px 16px; background: var(--paper); }
+  .card.wash { background: var(--wash); border-color: var(--line-soft); }
+  .card h3 { font-family: var(--font-display); font-size: 12pt; font-weight: 700; margin-bottom: 5px; }
+  .card p { font-size: 10pt; margin: 0; }
+  .ic { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; font-size: 14pt; margin-bottom: 9px; }
+  .ic.bad { background: #fdeaed; color: var(--red); }
+  .ic.good { background: var(--teal-soft); color: var(--teal); }
+
+  .callout { border-left: 3px solid var(--teal); background: var(--teal-soft); border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 4px 0 2px; }
+  .callout b { color: var(--green); }
+  .bluf { border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 10px 10px 0; padding: 15px 18px; margin: 2px 0 16px; font-size: 11.5pt; color: var(--ink); }
+  .bluf b { color: var(--accent); }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin: 8px 0; }
+  th { text-align: left; font-family: var(--mono); font-size: 8pt; text-transform: uppercase; letter-spacing: 0.6px; color: var(--ink-faint); padding: 7px 10px; border-bottom: 1.5px solid var(--line); }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--ink-dim); }
+  td.mono, .mono-cell { font-family: var(--mono); font-size: 9pt; color: var(--ink); }
+  .qa td { font-size: 10pt; }
+  .qa td.q { color: var(--ink); font-weight: 600; width: 31%; }
+  .qa td.ans { color: var(--ink-dim); }
+  .qa td.ans b { color: var(--green); }
+  .qa td.where { font-family: var(--mono); font-size: 8pt; color: var(--accent); white-space: nowrap; width: 16%; }
+
+  .pill { display: inline-block; font-family: var(--mono); font-size: 8pt; font-weight: 600; padding: 1px 7px; border-radius: 20px; }
+  .pill.d1 { background: var(--accent-soft); color: var(--d1); }
+  .pill.d2 { background: #f0ebfc; color: var(--d2); }
+  .pill.d3 { background: #fdeaed; color: var(--d3); }
+  .pill.d4 { background: #fdeaed; color: var(--d3); }
+
+  /* ── Chain visual ── */
+  .chain { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-family: var(--mono); font-size: 9pt; margin: 8px 0; }
+  .chain .node { background: var(--wash); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; color: var(--ink); }
+  .chain .node.foundation { background: var(--teal-soft); border-color: #9fe0d6; color: #0a6b60; font-weight: 600; }
+  .chain .arr { color: var(--ink-faint); font-size: 8pt; }
+  .chain .verb { color: var(--accent); font-size: 7.5pt; }
+
+  /* ── Architecture diagram ── */
+  .arch { background: var(--wash); border: 1px solid var(--line-soft); border-radius: 12px; padding: 14px; margin: 10px 0; }
+  .arch svg { display: block; width: 100%; height: auto; }
+
+  .footer-note { font-family: var(--mono); font-size: 8pt; color: var(--ink-faint); margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 8px; }
+  ul.clean { list-style: none; margin: 4px 0; }
+  ul.clean li { position: relative; padding-left: 18px; margin-bottom: 5px; font-size: 10pt; color: var(--ink-dim); }
+  ul.clean li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
+
+  /* ── Demo prompt chip ── */
+  .demo-prompt { font-family: var(--mono); font-size: 8.5pt; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--line-soft); border-radius: 7px; padding: 7px 10px; margin: 4px 0 9px; line-height: 1.5; }
+  .demo-prompt::before { content: "dev types  "; color: var(--ink-faint); }
+  .stage-lead { font-size: 11pt; color: var(--ink); margin: 18px 0 6px; font-weight: 600; }
+
+  /* ── Topology diagram ── */
+  .topo { margin: 14px 0 6px; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 6px; background: var(--paper); page-break-inside: avoid; }
+  .topo svg { display: block; width: 100%; height: auto; }
+  .topo-cap { font-size: 9.5pt; color: var(--ink-dim); padding: 8px 4px 4px; line-height: 1.5; border-top: 1px solid var(--line-soft); margin-top: 6px; }
+  .topo-cap code { font-family: var(--mono); font-size: 0.86em; color: var(--accent); }
+
+  /* ── Screenshots ── */
+  figure.shot { margin: 12px 0 6px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #0a0c14; page-break-inside: avoid; box-shadow: 0 6px 20px rgba(20,22,28,0.08); }
+  figure.shot img { display: block; width: 100%; height: auto; }
+  figcaption { display: flex; gap: 8px; align-items: baseline; font-size: 9.5pt; color: var(--ink-dim); padding: 9px 14px; background: var(--wash); border-top: 1px solid var(--line-soft); }
+  figcaption .tag { font-family: var(--mono); font-size: 7.5pt; letter-spacing: 0.5px; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+  figcaption b { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- ─────────────── COVER ─────────────── -->
+<div class="cover">
+  <div class="cover-badge"><span class="cover-dot"></span> mem9 · TiDB Cloud <span class="cover-ver">v3</span></div>
+  <div class="cover-eyebrow">Solution brief · technical evaluation</div>
+  <div class="cover-title">Shared memory for every AI coding agent.</div>
+  <div class="cover-sub">Claude Code, Minimax, and Cursor working a real Pulumi + AWS Landing Zone estate from one queryable memory on TiDB Cloud - isolated per team, spanning repos, answering what a vector store can't.</div>
+  <div class="cover-foot">
+    <div><b>Audience</b> platform engineering</div>
+    <div><b>Store</b> mem9 → TiDB Cloud</div>
+    <div><b>Access</b> Model Context Protocol</div>
+    <div><b>Scope</b> team acme · repos pulumi + lza</div>
+  </div>
+</div>
+
+<!-- ─────────────── 1. EXECUTIVE SUMMARY ─────────────── -->
+<div class="section page">
+  <div class="kicker">Executive summary</div>
+  <h1>What you asked, answered.</h1>
+  <div class="rule"></div>
+
+  <div class="bluf">
+    <b>Bottom line.</b> mem9 gives a team of AI coding agents one shared, queryable memory on TiDB Cloud. Agents read before they build and write back when done - so none starts cold or duplicates work. It is isolated per team, an agent can work across repos in a single session, and it answers the one question a vector store cannot: the transitive blast radius of a change. Every screenshot in this brief is a live read or write against TiDB Cloud.
+  </div>
+
+  <table class="qa keep">
+    <thead><tr><th>Your question on the call</th><th>The answer</th><th>Shown in</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="q">Can teams keep isolated knowledge bases - no team reading another's?</td>
+        <td class="ans"><b>Yes.</b> One TiDB cluster per team (a mem9 space). A team's key reaches only its own memory; isolation is enforced by the platform, not app code.</td>
+        <td class="where">§ The model</td>
+      </tr>
+      <tr>
+        <td class="q">One MCP across multiple repos / clusters?</td>
+        <td class="ans"><b>Yes.</b> Within a team, repos are <code>appId</code> namespaces on one cluster and the agent routes to the right one. Across teams, separate keys = separate clusters.</td>
+        <td class="where">§ The model</td>
+      </tr>
+      <tr>
+        <td class="q">Can one task span both repos - new AWS account in LZA <i>and</i> an S3 bucket for it in Pulumi?</td>
+        <td class="ans"><b>Yes.</b> A single agent session writes the account to the LZA namespace and the bucket to the Pulumi namespace, joined by <code>account_ref</code> - one MCP, two repos.</td>
+        <td class="where">§ One task, two repos</td>
+      </tr>
+      <tr>
+        <td class="q">Self-hosted option?</td>
+        <td class="ans"><b>Yes,</b> with one caveat - full-text search is TiDB Cloud only today; vector + graph run self-hosted.</td>
+        <td class="where">§ Deployment</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer-note">Demonstrated live with three different coding agents - Claude Code, Minimax, and Cursor - against a single TiDB Cloud cluster. The tools are interchangeable; the shared memory is the point.</div>
+</div>
+
+<!-- ─────────────── 2. THE MODEL ─────────────── -->
+<div class="section page">
+  <div class="kicker">The model</div>
+  <h1>Team = cluster. Repo = namespace.</h1>
+  <div class="rule"></div>
+  <p class="lead">mem9 maps onto how a team already works. A <b>team</b> is a mem9 <b>space</b> - one key, one isolated TiDB Cloud cluster. A <b>repo</b> is an <code>appId</code> namespace inside it, so repos share a cluster but keep separate recall scopes. Another team is another cluster, reachable only with its own key.</p>
+
+  <div class="topo keep">
+    <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="Hanken Grotesk, sans-serif">
+      <rect x="16" y="52" width="468" height="220" rx="14" fill="#f7f8fc" stroke="#2f6df6" stroke-width="1.5"/>
+      <text x="34" y="80" fill="#2f6df6" font-weight="700" font-size="15">team · acme</text>
+      <text x="34" y="99" fill="#5b6478" font-size="11">one mem9 space  →  one TiDB Cloud cluster</text>
+
+      <rect x="34" y="120" width="186" height="132" rx="10" fill="#ffffff" stroke="#dfe3ee" stroke-width="1"/>
+      <rect x="34" y="120" width="4" height="132" rx="2" fill="#2f6df6"/>
+      <text x="52" y="146" fill="#2f6df6" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600">acme_pulumi_kb</text>
+      <text x="52" y="165" fill="#5b6478" font-size="10.5">Pulumi infra-as-code</text>
+      <text x="52" y="214" fill="#1a1d27" font-family="Bricolage Grotesque, serif" font-weight="800" font-size="30">21</text>
+      <text x="92" y="214" fill="#8089a0" font-size="10">components</text>
+      <text x="52" y="236" fill="#8089a0" font-size="9.5">AWS · Cloudflare · Okta</text>
+
+      <line x1="220" y1="186" x2="282" y2="186" stroke="#8089a0" stroke-width="1.4" stroke-dasharray="4 3"/>
+      <text x="251" y="178" fill="#8089a0" font-family="IBM Plex Mono, monospace" font-size="8" text-anchor="middle">account_ref</text>
+
+      <rect x="282" y="120" width="186" height="132" rx="10" fill="#ffffff" stroke="#dfe3ee" stroke-width="1"/>
+      <rect x="282" y="120" width="4" height="132" rx="2" fill="#0b9d8e"/>
+      <text x="300" y="146" fill="#0b9d8e" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600">acme_lza_kb</text>
+      <text x="300" y="165" fill="#5b6478" font-size="10.5">AWS Landing Zone</text>
+      <text x="300" y="214" fill="#1a1d27" font-family="Bricolage Grotesque, serif" font-weight="800" font-size="30">11</text>
+      <text x="340" y="214" fill="#8089a0" font-size="10">components</text>
+      <text x="300" y="236" fill="#8089a0" font-size="9.5">Accounts · OUs · SCPs · IAM</text>
+
+      <line x1="496" y1="64" x2="496" y2="260" stroke="#cbd2e0" stroke-width="1.4" stroke-dasharray="3 4"/>
+      <text x="496" y="290" fill="#8089a0" font-size="9" text-anchor="middle">isolated by API key</text>
+
+      <rect x="508" y="52" width="236" height="220" rx="14" fill="#f1f2f6" stroke="#cbd2e0" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="526" y="80" fill="#737b8e" font-weight="700" font-size="15">team · globex</text>
+      <text x="526" y="99" fill="#9aa1b2" font-size="11">separate space · separate cluster</text>
+      <text x="626" y="170" font-size="26" text-anchor="middle">🔒</text>
+      <text x="626" y="205" fill="#737b8e" font-size="10.5" text-anchor="middle">Acme cannot read this</text>
+      <text x="626" y="222" fill="#9aa1b2" font-size="9.5" text-anchor="middle">different key → different memory</text>
+    </svg>
+    <div class="topo-cap">One key per team. Inside a team, repos are <code>appId</code> namespaces on the same cluster, joined by <code>account_ref</code>; across teams, separate keys mean separate clusters and zero shared recall.</div>
+  </div>
+
+  <div class="footer-note">Each team's space sits on its own managed TiDB Cloud cluster. Agents never handle raw database credentials - the mem9 API key is the only secret.</div>
+</div>
+
+<!-- ─────────────── 3. HEADLINE: ONE TASK, TWO REPOS ─────────────── -->
+<div class="section page">
+  <div class="kicker">Headline · the scenario you described</div>
+  <h1>One task, two repos.</h1>
+  <div class="rule"></div>
+  <p class="lead">You asked whether one session could create a new AWS account in the LZA repo <i>and</i> the S3 bucket for it in the Pulumi repo. It can. A single agent, given one plain-language request, writes the account to <code>acme_lza_kb</code> and the bucket to <code>acme_pulumi_kb</code> - two separate namespaces - and links them with <code>account_ref</code>. No second session, no manual hand-off.</p>
+
+  <figure class="shot">
+    <img src="img/xrepo.png" alt="Cross-repo tab: one agent writes a new LZA account and a Pulumi bucket, joined by account_ref" />
+    <figcaption><span class="tag">Dashboard · Cross-repo</span><span>Left: one activity feed shows the same agent writing to <b>both</b> repos. Right: the <code>account_ref</code> join - the new <b>data-platform</b> account and its Pulumi exports bucket, created together and linked.</span></figcaption>
+  </figure>
+
+  <div class="callout keep"><b>Why it matters.</b> The agent doesn't need to be told which repo owns what. It routes each write to the right namespace and records the cross-repo link, so the next session - in either repo - already knows the account and its bucket belong together.</div>
+</div>
+
+<!-- ─────────────── 4. THE COLLABORATION ─────────────── -->
+<div class="section page">
+  <div class="kicker">The collaboration</div>
+  <h1>Three tools, one memory, warm hand-offs.</h1>
+  <div class="rule"></div>
+  <p class="lead">A second scenario, the one in the video: production is complete, staging has drifted by four components. Three different agents bring it back to parity - each reading the shared memory before it builds and writing back when done. The developer only states the goal; the standing instruction does the rest.</p>
+
+  <div class="grid-3">
+    <div class="card keep">
+      <h3 style="color:#b25c3e;">1 · Claude Code</h3>
+      <p class="demo-prompt">"Bring staging up to parity with production - start with the static-assets bucket and its CDN."</p>
+      <p>Queries the KB, finds the gap, composes the libraries, writes both back. <b>Gap 4 → 2.</b></p>
+    </div>
+    <div class="card keep">
+      <h3 style="color:#0a8a62;">2 · Minimax</h3>
+      <p class="demo-prompt">"Keep bringing staging to parity with prod - it still needs the admin-portal DNS."</p>
+      <p>Opens cold. Reads the shared session log, sees what was just built, continues with admin-DNS. <b>Gap 2 → 1.</b></p>
+    </div>
+    <div class="card keep">
+      <h3 style="color:#1f5be0;">3 · Cursor</h3>
+      <p class="demo-prompt">"Finish bringing staging to parity - add the admin SSO app."</p>
+      <p>Traces what prod's admin-SSO depends on, confirms it redirects to a DnsRecord, builds the SSO app. <b>Gap 1 → 0.</b></p>
+    </div>
+  </div>
+
+  <div class="stage-lead">The gap closing - real writes to mem9:</div>
+  <figure class="shot">
+    <img src="img/demo-1-clean.png" alt="Live tab baseline, four components missing in staging" />
+    <figcaption><span class="tag">Start</span><span>Feed empty; staging-parity strip shows <b>4 missing</b>.</span></figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="img/demo-3-minimax.png" alt="Live tab after Minimax cold start, gap one" />
+    <figcaption><span class="tag">Warm hand-off</span><span>Minimax opens cold, reads the shared log first ("continuing staging work"), then builds - no re-briefing. Gap <b>1</b>.</span></figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="img/demo-4-cursor.png" alt="Live tab at parity, all three tools in one feed" />
+    <figcaption><span class="tag">Parity</span><span>One timeline across all three tools; the last write reads "Staging is now at parity with production." Gap <b>0</b>.</span></figcaption>
+  </figure>
+</div>
+
+<!-- ─────────────── 5. WHY TiDB ─────────────── -->
+<div class="section page">
+  <div class="kicker">Why TiDB</div>
+  <h1>The question similarity can't answer.</h1>
+  <div class="rule"></div>
+  <p class="lead">A vector store finds things that <i>look</i> related. It cannot compute a transitive closure - "what, exactly, breaks if I change this?" That is graph reachability. mem9 records every <code>depends_on</code> and composition edge; one recursive traversal walks the chain to any depth.</p>
+
+  <div class="chain keep">
+    <span class="node">portal-svc</span><span class="verb">authenticates_via</span><span class="arr">→</span>
+    <span class="node">portal-sso</span><span class="verb">redirects_to</span><span class="arr">→</span>
+    <span class="node">portal-dns</span><span class="verb">secured_by</span><span class="arr">→</span>
+    <span class="node">portal-cert</span><span class="verb">encrypted_by</span><span class="arr">→</span>
+    <span class="node">data-kms</span><span class="verb">instantiates</span><span class="arr">→</span>
+    <span class="node foundation">KmsKey</span>
+  </div>
+  <p>Run that in reverse from <code>KmsKey</code> - "what breaks if we rotate it?" - and the answer is <b>13 components across four depths</b>. No flat search surfaces this; only walking the graph does.</p>
+
+  <figure class="shot">
+    <img src="img/deps-blast.png" alt="Dependency Rail: blast radius of KmsKey, 13 components across four depths" />
+    <figcaption><span class="tag">Dashboard · Dependencies</span><span>"What breaks if we rotate <b>KmsKey</b>?" Each hop is a column; 13 components fan across four depths and funnel onto the anchored foundation. The Trace panel reads each chain as a sentence.</span></figcaption>
+  </figure>
+
+  <h2>One engine, not four</h2>
+  <table class="keep">
+    <thead><tr><th>Approach</th><th>Graph reachability</th><th>Semantic recall</th><th>Atomic agent state</th></tr></thead>
+    <tbody>
+      <tr><td class="mono-cell">S3 / filesystem</td><td>no traversal</td><td>no</td><td>no transactions</td></tr>
+      <tr><td class="mono-cell">Vector DB only</td><td>similarity ≠ reachability</td><td>yes</td><td>no</td></tr>
+      <tr><td class="mono-cell">Four separate systems</td><td>partial, with ETL</td><td>yes</td><td>no cross-system atomicity</td></tr>
+      <tr><td class="mono-cell" style="color:var(--teal);font-weight:600;">mem9 → TiDB Cloud</td><td style="color:var(--green);">recursive traversal</td><td style="color:var(--green);">vector + full-text</td><td style="color:var(--green);">one transaction</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:6px;">Graph, vector embeddings, and full-text live in the same store - the same recall that answers <i>"what encrypts production data"</i> also computes the blast radius above. No separate vector DB, no ETL, consistent across concurrent writes from all three tools.</p>
+
+  <div class="callout keep"><b>S3 is the filing cabinet for artifacts. mem9 is the brain agents query.</b></div>
+</div>
+
+<!-- ─────────────── 6. ARCHITECTURE & DEPLOYMENT ─────────────── -->
+<div class="section page">
+  <div class="kicker">Architecture &amp; deployment</div>
+  <h1>One store. One plug. One key.</h1>
+  <div class="rule"></div>
+
+  <div class="arch keep">
+    <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" font-family="Hanken Grotesk, sans-serif">
+      <rect x="14" y="20" width="150" height="40" rx="9" fill="#fbeee8" stroke="#CC785C"/><text x="89" y="45" text-anchor="middle" fill="#b25c3e" font-weight="700" font-size="13">Claude Code</text>
+      <rect x="14" y="105" width="150" height="40" rx="9" fill="#e7f6f1" stroke="#13B583"/><text x="89" y="130" text-anchor="middle" fill="#0a8a62" font-weight="700" font-size="13">Minimax</text>
+      <rect x="14" y="190" width="150" height="40" rx="9" fill="#eaf1fe" stroke="#2f6df6"/><text x="89" y="215" text-anchor="middle" fill="#1f5be0" font-weight="700" font-size="13">Cursor</text>
+
+      <rect x="280" y="92" width="150" height="66" rx="11" fill="#f7f8fc" stroke="#cdd3e6"/>
+      <text x="355" y="118" text-anchor="middle" fill="#14161c" font-weight="700" font-size="13">MCP</text>
+      <text x="355" y="138" text-anchor="middle" fill="#7b8196" font-size="10">infra-kb · one per repo</text>
+
+      <rect x="556" y="78" width="190" height="94" rx="12" fill="#0d2b2a"/>
+      <text x="651" y="116" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">mem9 → TiDB Cloud</text>
+      <text x="651" y="138" text-anchor="middle" fill="#8fe6da" font-size="10">graph · vector · full-text</text>
+
+      <g stroke="#aab1c9" stroke-width="1.6" fill="none">
+        <path d="M164,40 C230,40 220,120 278,122" marker-end="url(#ar)"/>
+        <path d="M164,125 L278,125" marker-end="url(#ar)"/>
+        <path d="M164,210 C230,210 220,130 278,128" marker-end="url(#ar)"/>
+        <path d="M430,125 L552,125" marker-end="url(#ar)"/>
+      </g>
+      <text x="492" y="116" text-anchor="middle" fill="#7b8196" font-size="9" font-family="IBM Plex Mono, monospace">REST</text>
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#aab1c9"/></marker></defs>
+    </svg>
+  </div>
+
+  <div class="grid-3">
+    <div class="card wash keep"><h3>MCP is the plug</h3><p>Every tool loads the same Model Context Protocol config - one named server per repo. No custom glue per tool.</p></div>
+    <div class="card wash keep"><h3>One store, every pattern</h3><p>Relational state, the dependency graph, vector embeddings, and full-text all live in the same memory.</p></div>
+    <div class="card wash keep"><h3>Just an API key</h3><p>mem9 manages the TiDB Cloud cluster. Agents read and write through one key and never touch credentials.</p></div>
+  </div>
+
+  <h2>The standing instruction</h2>
+  <p>The developer types a normal request. The prescriptive part lives in each tool's rules file (<code>CLAUDE.md</code> / <code>AGENTS.md</code> / <code>.cursorrules</code>), so the agent queries first, composes, and writes back on every run with no per-task hand-holding.</p>
+  <figure class="shot">
+    <img src="img/config.png" alt="Config tab: the standing instruction and one-server-per-repo MCP wiring" />
+    <figcaption><span class="tag">Dashboard · Config</span><span>The five-step standing instruction every tool loads, and the one-entry-per-repo MCP wiring that makes it automatic.</span></figcaption>
+  </figure>
+
+  <h2>Deployment</h2>
+  <ul class="clean">
+    <li><b>TiDB Cloud (shown here):</b> graph + vector + full-text, fully managed; nothing to host.</li>
+    <li><b>Self-hosted:</b> available - vector and graph run on-prem. Full-text search is TiDB Cloud only today, so this brief uses Cloud to show hybrid recall end to end.</li>
+  </ul>
+
+  <div class="footer-note">mem9 · TiDB Cloud - shared memory for AI coding agents · v3. Live demo: Claude Code · Minimax · Cursor over team acme (repos pulumi + lza). Every figure is a live read/write against TiDB Cloud.</div>
+</div>
+
+</body>
+</html>

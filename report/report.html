@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 16mm 16mm;
+    @bottom-center { content: "mem9-ai-coding  ·  shared TiDB knowledge graph for multi-tool AI coding"; font-size: 7.5pt; color: #9aa3b2; }
+    @bottom-right { content: counter(page); font-size: 8pt; color: #9aa3b2; }
+  }
+  @page :first { margin: 0; @bottom-center { content: ""; } @bottom-right { content: ""; } }
+
+  * { box-sizing: border-box; }
+  html { font-family: "Helvetica Neue", Arial, sans-serif; color: #1c2330; font-size: 10.5pt; line-height: 1.5; }
+  h1,h2,h3 { color: #0f1830; line-height: 1.2; }
+  h2 { font-size: 17pt; margin: 0 0 4pt; border-bottom: 2px solid #4A90E2; padding-bottom: 5pt; }
+  h3 { font-size: 12.5pt; margin: 14pt 0 4pt; color: #2a3550; }
+  p { margin: 0 0 7pt; }
+  code, .mono { font-family: "SF Mono","JetBrains Mono",Menlo,monospace; font-size: 8.7pt; }
+  a { color: #2a6fd0; text-decoration: none; }
+  .muted { color: #5b6678; }
+
+  /* Cover */
+  .cover { height: 297mm; background: linear-gradient(150deg, #0b0d12 0%, #15203a 55%, #1d2d52 100%); color: #fff; padding: 40mm 22mm 0; position: relative; }
+  .cover .badge { display: inline-block; background: linear-gradient(135deg,#4A90E2,#BF5AF2); color:#fff; font-weight:700; font-size: 11pt; padding: 5pt 12pt; border-radius: 6pt; letter-spacing:.5px; }
+  .cover h1 { color:#fff; font-size: 33pt; margin: 14mm 0 4mm; letter-spacing:-.5px; }
+  .cover .sub { color:#aab6cf; font-size: 14pt; max-width: 150mm; line-height:1.45; }
+  .cover .meta { position:absolute; bottom: 26mm; left:22mm; right:22mm; color:#8595b5; font-size:9.5pt; border-top:1px solid #2b3a5c; padding-top:6mm; display:flex; justify-content:space-between; }
+  .cover .pills { margin-top: 12mm; }
+  .cover .pill { display:inline-block; border:1px solid #3a4a6e; color:#cdd8ef; font-size:9pt; padding:4pt 10pt; border-radius:20pt; margin-right:6pt; }
+
+  /* Layout helpers */
+  .section { page-break-before: always; padding-top: 2mm; }
+  .lede { font-size: 11.5pt; color:#39435a; margin-bottom: 10pt; }
+  figure { margin: 7pt 0 3pt; break-inside: avoid; }
+  figure img { width: 100%; max-height: 150mm; object-fit: contain; border: 1px solid #d3d9e4; border-radius: 5pt; }
+  figcaption { font-size: 8.3pt; color:#6b7689; margin-top: 3pt; font-style: italic; }
+  .grid2 { display: flex; gap: 10pt; }
+  .grid2 > div { flex: 1; }
+
+  .callout { background:#f3f7fd; border-left: 3px solid #4A90E2; padding: 8pt 11pt; border-radius: 0 5pt 5pt 0; margin: 8pt 0; font-size: 9.7pt; }
+  .callout.warn { background:#fdf4f3; border-left-color:#e0573f; }
+  .callout.good { background:#f1faf3; border-left-color:#2faa55; }
+  .callout b { color:#0f1830; }
+
+  .sqlbox { background:#0d1018; color:#cdd6ea; font-family:"SF Mono",Menlo,monospace; font-size:8.2pt; line-height:1.5; padding:10pt 12pt; border-radius:6pt; white-space:pre; overflow:hidden; margin:6pt 0; }
+  .sqlbox .kw { color:#7aa2f7; } .sqlbox .fn { color:#bb9af7; } .sqlbox .cm { color:#5c6a82; }
+
+  table { width:100%; border-collapse: collapse; font-size: 9pt; margin: 6pt 0; }
+  th,td { text-align:left; padding: 5pt 7pt; border-bottom: 1px solid #e0e5ee; vertical-align: top; }
+  th { background:#f4f6fa; color:#41506b; font-size:8pt; text-transform:uppercase; letter-spacing:.4px; }
+  .tag { display:inline-block; font-size:7.5pt; font-weight:700; padding:1pt 6pt; border-radius:3pt; }
+  .t-cc{background:#f3e3dc;color:#b5613f;} .t-cx{background:#dcefe9;color:#0c7a5e;} .t-cr{background:#dde9fb;color:#2a6fd0;}
+
+  .steps { counter-reset: step; padding:0; list-style:none; margin: 6pt 0; }
+  .steps li { position:relative; padding: 4pt 0 9pt 26pt; font-size: 10pt; }
+  .steps li::before { counter-increment: step; content: counter(step); position:absolute; left:0; top:2pt; width:18pt; height:18pt; background:#4A90E2; color:#fff; border-radius:50%; text-align:center; line-height:18pt; font-weight:700; font-size:9pt; }
+
+  /* architecture svg wrapper */
+  .arch { text-align:center; margin: 6pt 0; }
+</style>
+</head>
+<body>
+
+<!-- ───────────────── COVER ───────────────── -->
+<div class="cover">
+  <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:8mm">
+    <path d="M24 4 L40 13 L40 31 L24 44 L8 31 L8 13 Z" fill="#EE3936" opacity="0.9"/>
+    <path d="M17 16 L31 16 L31 19 L25.5 19 L25.5 33 L22.5 33 L22.5 19 L17 19 Z" fill="#fff"/>
+  </svg>
+  <h1>TiDB as an agentic coding<br/>shared memory system</h1>
+  <div class="sub">Claude Code, Codex, and Cursor all reading and writing the same TiDB knowledge graph over MCP - so AI-written infrastructure stops duplicating work, breaking conventions, and starting from zero.</div>
+  <div class="pills">
+    <span class="pill">Claude Code</span><span class="pill">Codex</span><span class="pill">Cursor</span>
+    <span class="pill">Model Context Protocol</span><span class="pill">Recursive CTE graph</span>
+  </div>
+  <div class="meta">
+    <span>Technical demo report</span>
+    <span>Backed by a live TiDB Cloud cluster</span>
+  </div>
+</div>
+
+<!-- ───────────────── 1. SUMMARY ───────────────── -->
+<div class="section">
+  <h2>What this is</h2>
+  <p class="lede">Teams now write infrastructure with AI coding tools. But each tool works <b>blind and alone</b> - it cannot see what already exists, the team's conventions, or how components connect. The result is duplication, drift, broken conventions, and outages.</p>
+  <p>This demo puts the engineering knowledge where every tool can use it: a <b>knowledge graph in TiDB Cloud</b>. Every coding tool connects to it over the <b>Model Context Protocol (MCP)</b>, queries it before building, writes its work back, and traverses component relationships with <b>recursive SQL</b>. The example workload is an infrastructure-as-code monorepo (Pulumi / TypeScript) for a fictional company, <span class="mono">Acme</span>, spanning AWS, Cloudflare, and Okta.</p>
+
+  <div class="arch">
+    <svg width="470" height="190" viewBox="0 0 470 190" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7585a6"/></marker>
+      </defs>
+      <!-- tools -->
+      <g font-family="Helvetica" font-size="9" text-anchor="middle">
+        <rect x="8" y="20" width="92" height="26" rx="5" fill="#fbeee8" stroke="#cf8b6f"/><text x="54" y="37" fill="#b5613f" font-weight="bold">Claude Code</text>
+        <rect x="8" y="78" width="92" height="26" rx="5" fill="#e2f2ec" stroke="#3fae8c"/><text x="54" y="95" fill="#0c7a5e" font-weight="bold">Codex</text>
+        <rect x="8" y="136" width="92" height="26" rx="5" fill="#e3edfc" stroke="#6fa0e0"/><text x="54" y="153" fill="#2a6fd0" font-weight="bold">Cursor</text>
+        <!-- MCP -->
+        <rect x="165" y="62" width="86" height="58" rx="6" fill="#f4f6fa" stroke="#aab6cf"/>
+        <text x="208" y="86" font-weight="bold" fill="#41506b">MCP</text>
+        <text x="208" y="100" font-size="7.5" fill="#6b7689">tidb +</text>
+        <text x="208" y="111" font-size="7.5" fill="#6b7689">tidb-infra-kb</text>
+        <!-- TiDB -->
+        <ellipse cx="350" cy="64" rx="44" ry="11" fill="#1d2d52"/>
+        <rect x="306" y="64" width="88" height="56" fill="#1d2d52"/>
+        <ellipse cx="350" cy="120" rx="44" ry="11" fill="#15203a"/>
+        <text x="350" y="92" fill="#fff" font-weight="bold" font-size="10">TiDB Cloud</text>
+        <text x="350" y="105" fill="#aab6cf" font-size="7.5">shared memory</text>
+        <!-- dashboard -->
+        <rect x="300" y="150" width="100" height="24" rx="5" fill="#eef2f8" stroke="#aab6cf"/><text x="350" y="166" fill="#41506b" font-weight="bold">Dashboard</text>
+      </g>
+      <!-- arrows -->
+      <g stroke="#7585a6" stroke-width="1.4" fill="none">
+        <path d="M100,33 C135,33 135,80 163,86" marker-end="url(#ar)"/>
+        <path d="M100,91 L163,91" marker-end="url(#ar)"/>
+        <path d="M100,149 C135,149 135,104 163,98" marker-end="url(#ar)"/>
+        <path d="M251,91 L302,91" marker-end="url(#ar)"/>
+        <path d="M350,120 L350,148" marker-end="url(#ar)" stroke-dasharray="3,3"/>
+      </g>
+      <text x="276" y="84" font-size="7" fill="#7585a6" font-family="Helvetica">SQL</text>
+    </svg>
+  </div>
+  <p class="muted" style="text-align:center;font-size:8.3pt;margin-top:-2pt;">Three real CLIs &rarr; two MCP servers &rarr; one TiDB database. The dashboard reads the same database live.</p>
+
+  <h3>What runs automatically (the system prompt)</h3>
+  <p>The behaviour is configuration, not code. Each tool loads a rules file (<span class="mono">CLAUDE.md</span> / <span class="mono">AGENTS.md</span> / <span class="mono">.cursorrules</span>) with one standing instruction, so on every session - before any task - the agent already knows to read and write the shared memory:</p>
+  <div class="sqlbox">Before writing any infrastructure code, query the tidb-infra-kb MCP first
+(what exists, how it connects, what previous sessions did). Never use raw
+aws.* / cloudflare.* resources - compose the library components. After you
+create anything, record it with write_component so the next session starts warm.</div>
+
+  <div class="callout good"><b>Proven on real TiDB - every screenshot below is from an actual run.</b> The graph, the writes from three real CLIs (Claude Code, Codex, Cursor), and the recursive-CTE traversals all ran against a live TiDB Cloud cluster (v8.5.3) over the MySQL protocol with TLS. The terminal captures are the unedited tool output.</div>
+</div>
+
+<!-- ───────────────── 2. THE PROBLEM ───────────────── -->
+<div class="section">
+  <h2>The problem: AI tools with no shared memory</h2>
+  <p class="lede">Four failure modes show up the moment more than one agent (or session) touches the same codebase.</p>
+  <table>
+    <tr><th style="width:32%">Failure mode</th><th>What happens without a shared graph</th></tr>
+    <tr><td><b>Duplication</b></td><td>A tool can't see a component already exists, so it builds a second one. Drift and double cost follow.</td></tr>
+    <tr><td><b>Convention breaks</b></td><td>It writes a raw <span class="mono">aws.s3.Bucket</span> instead of the approved library wrapper, skipping required tags and policies.</td></tr>
+    <tr><td><b>Invisible blast radius</b></td><td>It changes a shared library and breaks resources two hops away - discovered only in production.</td></tr>
+    <tr><td><b>Cold starts</b></td><td>The next tool or session re-derives everything from the filesystem and re-makes the same mistakes.</td></tr>
+  </table>
+  <p>The common root cause: the knowledge that prevents these - <b>what exists, how it connects, and the rules</b> - lives only in scattered code and people's heads. It is not queryable, and it is not shared across tools.</p>
+
+  <div class="callout"><b>The fix.</b> Model the codebase as a graph in TiDB: <span class="mono">infra_components</span> (nodes), <span class="mono">component_edges</span> (typed relationships), and <span class="mono">session_log</span> (who did what). Expose it to every tool over MCP. Now the tools query before they build and hand off warm.</p>
+</div>
+
+<!-- ───────────────── 3. THE LIVE DEMO ───────────────── -->
+<div class="section">
+  <h2>The live demo: three tools, one task</h2>
+  <p class="lede">The task: production is complete, but <b>staging is missing its DNS and SSO layer</b> (four components). Watch three different AI coding tools finish it - each picking up where the last left off, because they share one TiDB brain. The terminal captures below are unedited tool output.</p>
+
+  <h3>Step 1 - Claude Code inspects, then builds the asset layer <span class="tag t-cc">claude-code</span></h3>
+  <p>It first <b>queries</b> the graph (it does not assume), then scaffolds the missing static-assets bucket and its Cloudflare DNS record by composing the existing <span class="mono">S3Bucket</span> and <span class="mono">DnsRecord</span> libraries - never raw cloud resources - and <b>writes each one back</b>.</p>
+  <figure>
+    <img src="img-live/claude-terminal.png" />
+    <figcaption>Real Claude Code output. It recorded both components (IDs 25 &amp; 26) and reports the rules it followed: no raw <span class="mono">aws.*</span>, <span class="mono">proxied: true</span> library-enforced, all four required tags, <span class="mono">acme-&lt;env&gt;-&lt;name&gt;</span> naming, KB writeback with dependency edges.</figcaption>
+  </figure>
+
+  <h3>Step 2 - Codex picks up warm <span class="tag t-cx">codex</span></h3>
+  <p>Codex opens with <b>zero local memory</b> of Claude Code's work. It reads the shared <span class="mono">session_log</span>, sees what was just created, and continues with the admin DNS record. No copy-pasting context between tools.</p>
+  <figure>
+    <img src="img-live/codex-terminal.png" />
+    <figcaption>Real Codex output: "The previous session most recently created <span class="mono">acme-staging-assets-dns</span>" - it read the shared log, then wrote <span class="mono">acme-staging-admin-dns</span> (id=27). A different vendor's tool, continuing seamlessly.</figcaption>
+  </figure>
+
+  <h3>Step 3 - Cursor verifies with a recursive query, then finishes <span class="tag t-cr">cursor</span></h3>
+  <p>Before writing the SSO application, Cursor runs a <b>recursive query</b> to confirm the dependency pattern (an SSO app must redirect to a DNS record), then scaffolds it correctly. Staging reaches parity.</p>
+  <figure>
+    <img src="img-live/cursor-cte-terminal.png" />
+    <figcaption>Real Cursor output - the headline moment. The recursive query returns the chain <span class="mono">SsoApplication → acme-prod-admin-dns → DnsRecord</span>, <i>proving</i> the dependency before writing a line of code.</figcaption>
+  </figure>
+  <figure>
+    <img src="img-live/dash-cursor.png" />
+    <figcaption>The result, in the dashboard: all three tools' activity in one feed (cursor, codex, claude-code) and the staging-parity strip now fully green. Built by three tools sharing one memory.</figcaption>
+  </figure>
+</div>
+
+<!-- ───────────────── 4. RECURSIVE CTE ───────────────── -->
+<div class="section">
+  <h2>The query a vector database can't answer</h2>
+  <p class="lede">The headline capability: <b>graph reachability</b>. "What breaks if I change this component?" requires traversing dependency edges to arbitrary depth. A recursive CTE does it in one query.</p>
+
+  <figure>
+    <img src="img-live/dash-cte.png" />
+    <figcaption>Blast radius of the <span class="mono">S3Bucket</span> library on the live dashboard, visualised as a depth-coloured subgraph with the exact SQL and result rows beside it. The traversal reaches the RDS databases <b>two hops away</b> - their backup buckets compose <span class="mono">S3Bucket</span> - a connection no text search could surface.</figcaption>
+  </figure>
+
+  <div class="sqlbox"><span class="cm">-- What breaks if S3Bucket changes? Runs unchanged on SQLite and TiDB.</span>
+<span class="kw">WITH RECURSIVE</span> blast(from_id, to_id, relationship, depth) <span class="kw">AS</span> (
+    <span class="kw">SELECT</span> e.from_id, e.to_id, e.relationship, 1
+    <span class="kw">FROM</span> component_edges e <span class="kw">JOIN</span> infra_components c <span class="kw">ON</span> e.to_id = c.id
+    <span class="kw">WHERE</span> c.name = <span style="color:#9ece6a">'S3Bucket'</span>
+  <span class="kw">UNION ALL</span>
+    <span class="kw">SELECT</span> e.from_id, e.to_id, e.relationship, b.depth + 1
+    <span class="kw">FROM</span> component_edges e <span class="kw">JOIN</span> blast b <span class="kw">ON</span> e.to_id = b.from_id
+    <span class="kw">WHERE</span> b.depth &lt; 10
+)
+<span class="kw">SELECT</span> depth, from_id, relationship, to_id <span class="kw">FROM</span> blast <span class="kw">ORDER BY</span> depth;</div>
+
+  <div class="callout warn"><b>Why a vector store can't do this.</b> Vector similarity finds <i>related-looking</i> text. It cannot compute a transitive closure over a dependency graph. This is reachability - exactly what SQL recursion is built for - and TiDB runs it as a distributed query alongside the same tables that hold the components, their tags, and (optionally) their vector embeddings.</div>
+</div>
+
+<!-- ───────────────── 5. ONE ENGINE: VECTOR + FTS + GRAPH ───────────────── -->
+<div class="section">
+  <h2>One engine: vector + full-text + graph, one table</h2>
+  <p class="lede">The same <span class="mono">infra_components</span> table that holds the graph also carries a 1024-dim <span class="mono">VECTOR</span> column - embedded server-side by TiDB's <span class="mono">EMBED_TEXT</span> - and a <span class="mono">FULLTEXT</span> index. Semantic, keyword, and hybrid search all run on it. No separate vector database, no ETL, no sync lag.</p>
+
+  <figure>
+    <img src="img-live/search-hybrid.png" />
+    <figcaption>Hybrid search for <i>"admin portal access control login"</i>. Reciprocal rank fusion over two queries on the same table. The top two rows match on <b>both</b> signals (<span class="mono">vector</span> + <span class="mono">FTS ✓</span>); the rest are <b>vector-only</b> - the keyword index missed them (<span class="mono">FTS ✗</span>) but the embedding caught them semantically.</figcaption>
+  </figure>
+
+  <div class="callout"><b>The headline:</b> full-text alone returns <b>2</b> results; the same query, same table, via embeddings returns <b>6</b> - including <span class="mono">SsoApplication</span> and the analytics database, which contain none of the query's keywords. Hybrid gives you both, ranked together.</div>
+
+  <div class="grid2">
+    <div>
+      <figure>
+        <img src="img-live/search-vector.png" />
+        <figcaption>Vector mode: pure semantic ranking by cosine distance (<span class="mono">VEC_COSINE_DISTANCE</span> over <span class="mono">EMBED_TEXT</span>). 6 results.</figcaption>
+      </figure>
+    </div>
+    <div>
+      <figure>
+        <img src="img-live/search-fts.png" />
+        <figcaption>Full-text mode: keyword ranking via <span class="mono">FTS_MATCH_WORD</span> on the FULLTEXT index. Only 2 results - keywords miss the rest.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="callout good"><b>Why it matters:</b> a coding agent searching its memory for "how do we do auth" needs <i>meaning</i>, not string matching. TiDB gives the agent vector recall, keyword precision, and graph reachability through one SQL endpoint - the same endpoint that already holds the structured state.</div>
+</div>
+
+<!-- ───────────────── 6. WHY TIDB ───────────────── -->
+<div class="section">
+  <h2>Why TiDB is the right brain for agents</h2>
+  <p class="lede">In the emerging pattern, the database is the agent's persistent memory, execution-state store, and shared knowledge base. That demands more than a vector index.</p>
+
+  <h3>One engine, every access pattern</h3>
+  <p>Agents need <b>SQL</b> for structured state, <b>graph traversal</b> for relationships, <b>vector search</b> for semantic memory, and <b>full-text (BM25)</b> for knowledge - all over the same data, with no ETL and no sync lag. TiDB provides all of them in one MySQL-compatible engine. This demo uses SQL + recursive CTEs today; the same <span class="mono">infra_components</span> table can carry a <span class="mono">VECTOR</span> column for hybrid graph-plus-semantic retrieval with <span class="mono">VEC_COSINE_DISTANCE</span>.</p>
+
+  <div class="grid2">
+    <div>
+      <h3>ACID for agent state</h3>
+      <p>Each write here is one transaction: <b>component + dependency edge + audit-log entry, all or nothing</b>. TiDB's distributed ACID prevents the partial-write bugs that make multi-agent systems nearly impossible to debug.</p>
+    </div>
+    <div>
+      <h3>Built for agent scale</h3>
+      <p>TiDB Cloud scales to zero with pay-per-request pricing. Millisecond database branching gives each agent or workspace an isolated environment - the pattern behind production fleets running millions of agent databases on TiDB Cloud.</p>
+    </div>
+  </div>
+
+  <h3>How it compares for this workload</h3>
+  <table>
+    <tr><th>Capability</th><th>TiDB Cloud</th><th>Vector DB (Pinecone)</th><th>Postgres / pgvector</th></tr>
+    <tr><td>Recursive graph traversal (CTE)</td><td><b>✓</b></td><td>✗</td><td>✓ (single node)</td></tr>
+    <tr><td>SQL + JOINs + ACID</td><td><b>✓</b></td><td>✗</td><td>✓</td></tr>
+    <tr><td>Vector + full-text in one engine</td><td><b>✓</b></td><td>vector only</td><td>partial</td></tr>
+    <tr><td>Horizontal scale / millions of tenants</td><td><b>✓</b></td><td>partial</td><td>✗</td></tr>
+  </table>
+  <p class="muted" style="font-size:8.5pt">Proof at scale: a leading agent platform runs 10M+ databases and billions of events/day on TiDB Cloud, with 100% of those databases created by agents.</p>
+</div>
+
+<!-- ───────────────── 6. SCENARIOS ───────────────── -->
+<div class="section">
+  <h2>Concrete scenarios the graph prevents</h2>
+  <p class="lede">Two everyday infrastructure mistakes, and how a queryable graph stops them before code is written.</p>
+  <figure>
+    <img src="img/scenarios.png" />
+    <figcaption>In-product scenario cards. Each contrasts the failure without the graph against the corrected path with TiDB, and shows the exact query that answers it.</figcaption>
+  </figure>
+  <h3>The duplicate-bucket guardrail, caught live</h3>
+  <p>Asked to add a backup bucket for the staging database, a coding tool queried the graph first - and stopped itself:</p>
+  <figure>
+    <img src="img-live/guardrail-terminal.png" />
+    <figcaption>Real tool output: it found <span class="mono">PostgresDatabase --instantiates--&gt; S3Bucket</span> in the graph and concluded "Don't add a manual backup bucket - you'd end up with a duplicate, and the library's lifecycle rules/tags on the auto-created one would conflict with yours." The duplicate was never written.</figcaption>
+  </figure>
+  <div class="grid2">
+    <div class="callout warn"><b>The duplicate backup bucket.</b> Asked to "add backups" for a database, a tool greps, finds nothing, and creates a raw duplicate. The graph shows <span class="mono">PostgresDatabase</span> already <i>instantiates</i> a backup bucket - so the right action is to write nothing.</div>
+    <div class="callout"><b>Blast radius before a refactor.</b> Before changing the <span class="mono">S3Bucket</span> library, one recursive query returns the full set of dependents across every environment - including the RDS instances two hops away. The change is staged safely instead of breaking production.</div>
+  </div>
+</div>
+
+<!-- ───────────────── 7. THE PROMPTS ───────────────── -->
+<div class="section">
+  <h2>How the tools are driven: the prompts</h2>
+  <p class="lede">The behaviour is prompt-driven. Two layers: a <b>standing instruction</b> in each tool's rules file (always read/write the shared memory), and the <b>per-task prompt</b> the developer types. Nothing is hard-coded - this is how a real team would configure it.</p>
+
+  <h3>Standing instruction (rules file: CLAUDE.md / AGENTS.md / .cursorrules)</h3>
+  <div class="sqlbox">Before writing any infrastructure code, query the tidb-infra-kb MCP first
+(what exists, how it connects, what previous sessions did). Never use raw
+aws.* / cloudflare.* resources - compose the library components. After you
+create anything, record it with write_component so the next session starts warm.</div>
+
+  <h3>Pane 1 - Claude Code</h3>
+  <div class="sqlbox">Use the tidb-infra-kb MCP. Query the knowledge base: what components exist in
+staging vs production, and what is staging missing? Then scaffold the missing
+staging static-assets bucket and its Cloudflare DNS record, composing the
+S3Bucket and DnsRecord libraries - never raw aws.* resources. Follow the
+acme-&lt;env&gt;-&lt;name&gt; naming and required tags. Record each new component with
+write_component.</div>
+
+  <h3>Pane 2 - Codex (opens cold, picks up warm)</h3>
+  <div class="sqlbox">Use the tidb-infra-kb MCP. Read the recent session_log - what did the previous
+session just create? Continue the staging build: add the admin-portal DNS record
+(acme-staging-admin-dns) matching the production pattern, composing DnsRecord.
+Record it with write_component.</div>
+
+  <h3>Pane 3 - Cursor (verify with a recursive CTE, then build)</h3>
+  <div class="sqlbox">Use the tidb MCP (db_query) to run a recursive CTE: what does the production
+acme-prod-admin-sso transitively depend on? Confirm an SSO app must redirect to a
+DnsRecord. Then scaffold acme-staging-admin-sso composing SsoApplication, with the
+redirect URI pointing at acme-staging-admin-dns. Record it with write_component.</div>
+
+  <h3>The guardrail prompt (duplicate-bucket scenario)</h3>
+  <div class="sqlbox">I'm about to add a backup S3 bucket for acme-staging-analytics-db. First query
+the KB: does PostgresDatabase already create one?</div>
+</div>
+
+<!-- ───────────────── 8. EVERY QUERY ───────────────── -->
+<div class="section">
+  <h2>Every query the demo runs</h2>
+  <p class="lede">Everything below executes on TiDB Cloud over the MySQL protocol - either through the official <span class="mono">tidb</span> MCP (<span class="mono">db_query</span> / <span class="mono">db_execute</span>) or the convention <span class="mono">tidb-infra-kb</span> MCP. Nothing is mocked.</p>
+
+  <h3>1. Inspect - what exists where (Claude Code)</h3>
+  <div class="sqlbox"><span class="kw">SELECT</span> environment, name, component_type
+<span class="kw">FROM</span> infra_components
+<span class="kw">WHERE</span> environment <span class="kw">IN</span> (<span style="color:#9ece6a">'staging'</span>, <span style="color:#9ece6a">'production'</span>)
+<span class="kw">ORDER BY</span> environment, component_type;</div>
+
+  <h3>2. Pick up warm - read the cross-session log (Codex)</h3>
+  <div class="sqlbox"><span class="kw">SELECT</span> developer, action, detail, created_at
+<span class="kw">FROM</span> session_log
+<span class="kw">ORDER BY</span> created_at <span class="kw">DESC</span> <span class="kw">LIMIT</span> 5;</div>
+
+  <h3>3. Prove a dependency pattern - recursive CTE (Cursor)</h3>
+  <div class="sqlbox"><span class="cm">-- what does acme-prod-admin-sso transitively depend on?</span>
+<span class="kw">WITH RECURSIVE</span> deps(from_id, to_id, relationship, depth) <span class="kw">AS</span> (
+    <span class="kw">SELECT</span> e.from_id, e.to_id, e.relationship, 1
+    <span class="kw">FROM</span> component_edges e <span class="kw">JOIN</span> infra_components c <span class="kw">ON</span> e.from_id = c.id
+    <span class="kw">WHERE</span> c.name = <span style="color:#9ece6a">'acme-prod-admin-sso'</span>
+  <span class="kw">UNION ALL</span>
+    <span class="kw">SELECT</span> e.from_id, e.to_id, e.relationship, d.depth + 1
+    <span class="kw">FROM</span> component_edges e <span class="kw">JOIN</span> deps d <span class="kw">ON</span> e.from_id = d.to_id
+    <span class="kw">WHERE</span> d.depth &lt; 10
+)
+<span class="kw">SELECT</span> d.depth, cf.name, d.relationship, ct.name
+<span class="kw">FROM</span> deps d <span class="kw">JOIN</span> infra_components cf <span class="kw">ON</span> d.from_id = cf.id
+        <span class="kw">JOIN</span> infra_components ct <span class="kw">ON</span> d.to_id = ct.id
+<span class="kw">ORDER BY</span> d.depth;</div>
+
+  <h3>4. The atomic write - what write_component actually does</h3>
+  <div class="sqlbox"><span class="cm">-- one transaction: component + dependency edge + audit log, all or nothing.</span>
+<span class="cm">-- the embedding is generated server-side by TiDB, no client model.</span>
+<span class="kw">INSERT INTO</span> infra_components (name, component_type, environment, summary, embedding)
+<span class="kw">VALUES</span> (<span style="color:#9ece6a">'acme-staging-admin-sso'</span>, <span style="color:#9ece6a">'Okta'</span>, <span style="color:#9ece6a">'staging'</span>, <span style="color:#9ece6a">'...'</span>,
+        <span class="fn">EMBED_TEXT</span>(<span style="color:#9ece6a">'tidbcloud_free/amazon/titan-embed-text-v2'</span>, <span style="color:#9ece6a">'...'</span>));
+<span class="kw">INSERT INTO</span> component_edges (from_id, to_id, relationship)
+<span class="kw">VALUES</span> (@sso_id, @dns_id, <span style="color:#9ece6a">'redirects_to'</span>);
+<span class="kw">INSERT INTO</span> session_log (developer, action, detail)
+<span class="kw">VALUES</span> (<span style="color:#9ece6a">'cursor'</span>, <span style="color:#9ece6a">'created'</span>, <span style="color:#9ece6a">'Created Okta component acme-staging-admin-sso'</span>);</div>
+
+  <h3>5. Blast radius - recursive CTE (Dependency-graph tab)</h3>
+  <div class="sqlbox"><span class="cm">-- what breaks if S3Bucket changes? walks dependents upward, any depth.</span>
+<span class="kw">WITH RECURSIVE</span> blast(from_id, to_id, relationship, depth) <span class="kw">AS</span> (
+    <span class="kw">SELECT</span> e.from_id, e.to_id, e.relationship, 1
+    <span class="kw">FROM</span> component_edges e <span class="kw">JOIN</span> infra_components c <span class="kw">ON</span> e.to_id = c.id
+    <span class="kw">WHERE</span> c.name = <span style="color:#9ece6a">'S3Bucket'</span>
+  <span class="kw">UNION ALL</span>
+    <span class="kw">SELECT</span> e.from_id, e.to_id, e.relationship, b.depth + 1
+    <span class="kw">FROM</span> component_edges e <span class="kw">JOIN</span> blast b <span class="kw">ON</span> e.to_id = b.from_id
+    <span class="kw">WHERE</span> b.depth &lt; 10
+)
+<span class="kw">SELECT</span> <span class="kw">DISTINCT</span> depth, from_id, relationship, to_id <span class="kw">FROM</span> blast <span class="kw">ORDER BY</span> depth;</div>
+
+  <h3>6. Search - vector, full-text, and hybrid (Search tab)</h3>
+  <div class="sqlbox"><span class="cm">-- semantic: TiDB embeds the query, ranks by cosine distance</span>
+<span class="kw">SELECT</span> name, <span class="fn">VEC_COSINE_DISTANCE</span>(embedding,
+         <span class="fn">EMBED_TEXT</span>(<span style="color:#9ece6a">'tidbcloud_free/amazon/titan-embed-text-v2'</span>, <span style="color:#9ece6a">'admin portal access control'</span>)) <span class="kw">AS</span> distance
+<span class="kw">FROM</span> infra_components <span class="kw">ORDER BY</span> distance <span class="kw">LIMIT</span> 6;
+
+<span class="cm">-- keyword: BM25 over the FULLTEXT index</span>
+<span class="kw">SELECT</span> name <span class="kw">FROM</span> infra_components
+<span class="kw">WHERE</span> <span class="fn">FTS_MATCH_WORD</span>(<span style="color:#9ece6a">'admin portal access control'</span>, summary)
+<span class="kw">ORDER BY</span> <span class="fn">FTS_MATCH_WORD</span>(<span style="color:#9ece6a">'admin portal access control'</span>, summary) <span class="kw">DESC</span> <span class="kw">LIMIT</span> 6;
+
+<span class="cm">-- hybrid = reciprocal rank fusion of the two result sets, same table.</span></div>
+</div>
+
+<!-- ───────────────── 9. RUN IT ON YOUR REPO ───────────────── -->
+<div class="section">
+  <h2>Running it on your own repo</h2>
+  <p class="lede">Everything you saw - query-before-build, convention checks, recursive dependency traversal, vector + full-text search, cross-tool handoff - is already general. The one piece to add for a real codebase is a small <b>ingestion job</b> that populates the graph from your source. Everything downstream is unchanged; it reads the same three tables.</p>
+
+  <h3>The ingestion job (runs in CI on every merge)</h3>
+  <ol class="steps">
+    <li><b>Read the resource graph.</b> Parse the Pulumi program (<span class="mono">pulumi stack export</span> / the resource tree, or the TypeScript AST) to enumerate every component and its parent-child and cross-references.</li>
+    <li><b>Upsert nodes + edges.</b> Each component becomes a row in <span class="mono">infra_components</span>; each relationship a row in <span class="mono">component_edges</span> (<span class="mono">instantiates</span>, <span class="mono">fronts</span>, <span class="mono">redirects_to</span>, ...).</li>
+    <li><b>Embed.</b> Call <span class="mono">EMBED_TEXT</span> on each summary so semantic search works the moment it lands - no embedding pipeline to run.</li>
+    <li><b>Log the scan</b> in <span class="mono">session_log</span> so tools can see "graph last synced at commit abc123."</li>
+  </ol>
+
+  <div class="sqlbox"><span class="cm"># ingest.py - run in CI; idempotent upserts keep the graph in sync with main</span>
+<span class="kw">for</span> resource <span class="kw">in</span> pulumi_resource_graph():
+    write_component(name=resource.urn_name, type=resource.kind, env=resource.stack,
+                    summary=resource.doc, depends_on=resource.parent)   <span class="cm"># embeds + edges, atomic</span></div>
+
+  <div class="callout good"><b>That is the whole gap between this demo and production.</b> The graph the tools query is the same shape; only its <i>source</i> changes from the seed script to your live repo. Query, CTE, search, convention-enforcement, and cross-tool memory all work as shown.</div>
+</div>
+
+<!-- ───────────────── 10. HOW TO RUN THE DEMO ───────────────── -->
+<div class="section">
+  <h2>How to run the demo</h2>
+  <p class="lede">The repository ships everything: the TiDB-backed knowledge base, both MCP servers, per-tool configs, the dashboard, and a presenter's runbook.</p>
+  <ol class="steps">
+    <li><b>Configure TiDB.</b> <span class="mono">cp .env.example .env</span> and paste your TiDB Cloud credentials (Connect &rarr; General).</li>
+    <li><b>Set up.</b> <span class="mono">./setup.sh</span> - installs dependencies, creates the schema and seeds the graph on TiDB, and generates MCP configs for Claude Code, Codex, and Cursor.</li>
+    <li><b>Launch the dashboard.</b> <span class="mono">./demo.sh</span> &rarr; open <span class="mono">http://localhost:7001</span> (the screen you narrate).</li>
+    <li><b>Open three terminals.</b> In each, run <span class="mono">claude</span>, <span class="mono">codex</span>, and <span class="mono">cursor-agent</span> from the repo. All three load both MCP servers automatically.</li>
+    <li><b>Follow the prompts</b> in <span class="mono">DEMO.md</span> / <span class="mono">PRESENTER.md</span>. As the tools work, the dashboard updates live from TiDB.</li>
+  </ol>
+
+  <h3>The two MCP servers each tool connects to</h3>
+  <table>
+    <tr><th>Server</th><th>Origin</th><th>What it provides</th></tr>
+    <tr><td class="mono">tidb</td><td>PingCAP official</td><td><span class="mono">db_query</span> / <span class="mono">db_execute</span> - raw SQL, recursive CTEs, vector search</td></tr>
+    <tr><td class="mono">tidb-infra-kb</td><td>This repo</td><td><span class="mono">query_knowledge_base</span> + <span class="mono">write_component</span> - convention-checked, atomic writes</td></tr>
+  </table>
+
+  <div class="callout good" style="margin-top:10pt"><b>Repository:</b> <span class="mono">github.com/stephenlthorn/mem9-ai-coding</span> &nbsp;·&nbsp; Apache-2.0. The dashboard falls back to local SQLite if no TiDB credentials are present, so the demo runs even with no network.</div>
+</div>
+
+</body>
+</html>

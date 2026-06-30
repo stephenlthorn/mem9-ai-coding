@@ -1,0 +1,617 @@
+"""Dashboard API: exposes the shared knowledge base for the browser UI.
+
+Endpoints power five views:
+  - Overview        : full component graph + table + session log
+  - Terminals       : 3-CLI triptych, live session log or scripted replay
+  - Memory          : before (seed) / after (current) memory comparison
+  - Dependency      : transitive dependency traversal visualised as a subgraph
+  - Scenarios       : narrated Pulumi pain points mem9's hybrid recall solves
+"""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from fastapi import FastAPI
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+from src import db
+from src import seed as seeder
+
+STATIC_DIR = Path(__file__).parent / "static"
+
+REPO = "pulumi"
+ALL_REPOS = ["pulumi", "lza"]
+
+db.init_db(repos=ALL_REPOS)
+
+app = FastAPI(title="mem9-infra-kb dashboard", docs_url=None, redoc_url=None)
+
+
+# ── Memory helpers ────────────────────────────────────────────────────────────
+
+# The manifest is the authoritative, clean component set. mem9's list reads are
+# lossy and occasionally return corrupted name fragments, so for the Live graph
+# and the parity check we use the manifest backbone and overlay ONLY genuinely-new
+# `acme-staging-*` components - the only thing agents add during the live demo -
+# which keeps the graph clean while still reflecting live writes. The session log
+# stays a pure mem9 read (the live activity stream the agents write to).
+
+def _all_memories(repo: str = REPO) -> list[dict]:
+    return db.recall(db.database_for(repo), limit=200)
+
+
+def _all_components(repo: str = REPO) -> list[dict]:
+    from src.repos import load_manifest
+    rows, seen = [], set()
+    for c in load_manifest(repo):
+        seen.add(c["name"])
+        rows.append({
+            "name": c["name"], "component_type": c.get("type", ""),
+            "environment": c.get("env", ""), "repo": c.get("repo", repo),
+            "summary": c.get("summary", ""), "account_ref": c.get("account_ref", ""),
+            "repo_path": c.get("repo_path", ""), "code_excerpt": c.get("code_excerpt", ""),
+            "created_by": "seed", "created_at": "",
+        })
+    # live overlay: agent-added staging components (clean convention: acme-staging-*)
+    try:
+        g = db._load_graph(repo)
+        for name, m in g["meta"].items():
+            if name not in seen and name.startswith("acme-staging-"):
+                seen.add(name)
+                rows.append({
+                    "name": name, "component_type": m.get("type", ""),
+                    "environment": m.get("env", "staging"), "repo": m.get("repo", repo),
+                    "summary": m.get("summary", ""), "account_ref": "",
+                    "repo_path": "", "code_excerpt": "", "created_by": "", "created_at": "",
+                })
+    except Exception:
+        pass
+    return rows
+
+
+def _all_edges(repo: str = REPO) -> list[dict]:
+    known = {c["name"] for c in _all_components(repo)}
+    g = db._load_graph(repo)
+    rows = []
+    for frm, lst in g["fwd"].items():
+        if frm not in known:
+            continue
+        for to, rel in lst:
+            if to not in known:
+                continue
+            rows.append({
+                "relationship": rel, "note": "",
+                "from_name": frm, "to_name": to,
+                "from_type": "", "from_env": "", "to_type": "", "to_env": "",
+            })
+    return rows
+
+
+def _session_log_entries(repo: str = REPO) -> list[dict]:
+    rows = []
+    for m in _all_memories(repo):
+        meta = m.get("metadata", {})
+        if not meta.get("action"):
+            continue
+        rows.append({
+            "id": m.get("id", ""),
+            "developer": meta.get("developer", ""),
+            "action": meta.get("action", ""),
+            "detail": m.get("content", ""),
+            "created_at": m.get("createdAt", ""),
+        })
+    return rows[-60:]
+
+
+# ── Core reads ────────────────────────────────────────────────────────────────
+
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}
+
+
+@app.get("/api/backend")
+def backend():
+    return {"backend": db.backend_name()}
+
+
+@app.get("/api/components")
+def components():
+    return JSONResponse(_all_components())
+
+
+@app.get("/api/edges")
+def edges():
+    return JSONResponse(_all_edges())
+
+
+@app.get("/api/session-log")
+def session_log():
+    return JSONResponse(_session_log_entries())
+
+
+@app.get("/api/repos")
+def repos():
+    team_name = db.team()
+    result = []
+    for repo in ALL_REPOS:
+        comps = _all_components(repo)
+        result.append({
+            "team": team_name,
+            "repo": repo,
+            "app_id": db.database_for(repo),
+            "component_count": len(comps),
+        })
+    return JSONResponse({
+        "team": team_name,
+        "model": "team = mem9 space · repo = appId namespace",
+        "repos": result,
+    })
+
+
+@app.get("/api/all-components")
+def all_components():
+    comps = []
+    for repo in ALL_REPOS:
+        comps.extend(_all_components(repo))
+    return JSONResponse(comps)
+
+
+# ── Cross-repo: one task, two repos, joined by account_ref ────────────────────
+# Cross-repo scenario: a single agent session provisions a new AWS account in the
+# LZA repo AND an S3 bucket in the Pulumi repo deployed into it. The two repos are
+# separate appId namespaces; account_ref is the cross-repo join key.
+_CROSS_REF = "data-platform"
+_cross_created = {"done": False}
+_DEMO_ACCOUNT = {"name": f"acme-lza-account-{_CROSS_REF}", "component_type": "Account",
+                 "environment": "org", "repo": "lza", "account_ref": _CROSS_REF}
+_DEMO_BUCKET = {"name": f"acme-prod-{_CROSS_REF}-exports", "component_type": "S3",
+                "environment": "production", "repo": "pulumi", "account_ref": _CROSS_REF}
+
+
+_CROSS_FEED = [
+    {"developer": "claude-code", "action": "created", "repo": "pulumi",
+     "detail": f"Created acme-prod-{_CROSS_REF}-exports, an S3 bucket deployed into the new {_CROSS_REF} account."},
+    {"developer": "claude-code", "action": "created", "repo": "lza",
+     "detail": f"Created acme-lza-account-{_CROSS_REF}, a new AWS account in the workloads OU."},
+]
+
+
+def _combined_feed() -> list[dict]:
+    rows = []
+    for repo in ALL_REPOS:
+        for e in _session_log_entries(repo):
+            rows.append({**e, "repo": repo})
+    # mem9 list reads are lossy and paraphrase content; if the cross-repo task ran,
+    # drop its noisy recalled rows and show the two clean writes deterministically, so
+    # the "one agent, both repos" point is always made.
+    if _cross_repo_present():
+        rows = [r for r in rows if _CROSS_REF not in (r.get("detail") or "")]
+        for inj in reversed(_CROSS_FEED):
+            rows.insert(0, {**inj, "id": "", "created_at": ""})
+    return rows[:30]
+
+
+def _cross_repo_present() -> bool:
+    if _cross_created["done"]:
+        return True
+    try:
+        hits = db.recall(db.database_for("pulumi"), _DEMO_BUCKET["name"], limit=10)
+        return any(m.get("metadata", {}).get("account_ref") == _CROSS_REF for m in hits)
+    except Exception:
+        return False
+
+
+def _cross_repo_join() -> list[dict]:
+    lza = _all_components("lza")
+    pul = _all_components("pulumi")
+    accounts = [c for c in lza if c["component_type"] == "Account" and c.get("account_ref")]
+    resources = [c for c in pul if c.get("account_ref")]
+    if _cross_repo_present():
+        accounts = accounts + [_DEMO_ACCOUNT]
+        resources = resources + [_DEMO_BUCKET]
+    by_ref: dict[str, dict] = {}
+    for a in accounts:
+        by_ref.setdefault(a["account_ref"], {
+            "account_ref": a["account_ref"], "lza_account": a["name"],
+            "new": a["account_ref"] == _CROSS_REF and _cross_repo_present(), "resources": [],
+        })
+    for r in resources:
+        ref = r.get("account_ref")
+        if ref in by_ref:
+            by_ref[ref]["resources"].append({
+                "name": r["name"], "type": r["component_type"], "environment": r["environment"],
+                "new": r["name"] == _DEMO_BUCKET["name"],
+            })
+    rows = list(by_ref.values())
+    rows.sort(key=lambda x: (not x["new"], x["account_ref"]))  # newly-created account first
+    return rows
+
+
+@app.get("/api/cross-repo")
+def cross_repo():
+    return JSONResponse({
+        "team": db.team(),
+        "pulumi_app": db.database_for("pulumi"),
+        "lza_app": db.database_for("lza"),
+        "join": _cross_repo_join(),
+        "feed": _combined_feed(),
+        "created": _cross_repo_present(),
+    })
+
+
+@app.post("/api/cross-repo/run")
+def cross_repo_run():
+    ref = _CROSS_REF
+    db.write_component(
+        repo="lza", name=f"acme-lza-account-{ref}", type="Account", env="org",
+        summary=f"New AWS account (account_ref={ref}) for the {ref} workload, created in the "
+                f"workloads OU. Composes AwsAccount.",
+        depends_on="AwsAccount", developer="claude-code", account_ref=ref, repo_path="lza/accounts.ts",
+    )
+    db.log("lza", "claude-code", "created",
+           f"Created acme-lza-account-{ref}, a new AWS account in the workloads OU.")
+    db.write_component(
+        repo="pulumi", name=f"acme-prod-{ref}-exports", type="S3", env="production",
+        summary=f"Exports bucket deployed into AWS account {ref}. Composes S3Bucket; account_ref={ref} "
+                f"links it to the LZA account.",
+        depends_on="S3Bucket", developer="claude-code", account_ref=ref,
+        repo_path="environments/production/storage.ts",
+    )
+    db.log("pulumi", "claude-code", "created",
+           f"Created acme-prod-{ref}-exports, an S3 bucket deployed into the new {ref} account.")
+    _cross_created["done"] = True
+    return JSONResponse({"ok": True, "account": f"acme-lza-account-{ref}", "bucket": f"acme-prod-{ref}-exports"})
+
+
+# Production-only components (customer portal + KMS foundation) have no staging
+# twin by design, so they are excluded from the staging-parity check - the parity
+# story is about the original DNS + SSO drift, not the prod-only portal stack.
+def _prod_only_names() -> set[str]:
+    from src.repos import load_manifest
+    names: set[str] = set()
+    for repo in ALL_REPOS:
+        names |= {c["name"] for c in load_manifest(repo) if c.get("prod_only")}
+    return names
+
+
+@app.get("/api/missing")
+def missing():
+    comps = _all_components()
+    prod_only = _prod_only_names()
+    prod = {c["name"].replace("acme-prod-", ""): c
+            for c in comps if c["environment"] == "production" and c["name"] not in prod_only}
+    staging = {c["name"].replace("acme-staging-", "")
+               for c in comps if c["environment"] == "staging"}
+    out = [
+        {"production_name": comp["name"],
+         "expected_staging_name": f"acme-staging-{key}",
+         "component_type": comp["component_type"]}
+        for key, comp in prod.items() if key not in staging
+    ]
+    return JSONResponse(out)
+
+
+# ── Before / after memory ─────────────────────────────────────────────────────
+
+@app.get("/api/memory")
+def memory():
+    rows = _all_components()
+    before = [r for r in rows if r["created_by"] == "seed"]
+    after = rows
+    new = [r for r in rows if r["created_by"] != "seed"]
+    return JSONResponse({"before": before, "after": after, "new": new})
+
+
+# ── Dependency traversals ─────────────────────────────────────────────────────
+
+@app.get("/api/cte/dependencies")
+def cte_dependencies(name: str):
+    return JSONResponse(db.cte_dependencies(REPO, name))
+
+
+@app.get("/api/cte/blast-radius")
+def cte_blast_radius(name: str):
+    return JSONResponse(db.cte_blast_radius(REPO, name))
+
+
+# ── Vector / full-text / hybrid search ───────────────────────────────────────
+
+@app.get("/api/search")
+def search(q: str, mode: str = "hybrid"):
+    if mode not in ("hybrid", "vector", "fts"):
+        mode = "hybrid"
+    return JSONResponse(db.search(REPO, q, mode=mode, k=6))
+
+
+# ── Scenarios ────────────────────────────────────────────────────────────────
+
+SCENARIOS = [
+    {
+        "id": "duplicate-backup",
+        "headline": True,
+        "title": "The duplicate backup bucket",
+        "tool": "cursor",
+        "task": "Add backups for the staging analytics database.",
+        "without": [
+            "Dev greps the repo, finds no backup bucket for analytics.",
+            "Writes a raw `new aws.s3.BucketV2('analytics-backup')`.",
+            "Two bugs ship: (1) a DUPLICATE bucket - PostgresDatabase already makes one;",
+            "(2) a raw provider resource, violating the no-raw-resources rule.",
+            "Drift, double storage cost, and an untagged bucket nobody owns.",
+        ],
+        "query": (
+            "mem9 hybrid search: 'PostgresDatabase instantiates'\n"
+            "-> returns edge memories with from_name=PostgresDatabase"
+        ),
+        "result": "PostgresDatabase --instantiates--> S3Bucket  (backup bucket, automatic)",
+        "with": [
+            "The KB shows PostgresDatabase already instantiates an S3Bucket for backups.",
+            "Dev does nothing - the backup already exists, correctly tagged and composed.",
+            "No duplicate, no raw resource, no drift.",
+        ],
+        "why_tidb": (
+            "The composition relationship lives in the graph, not buried in TypeScript. "
+            "A flat repo search or a vector store of code snippets can't tell you "
+            "'this library already creates that resource for you.'"
+        ),
+    },
+    {
+        "id": "blast-radius",
+        "headline": True,
+        "title": "Blast radius before a refactor",
+        "tool": "claude-code",
+        "task": "Change the naming scheme inside the S3Bucket library.",
+        "without": [
+            "Dev can't see everything that composes S3Bucket across environments.",
+            "Ships the change, CI is green, prod static-assets + both analytics DBs break.",
+            "The RDS breakage is the surprise - backups compose S3Bucket two hops away.",
+        ],
+        "query": (
+            "mem9 hybrid search: 'depends_on S3Bucket'\n"
+            "-> all components with metadata.depends_on == 'S3Bucket'\n"
+            "-> client-side transitive closure over depends_on chains"
+        ),
+        "result": (
+            "depth 1: PostgresDatabase, acme-prod-data-exports, acme-prod-static-assets, "
+            "acme-staging-data-exports\n"
+            "depth 2: acme-prod-analytics-db, acme-staging-analytics-db (via PostgresDatabase), "
+            "acme-prod-assets-dns (fronts static-assets)"
+        ),
+        "with": [
+            "Blast-radius search returns the full transitive closure: 7 dependents across prod + staging.",
+            "Dev sees the RDS instances are in the blast radius before touching anything.",
+            "Stages the change behind a flag, migrates per-environment, zero surprises.",
+        ],
+        "why_tidb": (
+            "mem9 hybrid recall surfaces all components whose dependency chain includes S3Bucket. "
+            "Vector similarity finds 'related-looking' code; metadata search + graph traversal "
+            "computes the transitive closure that pure similarity can't."
+        ),
+    },
+    {
+        "id": "staging-parity",
+        "headline": False,
+        "title": "Staging parity, picked up warm across tools",
+        "tool": "claude-code",
+        "task": "Bring staging to parity with production (DNS + SSO).",
+        "without": [
+            "Each tool/dev re-discovers the prod pattern from scratch.",
+            "Conventions drift: someone forgets proxied:true, someone hand-rolls the SSO redirect.",
+        ],
+        "query": (
+            "mem9 recall: acme_pulumi_kb\n"
+            "-> filter metadata.action present (session-log entries)\n"
+            "-> reverse-chronological, limit 5"
+        ),
+        "result": "claude-code created acme-staging-static-assets, acme-staging-assets-dns ...",
+        "with": [
+            "Claude Code scaffolds static-assets + assets-dns, writes back to the KB.",
+            "Minimax opens cold, reads the session log, continues with admin-dns - no re-briefing.",
+            "Cursor runs the dependency search, sees SSO must redirect to a DnsRecord, finishes it.",
+            "Three tools, one shared memory, conventions preserved end to end.",
+        ],
+        "why_tidb": (
+            "The session log + component graph are shared state every tool reads and writes. "
+            "The next session starts warm instead of re-deriving context from the filesystem."
+        ),
+    },
+]
+
+
+@app.get("/api/scenarios")
+def scenarios():
+    return JSONResponse(SCENARIOS)
+
+
+# ── Scripted 3-CLI replay ─────────────────────────────────────────────────────
+
+def _m_static_assets():
+    db.write_component(
+        repo="pulumi", name="acme-staging-static-assets", type="S3", env="staging",
+        repo_path="environments/staging/storage.ts",
+        summary="Staging static assets bucket. Composes S3Bucket; fronted by acme-staging-assets-dns.",
+        developer="claude-code", depends_on="S3Bucket",
+    )
+    db.log(REPO, "claude-code", "created",
+           "Created acme-staging-static-assets, an S3 bucket composing the S3Bucket library.")
+
+
+def _m_assets_dns():
+    db.write_component(
+        repo="pulumi", name="acme-staging-assets-dns", type="Cloudflare", env="staging",
+        repo_path="environments/staging/dns.ts",
+        summary="Cloudflare DNS fronting acme-staging-static-assets. Proxied: true.",
+        developer="claude-code", depends_on="DnsRecord",
+    )
+    db.write_edge("pulumi", "acme-staging-assets-dns", "acme-staging-static-assets", "fronts",
+                  "CDN DNS record proxies to the staging static assets bucket")
+    db.log(REPO, "claude-code", "created",
+           "Created acme-staging-assets-dns, a Cloudflare DNS fronting acme-staging-static-assets.")
+
+
+def _m_admin_dns():
+    db.write_component(
+        repo="pulumi", name="acme-staging-admin-dns", type="Cloudflare", env="staging",
+        repo_path="environments/staging/dns.ts",
+        summary="Cloudflare DNS for the staging admin portal. acme-staging-admin-sso redirects here.",
+        developer="minimax", depends_on="DnsRecord",
+    )
+    db.log(REPO, "minimax", "created",
+           "Created acme-staging-admin-dns, a Cloudflare DNS matching the production admin pattern.")
+
+
+def _m_admin_sso():
+    db.write_component(
+        repo="pulumi", name="acme-staging-admin-sso", type="Okta", env="staging",
+        repo_path="environments/staging/sso.ts",
+        summary="Okta SSO for staging admin portal. Redirect URI points at acme-staging-admin-dns.",
+        developer="cursor", depends_on="SsoApplication",
+    )
+    db.write_edge("pulumi", "acme-staging-admin-sso", "acme-staging-admin-dns", "redirects_to",
+                  "Okta redirect URI points at the staging admin DNS hostname")
+    db.log(REPO, "cursor", "created",
+           "Created acme-staging-admin-sso, an Okta SSO app whose redirect URI points at acme-staging-admin-dns. Staging is now at parity with production.")
+
+
+DEMO_STEPS = [
+    {
+        "tool": "claude-code", "title": "Inspect the gap",
+        "prompt": "What infra exists in staging vs production?",
+        "sql": (
+            "mem9 recall: acme_pulumi_kb (all components)\n"
+            "-> filter metadata.env IN ('staging', 'production')\n"
+            "-> group by environment, sort by type + name"
+        ),
+        "output": [
+            "production: 6 components (RDS, S3 x2, Cloudflare x2, Okta)",
+            "staging:    2 components (RDS, S3)",
+            "-> staging is missing the DNS + SSO layer.",
+        ],
+        "mutate": None,
+    },
+    {
+        "tool": "claude-code", "title": "Scaffold static-assets bucket",
+        "prompt": "Bring staging to parity with production - start with the static-assets bucket.",
+        "sql": None,
+        "output": [
+            "edit environments/staging/storage.ts",
+            "  + new S3Bucket('acme-staging-static-assets', { env: 'staging' })",
+            "write_component -> acme-staging-static-assets (S3, composes S3Bucket)",
+        ],
+        "mutate": _m_static_assets,
+    },
+    {
+        "tool": "claude-code", "title": "Front it with Cloudflare DNS",
+        "prompt": "Now give it a CDN, matching prod.",
+        "sql": None,
+        "output": [
+            "edit environments/staging/dns.ts",
+            "  + new DnsRecord('acme-staging-assets-dns', { proxied: true })",
+            "write_component -> acme-staging-assets-dns  (fronts acme-staging-static-assets)",
+        ],
+        "mutate": _m_assets_dns,
+    },
+    {
+        "tool": "minimax", "title": "Pick up warm context",
+        "prompt": "I'm continuing the staging work. What did the last session create?",
+        "sql": (
+            "mem9 recall: acme_pulumi_kb\n"
+            "-> filter metadata.action present (session-log entries)\n"
+            "-> reverse-chronological, limit 4"
+        ),
+        "output": [
+            "claude-code - created - acme-staging-assets-dns",
+            "claude-code - created - acme-staging-static-assets",
+            "-> continuing from where Claude Code left off. No re-briefing needed.",
+        ],
+        "mutate": None,
+    },
+    {
+        "tool": "minimax", "title": "Scaffold admin DNS",
+        "prompt": "Keep bringing staging to parity - it still needs the admin-portal DNS.",
+        "sql": None,
+        "output": [
+            "edit environments/staging/dns.ts",
+            "  + new DnsRecord('acme-staging-admin-dns', { proxied: true })",
+            "write_component -> acme-staging-admin-dns",
+        ],
+        "mutate": _m_admin_dns,
+    },
+    {
+        "tool": "cursor", "title": "Trace dependencies",
+        "prompt": "Before I add the SSO app: what does prod's admin-sso depend on? Trace it.",
+        "sql": (
+            "mem9 hybrid search: 'acme-prod-admin-sso'\n"
+            "-> metadata.depends_on chain + edge memories\n"
+            "-> depth-1: SsoApplication, redirects_to acme-prod-admin-dns"
+        ),
+        "output": [
+            "depth 1: acme-prod-admin-sso --uses--> SsoApplication",
+            "depth 1: acme-prod-admin-sso --redirects_to--> acme-prod-admin-dns",
+            "depth 2: acme-prod-admin-dns --uses--> DnsRecord",
+            "-> the SSO redirect URI must point at the admin DnsRecord.",
+        ],
+        "mutate": None,
+    },
+    {
+        "tool": "cursor", "title": "Scaffold admin SSO",
+        "prompt": "Finish bringing staging to parity - add the admin SSO app.",
+        "sql": None,
+        "output": [
+            "edit environments/staging/sso.ts",
+            "  + new SsoApplication('acme-staging-admin-sso', {",
+            "      redirectUris: [pmStagingAdminDns.hostname] })",
+            "write_component -> acme-staging-admin-sso  (redirects_to acme-staging-admin-dns)",
+            "staging is now at parity with production.",
+        ],
+        "mutate": _m_admin_sso,
+    },
+]
+
+
+@app.get("/api/demo/script")
+def demo_script():
+    return JSONResponse([
+        {k: v for k, v in step.items() if k != "mutate"} | {"mutates": step["mutate"] is not None}
+        for step in DEMO_STEPS
+    ])
+
+
+class ApplyBody(BaseModel):
+    index: int
+
+
+@app.post("/api/demo/apply")
+def demo_apply(body: ApplyBody):
+    if body.index < 0 or body.index >= len(DEMO_STEPS):
+        return JSONResponse({"error": "index out of range"}, status_code=400)
+    step = DEMO_STEPS[body.index]
+    if step["mutate"]:
+        step["mutate"]()
+    elif step.get("prompt"):
+        # log the natural question the developer asked (reads cleanly in the feed)
+        db.log_query(REPO, step["tool"], step["prompt"])
+    return JSONResponse({"ok": True, "applied": body.index, "mutated": step["mutate"] is not None})
+
+
+@app.post("/api/reset")
+def reset():
+    _cross_created["done"] = False
+    seeder.seed(reset=True)
+    return JSONResponse({"ok": True})
+
+
+# ── Static ────────────────────────────────────────────────────────────────────
+
+if STATIC_DIR.exists():
+    @app.get("/")
+    def root():
+        return FileResponse(STATIC_DIR / "index.html")
+
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

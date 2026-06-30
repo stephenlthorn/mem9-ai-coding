@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mem9 · infra knowledge base</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css?v=29" />
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo-group">
+          <span class="logo-badge">mem9</span>
+          <span class="header-title">Infra Knowledge Base</span>
+        </div>
+        <div class="header-meta">
+          <span class="meta-chip" id="header-team-repos">acme · pulumi + lza</span>
+          <span class="meta-chip meta-backend" id="backend-name">TiDB Cloud</span>
+        </div>
+        <div class="header-actions">
+          <button id="reset-btn" class="btn btn-ghost">Reset</button>
+        </div>
+      </div>
+      <nav class="tabs">
+        <button class="tab active" data-tab="live">Live</button>
+        <button class="tab" data-tab="crossrepo">Cross-repo</button>
+        <button class="tab" data-tab="cte">Dependencies</button>
+        <button class="tab" data-tab="search">Search</button>
+        <button class="tab" data-tab="sysprompt">Config</button>
+      </nav>
+    </header>
+
+    <main class="main">
+
+      <!-- ─────────────── LIVE ─────────────── -->
+      <section class="view active" data-view="live">
+        <div class="lead">
+          <h2 class="lead-title">Three tools, one memory, live.</h2>
+          <p class="lead-sub">Every query and write from Claude Code, Minimax, and Cursor lands in the same mem9 space. Watch the staging gap close as each tool reads the shared log and writes back.</p>
+        </div>
+
+        <div class="live-split">
+          <section class="feed-pane">
+            <div class="pane-head">
+              <span class="pane-title">Activity</span>
+              <span class="live-dot" title="auto-refresh"></span>
+            </div>
+            <div id="live-feed" class="live-feed"></div>
+          </section>
+
+          <section class="brain-pane">
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Knowledge graph</span>
+                <div class="seg">
+                  <button class="env-btn active" data-env="all">All</button>
+                  <button class="env-btn" data-env="library">Lib</button>
+                  <button class="env-btn" data-env="production">Prod</button>
+                  <button class="env-btn" data-env="staging">Staging</button>
+                  <button class="env-btn" data-env="org">Org</button>
+                </div>
+              </div>
+              <canvas id="live-canvas" width="640" height="360"></canvas>
+              <div class="legend">
+                <span class="leg lib">Library</span>
+                <span class="leg s3">S3</span>
+                <span class="leg rds">RDS</span>
+                <span class="leg cf">Cloudflare</span>
+                <span class="leg okta">Okta</span>
+                <span class="leg account">Account</span>
+                <span class="leg-hint"><span class="repo-dot dot-pulumi"></span>pulumi&nbsp;&nbsp;<span class="repo-dot dot-lza"></span>lza</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Staging parity</span>
+                <span id="parity-stat" class="card-count">-</span>
+              </div>
+              <div id="parity" class="parity"></div>
+            </div>
+          </section>
+        </div>
+
+        <p class="runbook-note">Each prompt is what a developer would actually type - no "query the KB first," no "write back when done." The <a href="#sysprompt" onclick="document.querySelector('.tab[data-tab=sysprompt]').click()">standing instruction</a> makes the agent do that automatically.</p>
+        <div class="runbook">
+          <div class="rb-step">
+            <div class="rb-header">
+              <span class="rb-num">1</span>
+              <span class="rb-tool tool-claude-code">Claude Code</span>
+              <span class="rb-title">Inspect the gap, scaffold assets</span>
+              <span class="rb-delta">gap 4 → 2</span>
+            </div>
+            <div class="rb-cmd-wrap">
+              <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
+              <pre class="rb-cmd">Bring staging up to parity with production - start with the static-assets bucket and its CDN.</pre>
+            </div>
+          </div>
+          <div class="rb-step">
+            <div class="rb-header">
+              <span class="rb-num">2</span>
+              <span class="rb-tool tool-minimax">Minimax</span>
+              <span class="rb-title">Open cold, pick up warm from the log</span>
+              <span class="rb-delta">gap 2 → 1</span>
+            </div>
+            <div class="rb-cmd-wrap">
+              <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
+              <pre class="rb-cmd">Keep bringing staging to parity with prod - it still needs the admin-portal DNS.</pre>
+            </div>
+          </div>
+          <div class="rb-step">
+            <div class="rb-header">
+              <span class="rb-num">3</span>
+              <span class="rb-tool tool-cursor">Cursor</span>
+              <span class="rb-title">Trace dependencies, then finish</span>
+              <span class="rb-delta">gap 1 → 0</span>
+            </div>
+            <div class="rb-cmd-wrap">
+              <button class="rb-copy" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent.trim())">Copy</button>
+              <pre class="rb-cmd">Finish bringing staging to parity - add the admin SSO app.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────── CROSS-REPO ─────────────── -->
+      <section class="view" data-view="crossrepo">
+        <div class="lead">
+          <h2 class="lead-title">One task. Two repos. One memory.</h2>
+          <p class="lead-sub">A single agent session provisions a new AWS account in the <b>LZA</b> repo and an S3 bucket in the <b>Pulumi</b> repo deployed into it - reading and writing across both <code>appId</code> namespaces in one MCP session, joined by <code>account_ref</code>.</p>
+        </div>
+
+        <div class="dep-controls">
+          <button id="xrepo-run" class="btn btn-primary">Run cross-repo task</button>
+          <span class="runbook-note" style="margin:0;">dev types: <i>"Create a new data-platform AWS account in LZA and an exports bucket for it in Pulumi."</i></span>
+          <div class="dep-readout" id="xrepo-stat">-</div>
+        </div>
+
+        <div class="live-split">
+          <section class="feed-pane">
+            <div class="pane-head">
+              <span class="pane-title">Activity · both repos</span>
+              <span class="live-dot" title="auto-refresh"></span>
+            </div>
+            <div id="xrepo-feed" class="live-feed"></div>
+          </section>
+          <section class="brain-pane">
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">account_ref join · LZA account ↔ Pulumi resources</span>
+              </div>
+              <div id="xrepo-join" class="xrepo-join"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ─────────────── DEPENDENCIES (rail) ─────────────── -->
+      <section class="view" data-view="cte">
+        <div class="lead">
+          <h2 class="lead-title">Transitive dependencies, in one pass.</h2>
+          <p class="lead-sub">Recursive reachability over the dependency graph - the question a vector store can't answer. Pick a component: trace what it <b>needs</b>, or what <b>breaks</b> if it changes. Each hop is a column.</p>
+        </div>
+
+        <div class="dep-controls">
+          <div class="seg">
+            <button class="cte-btn active" data-mode="blast-radius">Blast radius</button>
+            <button class="cte-btn" data-mode="dependencies">Dependencies</button>
+          </div>
+          <select id="cte-node" class="dep-select"></select>
+          <div class="dep-examples">
+            <span class="dep-ex-label">Try</span>
+            <button class="ex-btn" data-node="KmsKey" data-mode="blast-radius">rotate KmsKey →</button>
+            <button class="ex-btn" data-node="acme-prod-portal-svc" data-mode="dependencies">portal-svc needs →</button>
+            <button class="ex-btn" data-node="acme-lza-account-prod" data-mode="dependencies">account-prod →</button>
+          </div>
+          <div class="dep-readout" id="dep-stat">-</div>
+        </div>
+
+        <div class="card">
+          <div id="rail" class="rail"></div>
+        </div>
+
+        <div class="dep-trace">
+          <div class="trace-block">
+            <div class="trace-head">Longest chains</div>
+            <div id="trace-chains" class="trace-chains"></div>
+          </div>
+          <div class="trace-block">
+            <div class="trace-head">How it's resolved</div>
+            <pre id="cte-note" class="code-block"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────── SEARCH ─────────────── -->
+      <section class="view" data-view="search">
+        <div class="lead">
+          <h2 class="lead-title">Vector + full-text, one store.</h2>
+          <p class="lead-sub">Semantic and keyword recall over the same memory - served by mem9, no separate vector DB.</p>
+        </div>
+        <div class="search-controls">
+          <input id="search-input" class="search-input" type="text"
+                 placeholder="Ask in plain language - e.g. where do database backups live" />
+          <div class="seg">
+            <button class="cte-btn active" data-smode="hybrid">Hybrid</button>
+            <button class="cte-btn" data-smode="vector">Vector</button>
+            <button class="cte-btn" data-smode="fts">Full-text</button>
+          </div>
+          <button id="search-run" class="btn btn-primary">Search</button>
+        </div>
+        <div class="search-presets">
+          <button class="preset-btn" data-q="admin portal access control login">admin portal access control</button>
+          <button class="preset-btn" data-q="where do database backups live">where do database backups live</button>
+          <button class="preset-btn" data-q="what encrypts production data">what encrypts production data</button>
+        </div>
+        <div class="cte-grid">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Results</span><span id="search-stat" class="card-count">-</span></div>
+            <div id="search-results" class="search-results"></div>
+          </div>
+          <div class="col-side">
+            <div class="card">
+              <div class="card-header"><span class="card-title">How it's resolved</span></div>
+              <pre id="search-sql" class="code-block"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────── CONFIG ─────────────── -->
+      <section class="view" data-view="sysprompt">
+        <div class="lead">
+          <h2 class="lead-title">Behavior is configuration, not code.</h2>
+          <p class="lead-sub">The developer just types a normal request - "bring staging to parity." This standing instruction, loaded into every tool's rules file, makes the agent query first, compose, and write back on its own. No per-task hand-holding.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Standing instruction · CLAUDE.md / AGENTS.md / .cursorrules</span></div>
+          <pre class="code-block">Before you write or change any infrastructure - automatically, every task:
+
+  1. Query first.   query_knowledge_base on the infra-kb MCP for the repo
+                    you're touching: what exists, how it connects, recent log.
+  2. Compose.       Build from libs/ (S3Bucket, PostgresDatabase, DnsRecord,
+                    SsoApplication, KmsKey, ...). Never raw aws.*/cloudflare.*/okta.*.
+  3. Conventions.   acme-&lt;env&gt;-&lt;name&gt; naming; required tags; DnsRecord proxied;
+                    SSO redirect -&gt; DnsRecord; set account_ref (prod/sandbox).
+  4. Blast radius.  Before changing a shared component, trace what depends on it.
+  5. Write back.    After any change, call write_component to record it - or the
+                    next tool, and the next session, start cold.
+
+The human never says these steps. They say what they want; you do this on your own.</pre>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">MCP servers · one entry per repo</span></div>
+          <pre class="code-block">{
+  "mcpServers": {
+    "infra-kb-pulumi": { "command": "python", "args": ["-m","src.mcp_server"] },
+    "infra-kb-lza":    { "command": "python", "args": ["-m","src.mcp_server"] }
+  }
+}
+
+query_knowledge_base  ·  write_component   ->  hybrid recall + atomic writes</pre>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  <script src="/static/app.js?v=29"></script>
+</body>
+</html>
