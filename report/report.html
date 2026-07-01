@@ -14,7 +14,7 @@
   * { box-sizing: border-box; }
   html { font-family: "Helvetica Neue", Arial, sans-serif; color: #1c2330; font-size: 10.5pt; line-height: 1.5; }
   h1,h2,h3 { color: #0f1830; line-height: 1.2; }
-  h2 { font-size: 17pt; margin: 0 0 4pt; border-bottom: 2px solid #4A90E2; padding-bottom: 5pt; }
+  h2 { font-size: 17pt; margin: 0 0 4pt; border-bottom: 2px solid #DC150B; padding-bottom: 5pt; }
   h3 { font-size: 12.5pt; margin: 14pt 0 4pt; color: #2a3550; }
   p { margin: 0 0 7pt; }
   code, .mono { font-family: "SF Mono","JetBrains Mono",Menlo,monospace; font-size: 8.7pt; }
@@ -22,8 +22,8 @@
   .muted { color: #5b6678; }
 
   /* Cover */
-  .cover { height: 297mm; background: linear-gradient(150deg, #0b0d12 0%, #15203a 55%, #1d2d52 100%); color: #fff; padding: 40mm 22mm 0; position: relative; }
-  .cover .badge { display: inline-block; background: linear-gradient(135deg,#4A90E2,#BF5AF2); color:#fff; font-weight:700; font-size: 11pt; padding: 5pt 12pt; border-radius: 6pt; letter-spacing:.5px; }
+  .cover { height: 297mm; background: linear-gradient(150deg, #0b0b0f 0%, #16161c 55%, #2a0c09 100%); color: #fff; padding: 40mm 22mm 0; position: relative; }
+  .cover .badge { display: inline-block; background: linear-gradient(135deg,#DC150B,#F26048); color:#fff; font-weight:700; font-size: 11pt; padding: 5pt 12pt; border-radius: 6pt; letter-spacing:.5px; }
   .cover h1 { color:#fff; font-size: 33pt; margin: 14mm 0 4mm; letter-spacing:-.5px; }
   .cover .sub { color:#aab6cf; font-size: 14pt; max-width: 150mm; line-height:1.45; }
   .cover .meta { position:absolute; bottom: 26mm; left:22mm; right:22mm; color:#8595b5; font-size:9.5pt; border-top:1px solid #2b3a5c; padding-top:6mm; display:flex; justify-content:space-between; }
@@ -39,7 +39,7 @@
   .grid2 { display: flex; gap: 10pt; }
   .grid2 > div { flex: 1; }
 
-  .callout { background:#f3f7fd; border-left: 3px solid #4A90E2; padding: 8pt 11pt; border-radius: 0 5pt 5pt 0; margin: 8pt 0; font-size: 9.7pt; }
+  .callout { background:#f3f7fd; border-left: 3px solid #4A90E2; padding: 8pt 11pt; border-radius: 0 5pt 5pt 0; margin: 8pt 0; font-size: 9.7pt; break-inside: avoid; }
   .callout.warn { background:#fdf4f3; border-left-color:#e0573f; }
   .callout.good { background:#f1faf3; border-left-color:#2faa55; }
   .callout b { color:#0f1830; }
@@ -55,7 +55,12 @@
 
   .steps { counter-reset: step; padding:0; list-style:none; margin: 6pt 0; }
   .steps li { position:relative; padding: 4pt 0 9pt 26pt; font-size: 10pt; }
-  .steps li::before { counter-increment: step; content: counter(step); position:absolute; left:0; top:2pt; width:18pt; height:18pt; background:#4A90E2; color:#fff; border-radius:50%; text-align:center; line-height:18pt; font-weight:700; font-size:9pt; }
+  .steps li::before { counter-increment: step; content: counter(step); position:absolute; left:0; top:2pt; width:18pt; height:18pt; background:#DC150B; color:#fff; border-radius:50%; text-align:center; line-height:18pt; font-weight:700; font-size:9pt; }
+
+  .stats { display:flex; gap:8pt; margin: 9pt 0 4pt; }
+  .stats > div { flex:1; background:#fbf5f4; border:1px solid #eddad7; border-radius:6pt; padding:7pt 4pt 6pt; text-align:center; }
+  .stats b { display:block; font-size:20pt; color:#DC150B; line-height:1.1; }
+  .stats span { font-size:7.8pt; color:#5b6678; }
 
   /* architecture svg wrapper */
   .arch { text-align:center; margin: 6pt 0; }
@@ -66,7 +71,7 @@
 <!-- ───────────────── COVER ───────────────── -->
 <div class="cover">
   <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:8mm">
-    <path d="M24 4 L40 13 L40 31 L24 44 L8 31 L8 13 Z" fill="#EE3936" opacity="0.9"/>
+    <path d="M24 4 L40 13 L40 31 L24 44 L8 31 L8 13 Z" fill="#DC150B" opacity="0.95"/>
     <path d="M17 16 L31 16 L31 19 L25.5 19 L25.5 33 L22.5 33 L22.5 19 L17 19 Z" fill="#fff"/>
   </svg>
   <h1>TiDB as an agentic coding<br/>shared memory system</h1>
@@ -84,6 +89,12 @@
 <!-- ───────────────── 1. SUMMARY ───────────────── -->
 <div class="section">
   <h2>What this is</h2>
+  <div class="stats">
+    <div><b>3</b><span>AI coding tools, different vendors</span></div>
+    <div><b>4</b><span>components built to parity</span></div>
+    <div><b>0</b><span>duplicates or convention breaks</span></div>
+    <div><b>1</b><span>TiDB database as shared memory</span></div>
+  </div>
   <p class="lede">Teams now write infrastructure with AI coding tools. But each tool works <b>blind and alone</b> - it cannot see what already exists, the team's conventions, or how components connect. The result is duplication, drift, broken conventions, and outages.</p>
   <p>This demo puts the engineering knowledge where every tool can use it: a <b>knowledge graph in TiDB Cloud</b>. Every coding tool connects to it over the <b>Model Context Protocol (MCP)</b>, queries it before building, writes its work back, and traverses component relationships with <b>recursive SQL</b>. The example workload is an infrastructure-as-code monorepo (Pulumi / TypeScript) for a fictional company, <span class="mono">Acme</span>, spanning AWS, Cloudflare, and Okta.</p>
 
@@ -103,9 +114,9 @@
         <text x="208" y="100" font-size="7.5" fill="#6b7689">tidb +</text>
         <text x="208" y="111" font-size="7.5" fill="#6b7689">tidb-infra-kb</text>
         <!-- TiDB -->
-        <ellipse cx="350" cy="64" rx="44" ry="11" fill="#1d2d52"/>
-        <rect x="306" y="64" width="88" height="56" fill="#1d2d52"/>
-        <ellipse cx="350" cy="120" rx="44" ry="11" fill="#15203a"/>
+        <ellipse cx="350" cy="64" rx="44" ry="11" fill="#3a0f0c" stroke="#DC150B" stroke-width="1"/>
+        <rect x="306" y="64" width="88" height="56" fill="#1d0a09"/>
+        <ellipse cx="350" cy="120" rx="44" ry="11" fill="#240b09" stroke="#DC150B" stroke-width="1"/>
         <text x="350" y="92" fill="#fff" font-weight="bold" font-size="10">TiDB Cloud</text>
         <text x="350" y="105" fill="#aab6cf" font-size="7.5">shared memory</text>
         <!-- dashboard -->
@@ -168,6 +179,8 @@ create anything, record it with write_component so the next session starts warm.
     <img src="img-live/codex-terminal.png" />
     <figcaption>Real Codex output: "The previous session most recently created <span class="mono">acme-staging-assets-dns</span>" - it read the shared log, then wrote <span class="mono">acme-staging-admin-dns</span> (id=27). A different vendor's tool, continuing seamlessly.</figcaption>
   </figure>
+
+  <div class="callout good"><b>Tool-agnostic by construction.</b> Mid-project, this Step 2 seat was re-run with an entirely different model vendor - <b>MiniMax-M3</b> driving the identical MCP tools through the MiniMax CLI - with zero changes to the schema, the database, or the MCP servers. The shared memory does not care which agent connects: anything that speaks MCP reads the same session log and picks up the same warm context.</div>
 
   <h3>Step 3 - Cursor verifies with a recursive query, then finishes <span class="tag t-cr">cursor</span></h3>
   <p>Before writing the SSO application, Cursor runs a <b>recursive query</b> to confirm the dependency pattern (an SSO app must redirect to a DNS record), then scaffolds it correctly. Staging reaches parity.</p>
@@ -263,10 +276,10 @@ create anything, record it with write_component so the next session starts warm.
     <tr><td>Vector + full-text in one engine</td><td><b>✓</b></td><td>vector only</td><td>partial</td></tr>
     <tr><td>Horizontal scale / millions of tenants</td><td><b>✓</b></td><td>partial</td><td>✗</td></tr>
   </table>
-  <p class="muted" style="font-size:8.5pt">Proof at scale: a leading agent platform runs 10M+ databases and billions of events/day on TiDB Cloud, with 100% of those databases created by agents.</p>
+  <p class="muted" style="font-size:8.5pt">Proof at scale (public TiDB Cloud case study): a leading agent platform runs 10M+ databases and billions of events/day on TiDB Cloud, with 100% of those databases created by agents - see pingcap.com case studies.</p>
 </div>
 
-<!-- ───────────────── 6. SCENARIOS ───────────────── -->
+<!-- ───────────────── 7. SCENARIOS ───────────────── -->
 <div class="section">
   <h2>Concrete scenarios the graph prevents</h2>
   <p class="lede">Two everyday infrastructure mistakes, and how a queryable graph stops them before code is written.</p>
@@ -286,7 +299,7 @@ create anything, record it with write_component so the next session starts warm.
   </div>
 </div>
 
-<!-- ───────────────── 7. THE PROMPTS ───────────────── -->
+<!-- ───────────────── 8. THE PROMPTS ───────────────── -->
 <div class="section">
   <h2>How the tools are driven: the prompts</h2>
   <p class="lede">The behaviour is prompt-driven. Two layers: a <b>standing instruction</b> in each tool's rules file (always read/write the shared memory), and the <b>per-task prompt</b> the developer types. Nothing is hard-coded - this is how a real team would configure it.</p>
@@ -303,26 +316,29 @@ staging vs production, and what is staging missing? Then scaffold the missing
 staging static-assets bucket and its Cloudflare DNS record, composing the
 S3Bucket and DnsRecord libraries - never raw aws.* resources. Follow the
 acme-&lt;env&gt;-&lt;name&gt; naming and required tags. Record each new component with
-write_component.</div>
+write_component. Pass developer='claude-code' on every tidb-infra-kb call
+so the activity feed attributes the work.</div>
 
-  <h3>Pane 2 - Codex (opens cold, picks up warm)</h3>
+  <h3>Pane 2 - Codex seat (opens cold, picks up warm; also runs on MiniMax-M3)</h3>
   <div class="sqlbox">Use the tidb-infra-kb MCP. Read the recent session_log - what did the previous
 session just create? Continue the staging build: add the admin-portal DNS record
 (acme-staging-admin-dns) matching the production pattern, composing DnsRecord.
-Record it with write_component.</div>
+Record it with write_component. Pass developer='codex' on every tidb-infra-kb
+call so the activity feed attributes the work.</div>
 
   <h3>Pane 3 - Cursor (verify with a recursive CTE, then build)</h3>
   <div class="sqlbox">Use the tidb MCP (db_query) to run a recursive CTE: what does the production
 acme-prod-admin-sso transitively depend on? Confirm an SSO app must redirect to a
 DnsRecord. Then scaffold acme-staging-admin-sso composing SsoApplication, with the
-redirect URI pointing at acme-staging-admin-dns. Record it with write_component.</div>
+redirect URI pointing at acme-staging-admin-dns. Record it with write_component
+(developer='cursor') so the activity feed attributes the work.</div>
 
   <h3>The guardrail prompt (duplicate-bucket scenario)</h3>
   <div class="sqlbox">I'm about to add a backup S3 bucket for acme-staging-analytics-db. First query
 the KB: does PostgresDatabase already create one?</div>
 </div>
 
-<!-- ───────────────── 8. EVERY QUERY ───────────────── -->
+<!-- ───────────────── 9. EVERY QUERY ───────────────── -->
 <div class="section">
   <h2>Every query the demo runs</h2>
   <p class="lede">Everything below executes on TiDB Cloud over the MySQL protocol - either through the official <span class="mono">tidb</span> MCP (<span class="mono">db_query</span> / <span class="mono">db_execute</span>) or the convention <span class="mono">tidb-infra-kb</span> MCP. Nothing is mocked.</p>
@@ -392,7 +408,7 @@ the KB: does PostgresDatabase already create one?</div>
 <span class="cm">-- hybrid = reciprocal rank fusion of the two result sets, same table.</span></div>
 </div>
 
-<!-- ───────────────── 9. RUN IT ON YOUR REPO ───────────────── -->
+<!-- ───────────────── 10. RUN IT ON YOUR REPO ───────────────── -->
 <div class="section">
   <h2>Running it on your own repo</h2>
   <p class="lede">Everything you saw - query-before-build, convention checks, recursive dependency traversal, vector + full-text search, cross-tool handoff - is already general. The one piece to add for a real codebase is a small <b>ingestion job</b> that populates the graph from your source. Everything downstream is unchanged; it reads the same three tables.</p>
@@ -413,7 +429,7 @@ the KB: does PostgresDatabase already create one?</div>
   <div class="callout good"><b>That is the whole gap between this demo and production.</b> The graph the tools query is the same shape; only its <i>source</i> changes from the seed script to your live repo. Query, CTE, search, convention-enforcement, and cross-tool memory all work as shown.</div>
 </div>
 
-<!-- ───────────────── 10. HOW TO RUN THE DEMO ───────────────── -->
+<!-- ───────────────── 11. HOW TO RUN THE DEMO ───────────────── -->
 <div class="section">
   <h2>How to run the demo</h2>
   <p class="lede">The repository ships everything: the TiDB-backed knowledge base, both MCP servers, per-tool configs, the dashboard, and a presenter's runbook.</p>
@@ -421,8 +437,8 @@ the KB: does PostgresDatabase already create one?</div>
     <li><b>Configure TiDB.</b> <span class="mono">cp .env.example .env</span> and paste your TiDB Cloud credentials (Connect &rarr; General).</li>
     <li><b>Set up.</b> <span class="mono">./setup.sh</span> - installs dependencies, creates the schema and seeds the graph on TiDB, and generates MCP configs for Claude Code, Codex, and Cursor.</li>
     <li><b>Launch the dashboard.</b> <span class="mono">./demo.sh</span> &rarr; open <span class="mono">http://localhost:7001</span> (the screen you narrate).</li>
-    <li><b>Open three terminals.</b> In each, run <span class="mono">claude</span>, <span class="mono">codex</span>, and <span class="mono">cursor-agent</span> from the repo. All three load both MCP servers automatically.</li>
-    <li><b>Follow the prompts</b> in <span class="mono">DEMO.md</span> / <span class="mono">PRESENTER.md</span>. As the tools work, the dashboard updates live from TiDB.</li>
+    <li><b>Open three terminals.</b> In each, run <span class="mono">claude</span>, <span class="mono">minimax -m MiniMax-M3</span> (the Codex seat - any MCP-capable agent CLI works, including <span class="mono">codex</span> where available), and <span class="mono">cursor-agent</span> from the repo. All three connect to the shared TiDB memory over MCP automatically.</li>
+    <li><b>Follow the prompts</b> in <span class="mono">DEMO.md</span> / <span class="mono">PRESENTER.md</span>, or use <span class="mono">RECORDING.md</span> for the full runbook with a narration script. As the tools work, the dashboard updates live from TiDB.</li>
   </ol>
 
   <h3>The two MCP servers each tool connects to</h3>
