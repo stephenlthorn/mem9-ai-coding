@@ -11,7 +11,7 @@
     --ink: #15161a; --ink-dim: #44485a; --ink-faint: #7b8196;
     --line: #e4e7ef; --line-soft: #eef0f6; --paper: #ffffff; --wash: #f6f7fb;
     --accent: #0e83c8; --accent-bright: #2caeef; --accent-soft: #e4f3fc;
-    --tidb-red: #e30c34; --tidb-red-soft: #fde7eb;
+    --tidb-red: #DC150B; --tidb-red-soft: #fde7eb;
     --teal: #0b9d8e; --teal-soft: #e3f7f4;
     --amber: #c77a12; --red: #d6455d; --violet: #7b59e0; --green: #15976b;
     --d1: #0e83c8; --d2: #7b59e0; --d3: #e30c34;
@@ -61,6 +61,11 @@
   .ic { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; font-size: 14pt; margin-bottom: 9px; }
   .ic.bad { background: #fdeaed; color: var(--red); }
   .ic.good { background: var(--teal-soft); color: var(--teal); }
+
+  .statrow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 2px 0 16px; page-break-inside: avoid; }
+  .statrow .stat { border: 1px solid var(--line); border-radius: 11px; background: var(--wash); padding: 12px 10px 10px; text-align: center; }
+  .statrow .stat b { display: block; font-family: var(--font-display); font-weight: 800; font-size: 24pt; color: var(--tidb-red); line-height: 1.05; }
+  .statrow .stat span { font-size: 8.5pt; color: var(--ink-faint); line-height: 1.35; display: inline-block; }
 
   .callout { border-left: 3px solid var(--teal); background: var(--teal-soft); border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 4px 0 2px; }
   .callout b { color: var(--green); }
@@ -149,6 +154,13 @@
 
   <div class="bluf">
     <b>Bottom line.</b> mem9 gives a team of AI coding agents <b>one shared, queryable memory</b> on TiDB Cloud: agents read before they build and write back when done, so none starts cold or duplicates work - across sessions, tools, and repos. That shared memory is the product. What makes it work is the engine underneath: because mem9 runs on TiDB, not a bolt-on vector store, the same memory also answers the one question similarity search cannot - the transitive blast radius of a change. Isolated per team, and every screenshot in this brief is a live read or write against TiDB Cloud.
+  </div>
+
+  <div class="statrow">
+    <div class="stat"><b>3</b><span>coding agents,<br/>different vendors</span></div>
+    <div class="stat"><b>4</b><span>components built<br/>to parity</span></div>
+    <div class="stat"><b>0</b><span>duplicates, re-briefs,<br/>or cold starts</span></div>
+    <div class="stat"><b>1</b><span>shared memory<br/>on TiDB Cloud</span></div>
   </div>
 
   <table class="qa keep">
@@ -347,6 +359,8 @@
     <figcaption><span class="tag">Result · Minimax</span><span>Its query ("continuing staging work") and write join the same timeline as Claude Code's. <b>1 missing</b>.</span></figcaption>
   </figure>
 
+  <div class="callout keep"><b>Interchangeable by construction.</b> This seat ran OpenAI's Codex earlier in the project and was swapped to MiniMax-M3 mid-stream - with zero changes to mem9, the schema, or the MCP wiring. Any agent that speaks MCP reads the same session log and picks up the same warm context.</div>
+
   <!-- STEP 3 -->
   <div class="step-head"><span class="num">STEP 3</span> <span style="color:#1f5be0;">Cursor</span></div>
   <p class="demo-prompt">"Finish bringing staging to parity - add the admin SSO app."</p>
@@ -471,7 +485,7 @@
     </div>
   </div>
 
-  <div class="footer-note">mem9 · TiDB Cloud - shared memory for AI coding agents · v3. Live demo: Claude Code · Minimax · Cursor over team acme (repos pulumi + lza). Every figure is a live read/write against TiDB Cloud.</div>
+  <div class="footer-note">mem9 · TiDB Cloud - shared memory for AI coding agents · v3. Live demo: Claude Code · Minimax · Cursor over team acme (repos pulumi + lza). Every figure is a live read/write against TiDB Cloud. Demo source: github.com/stephenlthorn/mem9-ai-coding · Apache-2.0.</div>
 </div>
 
 </body>
