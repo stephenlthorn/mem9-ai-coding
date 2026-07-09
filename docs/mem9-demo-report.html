@@ -12,6 +12,7 @@
     --line: #e4e7ef; --line-soft: #eef0f6; --paper: #ffffff; --wash: #f6f7fb;
     --accent: #0e83c8; --accent-bright: #2caeef; --accent-soft: #e4f3fc;
     --tidb-red: #DC150B; --tidb-red-soft: #fde7eb;
+    --violet-deep: #350B5D; --violet-mid: #6C287F; --violet-light: #C08FBE; --footer-black: #221E1F;
     --teal: #0b9d8e; --teal-soft: #e3f7f4;
     --amber: #c77a12; --red: #d6455d; --violet: #7b59e0; --green: #15976b;
     --d1: #0e83c8; --d2: #7b59e0; --d3: #e30c34;
@@ -30,16 +31,36 @@
   .section { page-break-before: always; padding-top: 4mm; }
   .keep { page-break-inside: avoid; }
 
-  /* ── Cover ── */
-  .cover { height: 100vh; min-height: 980px; background: linear-gradient(150deg, #06101e 0%, #0c2238 55%, #0a3152 100%); color: #fff; padding: 26mm 20mm; display: flex; flex-direction: column; }
-  .cover-lockup { display: inline-flex; align-items: center; gap: 14px; }
-  .cover-logo { background: #fff; border-radius: 9px; padding: 8px 13px; display: inline-flex; align-items: center; }
-  .cover-logo img { height: 22px; display: block; }
-  .cover-badge-text { font-family: var(--mono); font-size: 10.5pt; letter-spacing: 0.4px; color: #cfe6f6; }
-  .cover-ver { font-family: var(--mono); font-size: 9pt; font-weight: 600; letter-spacing: 1px; color: #06101e; background: var(--accent-bright); padding: 2px 9px; border-radius: 20px; }
-  .cover-eyebrow { font-family: var(--mono); font-size: 9.5pt; letter-spacing: 2.5px; text-transform: uppercase; color: #69b8e6; margin-top: 64mm; }
-  .cover-title { font-family: var(--font-display); font-weight: 800; font-size: 46pt; line-height: 1.03; letter-spacing: -1.6px; margin: 10px 0 0; max-width: 15em; }
+  /* ── Letterhead (TiDB corporate template: cover + closing page) ── */
+  .lh-page { min-height: 100vh; min-height: 980px; display: flex; flex-direction: column; background: var(--paper); }
+  .lh-header { display: flex; align-items: center; justify-content: space-between; padding: 12mm 16mm 7mm; }
+  .lh-header img { height: 22px; display: block; }
+  .lh-tagline { font-family: var(--font); font-size: 9.5pt; color: var(--ink-faint); }
+  .lh-banner { height: 58mm; background: var(--violet-deep); position: relative; overflow: hidden; flex-shrink: 0; }
+  .lh-cubes { position: absolute; top: 0; right: 0; height: 100%; width: 62%; display: block; }
+  .lh-footer-mini { font-family: var(--font); font-size: 8.5pt; color: var(--ink-faint); padding: 0 16mm 10mm; margin-top: auto; }
+
+  .cover-body { padding: 16mm 20mm 8mm; flex: 1; }
+  .cover-eyebrow { font-family: var(--mono); font-size: 9.5pt; letter-spacing: 2.5px; text-transform: uppercase; color: var(--violet-mid); margin-top: 10mm; }
+  .cover-title { font-family: var(--font-display); font-weight: 800; font-size: 38pt; line-height: 1.06; letter-spacing: -1.2px; margin: 10px 0 0; max-width: 17em; color: var(--ink); }
   .cover-rule { height: 4px; width: 66px; background: var(--tidb-red); border-radius: 3px; margin-top: 22px; }
+  .cover-pills { margin-top: 20px; }
+  .cover-pills .pill2 { display: inline-block; font-family: var(--mono); font-size: 8.5pt; font-weight: 600; color: var(--violet-mid); background: var(--tidb-red-soft); background: #f3eaf5; border: 1px solid #e4d3e8; padding: 3px 10px; border-radius: 20px; margin: 0 6px 6px 0; }
+
+  /* ── Closing page ── */
+  .closing-body { flex: 1; padding: 16mm 20mm; display: flex; align-items: center; }
+  .closing-quote { font-family: var(--font-display); font-weight: 700; font-size: 20pt; line-height: 1.3; color: var(--ink); max-width: 26em; width: 100%; min-width: 0; }
+  .closing-quote .hl { color: var(--tidb-red); }
+  .lh-footer { background: var(--footer-black); color: #cfd0d4; padding: 12mm 16mm; margin-top: auto; }
+  .lh-footer .grid-2 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
+  .lh-footer img { height: 20px; margin-bottom: 10px; display: block; }
+  .lh-footer p { color: #a9abb3; font-size: 9pt; margin-bottom: 10px; }
+  .lh-footer .invest { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+  .lh-footer .invest span { font-family: var(--font-display); font-weight: 700; font-size: 10pt; color: #8b8d95; }
+  .lh-footer .contact { font-size: 9pt; line-height: 1.9; }
+  .lh-footer .contact b { color: #fff; font-weight: 600; }
+  .lh-footer .contact a { color: #cfd0d4; }
+  .lh-footer .contact .row { margin-bottom: 10px; }
 
   /* ── Headings ── */
   .kicker { font-family: var(--mono); font-size: 9pt; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
@@ -100,6 +121,9 @@
   .arch { background: var(--wash); border: 1px solid var(--line-soft); border-radius: 12px; padding: 14px; margin: 10px 0; }
   .arch svg { display: block; width: 100%; height: auto; }
 
+  .bleed { margin: -16mm -16mm -18mm -16mm; }
+  .section.lh-page { padding-top: 0; }
+
   .footer-note { font-family: var(--mono); font-size: 8pt; color: var(--ink-faint); margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 8px; }
   ul.clean { list-style: none; margin: 4px 0; }
   ul.clean li { position: relative; padding-left: 18px; margin-bottom: 5px; font-size: 10pt; color: var(--ink-dim); }
@@ -137,13 +161,34 @@
 <body>
 
 <!-- ─────────────── COVER ─────────────── -->
-<div class="cover">
-  <div class="cover-lockup">
-    <span class="cover-logo"><img src="img/tidb-logo.png" alt="TiDB" /></span>
+<div class="lh-page">
+  <div class="lh-header">
+    <img src="img/tidb-logo.png" alt="TiDB" />
+    <span class="lh-tagline">Built to Scale with Your Ambitions.</span>
   </div>
-  <div class="cover-eyebrow">Solution brief</div>
-  <div class="cover-title">Agentic Coding - Shared Memory Layer</div>
-  <div class="cover-rule"></div>
+  <div class="lh-banner">
+    <svg class="lh-cubes" viewBox="0 0 420 300" preserveAspectRatio="xMaxYMin slice" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" stroke="#5a2a8a" stroke-width="1.4" opacity="0.85">
+        <path d="M40,150 L110,112 L180,150 L110,188 Z"/>
+        <path d="M40,150 L110,188 L110,258 L40,220 Z"/>
+        <path d="M180,150 L110,188 L110,258 L180,220 Z"/>
+      </g>
+      <path d="M150,110 L230,68 L310,110 L230,152 Z" fill="#C08FBE"/>
+      <path d="M150,110 L230,152 L230,232 L150,190 Z" fill="#6C287F"/>
+      <path d="M310,110 L230,152 L230,232 L310,190 Z" fill="#8A3FA0"/>
+      <path d="M280,42 L330,14 L380,42 L330,70 Z" fill="#D9AEDA" opacity="0.9"/>
+    </svg>
+  </div>
+  <div class="cover-body">
+    <div class="cover-eyebrow">Solution brief</div>
+    <div class="cover-title">Agentic Coding - Shared Memory Layer</div>
+    <div class="cover-rule"></div>
+    <div class="cover-pills">
+      <span class="pill2">Claude Code</span><span class="pill2">Minimax</span><span class="pill2">Cursor</span>
+      <span class="pill2">Model Context Protocol</span><span class="pill2">TiDB Cloud</span>
+    </div>
+  </div>
+  <div class="lh-footer-mini">www.tidb.io</div>
 </div>
 
 <!-- ─────────────── 1. EXECUTIVE SUMMARY ─────────────── -->
@@ -486,6 +531,45 @@
   </div>
 
   <div class="footer-note">mem9 · TiDB Cloud - shared memory for AI coding agents · v3. Live demo: Claude Code · Minimax · Cursor over team acme (repos pulumi + lza). Every figure is a live read/write against TiDB Cloud. Demo source: github.com/stephenlthorn/mem9-ai-coding · Apache-2.0.</div>
+</div>
+
+<!-- ─────────────── CLOSING ─────────────── -->
+<div class="section lh-page bleed">
+  <div class="lh-header">
+    <img src="img/tidb-logo.png" alt="TiDB" />
+    <span class="lh-tagline">Built to Scale with Your Ambitions.</span>
+  </div>
+  <div class="lh-banner">
+    <svg class="lh-cubes" viewBox="0 0 420 300" preserveAspectRatio="xMaxYMin slice" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" stroke="#5a2a8a" stroke-width="1.4" opacity="0.85">
+        <path d="M40,150 L110,112 L180,150 L110,188 Z"/>
+        <path d="M40,150 L110,188 L110,258 L40,220 Z"/>
+        <path d="M180,150 L110,188 L110,258 L180,220 Z"/>
+      </g>
+      <path d="M150,110 L230,68 L310,110 L230,152 Z" fill="#C08FBE"/>
+      <path d="M150,110 L230,152 L230,232 L150,190 Z" fill="#6C287F"/>
+      <path d="M310,110 L230,152 L230,232 L310,190 Z" fill="#8A3FA0"/>
+      <path d="M280,42 L330,14 L380,42 L330,70 Z" fill="#D9AEDA" opacity="0.9"/>
+    </svg>
+  </div>
+  <div class="closing-body">
+    <div class="closing-quote">One shared memory for a team of agents - <span class="hl">query before you build, write back when you're done.</span></div>
+  </div>
+  <div class="lh-footer">
+    <div class="grid-2">
+      <div>
+        <img src="img/tidb-logo-white.png" alt="TiDB" />
+        <p>TiDB, powered by PingCAP, unlocks limitless scale for data-intensive businesses. Our advanced distributed SQL database enables leading enterprises, SaaS, and digital native companies to build petabyte-grade clusters while managing millions of tables, concurrent connections, frequent schema changes, and zero-downtime scaling. With AI-driven innovations and multi-cloud flexibility, TiDB offers unmatched agility, resilience, and security.</p>
+        <div class="invest"><span>SEQUOIA</span><span>GGV CAPITAL</span><span>COATUE</span><span>ACCESS</span></div>
+      </div>
+      <div class="contact">
+        <div class="row"><b>440 N Wolfe Road, Office EL265</b><br/>Sunnyvale, CA 94085</div>
+        <div class="row">www.tidb.io<br/>contact@pingcap.com</div>
+        <div class="row">Demo source: github.com/stephenlthorn/mem9-ai-coding · Apache-2.0</div>
+        <div class="row"><b>LinkedIn</b>: linkedin.com/company/pingcap<br/><b>Twitter</b>: twitter.com/PingCAP<br/><b>YouTube</b>: youtube.com/c/PingCAP</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 </body>
