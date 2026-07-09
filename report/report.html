@@ -21,14 +21,37 @@
   a { color: #2a6fd0; text-decoration: none; }
   .muted { color: #5b6678; }
 
-  /* Cover */
-  .cover { height: 297mm; background: linear-gradient(150deg, #0b0b0f 0%, #16161c 55%, #2a0c09 100%); color: #fff; padding: 40mm 22mm 0; position: relative; }
-  .cover .badge { display: inline-block; background: linear-gradient(135deg,#DC150B,#F26048); color:#fff; font-weight:700; font-size: 11pt; padding: 5pt 12pt; border-radius: 6pt; letter-spacing:.5px; }
-  .cover h1 { color:#fff; font-size: 33pt; margin: 14mm 0 4mm; letter-spacing:-.5px; }
-  .cover .sub { color:#aab6cf; font-size: 14pt; max-width: 150mm; line-height:1.45; }
-  .cover .meta { position:absolute; bottom: 26mm; left:22mm; right:22mm; color:#8595b5; font-size:9.5pt; border-top:1px solid #2b3a5c; padding-top:6mm; display:flex; justify-content:space-between; }
-  .cover .pills { margin-top: 12mm; }
-  .cover .pill { display:inline-block; border:1px solid #3a4a6e; color:#cdd8ef; font-size:9pt; padding:4pt 10pt; border-radius:20pt; margin-right:6pt; }
+  /* Letterhead (TiDB corporate template: cover + closing page) */
+  .lh-page { min-height: 240mm; display: flex; flex-direction: column; background: #fff; }
+  .lh-header { display: flex; align-items: center; justify-content: space-between; padding: 14mm 18mm 8mm; }
+  .lh-header img { height: 22px; display: block; }
+  .lh-tagline { font-size: 9.5pt; color: #7b8196; }
+  .lh-banner { height: 62mm; background: #350B5D; position: relative; overflow: hidden; flex-shrink: 0; }
+  .lh-cubes { position: absolute; top: 0; right: 0; height: 100%; width: 62%; display: block; }
+  .lh-footer-mini { font-size: 8.5pt; color: #7b8196; padding: 0 18mm 12mm; margin-top: auto; }
+  .bleed { margin: -18mm -16mm -16mm -16mm; }
+  .section.lh-page { padding-top: 0; }
+
+  .cover-body { padding: 16mm 22mm 8mm; flex: 1; }
+  .cover-eyebrow { font-family: "SF Mono",Menlo,monospace; font-size: 9.5pt; letter-spacing: 2.5px; text-transform: uppercase; color: #6C287F; margin-top: 8mm; }
+  .cover-title2 { font-size: 32pt; font-weight: 800; line-height: 1.08; letter-spacing: -1pt; margin: 10px 0 0; max-width: 16em; color: #0f1830; }
+  .cover-rule { height: 4px; width: 66px; background: #DC150B; border-radius: 3px; margin-top: 20px; }
+  .cover-pills2 { margin-top: 18px; }
+  .cover-pills2 .pill2 { display: inline-block; font-family: "SF Mono",Menlo,monospace; font-size: 8.5pt; font-weight: 600; color: #6C287F; background: #f3eaf5; border: 1px solid #e4d3e8; padding: 3px 10px; border-radius: 20px; margin: 0 6px 6px 0; }
+
+  .closing-body { flex: 1; padding: 16mm 22mm; display: flex; align-items: center; }
+  .closing-quote { font-size: 19pt; font-weight: 700; line-height: 1.3; color: #0f1830; max-width: 26em; width: 100%; min-width: 0; }
+  .closing-quote .hl { color: #DC150B; }
+  .lh-footer { background: #221E1F; color: #cfd0d4; padding: 14mm 18mm; margin-top: auto; }
+  .lh-footer .grid2b { display: flex; gap: 20px; }
+  .lh-footer .grid2b > div { flex: 1; }
+  .lh-footer img { height: 20px; margin-bottom: 10px; display: block; }
+  .lh-footer p { color: #a9abb3; font-size: 9pt; margin-bottom: 10px; }
+  .lh-footer .invest { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+  .lh-footer .invest span { font-weight: 700; font-size: 10pt; color: #8b8d95; }
+  .lh-footer .contact { font-size: 9pt; line-height: 1.9; }
+  .lh-footer .contact b { color: #fff; font-weight: 600; }
+  .lh-footer .contact .row { margin-bottom: 10px; }
 
   /* Layout helpers */
   .section { page-break-before: always; padding-top: 2mm; }
@@ -69,21 +92,34 @@
 <body>
 
 <!-- ───────────────── COVER ───────────────── -->
-<div class="cover">
-  <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:8mm">
-    <path d="M24 4 L40 13 L40 31 L24 44 L8 31 L8 13 Z" fill="#DC150B" opacity="0.95"/>
-    <path d="M17 16 L31 16 L31 19 L25.5 19 L25.5 33 L22.5 33 L22.5 19 L17 19 Z" fill="#fff"/>
-  </svg>
-  <h1>TiDB as an agentic coding<br/>shared memory system</h1>
-  <div class="sub">Claude Code, Codex, and Cursor all reading and writing the same TiDB knowledge graph over MCP - so AI-written infrastructure stops duplicating work, breaking conventions, and starting from zero.</div>
-  <div class="pills">
-    <span class="pill">Claude Code</span><span class="pill">Codex</span><span class="pill">Cursor</span>
-    <span class="pill">Model Context Protocol</span><span class="pill">Recursive CTE graph</span>
+<div class="lh-page">
+  <div class="lh-header">
+    <img src="img/tidb-logo.png" alt="TiDB" />
+    <span class="lh-tagline">Built to Scale with Your Ambitions.</span>
   </div>
-  <div class="meta">
-    <span>Technical demo report</span>
-    <span>Backed by a live TiDB Cloud cluster</span>
+  <div class="lh-banner">
+    <svg class="lh-cubes" viewBox="0 0 420 300" preserveAspectRatio="xMaxYMin slice" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" stroke="#5a2a8a" stroke-width="1.4" opacity="0.85">
+        <path d="M40,150 L110,112 L180,150 L110,188 Z"/>
+        <path d="M40,150 L110,188 L110,258 L40,220 Z"/>
+        <path d="M180,150 L110,188 L110,258 L180,220 Z"/>
+      </g>
+      <path d="M150,110 L230,68 L310,110 L230,152 Z" fill="#C08FBE"/>
+      <path d="M150,110 L230,152 L230,232 L150,190 Z" fill="#6C287F"/>
+      <path d="M310,110 L230,152 L230,232 L310,190 Z" fill="#8A3FA0"/>
+      <path d="M280,42 L330,14 L380,42 L330,70 Z" fill="#D9AEDA" opacity="0.9"/>
+    </svg>
   </div>
+  <div class="cover-body">
+    <div class="cover-eyebrow">Technical demo report</div>
+    <div class="cover-title2">TiDB as an agentic coding shared memory system</div>
+    <div class="cover-rule"></div>
+    <div class="cover-pills2">
+      <span class="pill2">Claude Code</span><span class="pill2">Codex</span><span class="pill2">Cursor</span>
+      <span class="pill2">Model Context Protocol</span><span class="pill2">Recursive CTE graph</span>
+    </div>
+  </div>
+  <div class="lh-footer-mini">www.tidb.io &nbsp;·&nbsp; Backed by a live TiDB Cloud cluster</div>
 </div>
 
 <!-- ───────────────── 1. SUMMARY ───────────────── -->
@@ -449,6 +485,45 @@ the KB: does PostgresDatabase already create one?</div>
   </table>
 
   <div class="callout good" style="margin-top:10pt"><b>Repository:</b> <span class="mono">github.com/stephenlthorn/mem9-ai-coding</span> &nbsp;·&nbsp; Apache-2.0. The dashboard falls back to local SQLite if no TiDB credentials are present, so the demo runs even with no network.</div>
+</div>
+
+<!-- ───────────────── CLOSING ───────────────── -->
+<div class="section lh-page bleed">
+  <div class="lh-header">
+    <img src="img/tidb-logo.png" alt="TiDB" />
+    <span class="lh-tagline">Built to Scale with Your Ambitions.</span>
+  </div>
+  <div class="lh-banner">
+    <svg class="lh-cubes" viewBox="0 0 420 300" preserveAspectRatio="xMaxYMin slice" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" stroke="#5a2a8a" stroke-width="1.4" opacity="0.85">
+        <path d="M40,150 L110,112 L180,150 L110,188 Z"/>
+        <path d="M40,150 L110,188 L110,258 L40,220 Z"/>
+        <path d="M180,150 L110,188 L110,258 L180,220 Z"/>
+      </g>
+      <path d="M150,110 L230,68 L310,110 L230,152 Z" fill="#C08FBE"/>
+      <path d="M150,110 L230,152 L230,232 L150,190 Z" fill="#6C287F"/>
+      <path d="M310,110 L230,152 L230,232 L310,190 Z" fill="#8A3FA0"/>
+      <path d="M280,42 L330,14 L380,42 L330,70 Z" fill="#D9AEDA" opacity="0.9"/>
+    </svg>
+  </div>
+  <div class="closing-body">
+    <div class="closing-quote">Query before you build. Prove the blast radius. <span class="hl">Hand off warm to the next tool.</span></div>
+  </div>
+  <div class="lh-footer">
+    <div class="grid2b">
+      <div>
+        <img src="img/tidb-logo-white.png" alt="TiDB" />
+        <p>TiDB, powered by PingCAP, unlocks limitless scale for data-intensive businesses. Our advanced distributed SQL database enables leading enterprises, SaaS, and digital native companies to build petabyte-grade clusters while managing millions of tables, concurrent connections, frequent schema changes, and zero-downtime scaling. With AI-driven innovations and multi-cloud flexibility, TiDB offers unmatched agility, resilience, and security.</p>
+        <div class="invest"><span>SEQUOIA</span><span>GGV CAPITAL</span><span>COATUE</span><span>ACCESS</span></div>
+      </div>
+      <div class="contact">
+        <div class="row"><b>440 N Wolfe Road, Office EL265</b><br/>Sunnyvale, CA 94085</div>
+        <div class="row">www.tidb.io<br/>contact@pingcap.com</div>
+        <div class="row">Demo source: github.com/stephenlthorn/mem9-ai-coding · Apache-2.0</div>
+        <div class="row"><b>LinkedIn</b>: linkedin.com/company/pingcap<br/><b>Twitter</b>: twitter.com/PingCAP<br/><b>YouTube</b>: youtube.com/c/PingCAP</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 </body>
