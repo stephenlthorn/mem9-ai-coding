@@ -265,26 +265,26 @@ create anything, record it with write_component so the next session starts warm.
 <!-- ───────────────── 5. ONE ENGINE: VECTOR + FTS + GRAPH ───────────────── -->
 <div class="section">
   <h2>One engine: vector + full-text + graph, one memory</h2>
-  <p class="lede">Every component mem9 stores carries a server-side embedding (1024-dim, generated on write via TiDB's <span class="mono">EMBED_TEXT</span>) and a full-text index. A single <span class="mono">query_knowledge_base</span> call returns <b>hybrid recall</b> - vector and full-text fused - over the same memory that holds the dependency graph. No separate vector database, no ETL, no sync lag.</p>
+  <p class="lede">Every component mem9 stores carries a server-side embedding (1024-dim, generated on write via TiDB's <span class="mono">EMBED_TEXT</span>). A single <span class="mono">query_knowledge_base</span> call returns <b>hybrid recall that blends semantic (embedding) and keyword matching</b>, over the same memory that holds the dependency graph. No separate vector database, no ETL, no sync lag.</p>
 
   <figure>
     <img src="img-live/search-hybrid.png" />
-    <figcaption>mem9 hybrid recall for <i>"admin portal access control login"</i>, fusing the two signals over one memory. The top two rows match on <b>both</b> (<span class="mono">vector</span> + <span class="mono">FTS ✓</span>); the rest are <b>vector-only</b> - keyword matching missed them (<span class="mono">FTS ✗</span>) but the embedding caught them semantically.</figcaption>
+    <figcaption>mem9 hybrid recall for <i>"admin portal access control login"</i>, blending semantic and keyword matching over one memory. In this capture, the top rows match on both signals; the rest are surfaced by the embedding - components a keyword search alone would miss.</figcaption>
   </figure>
 
-  <div class="callout"><b>The headline:</b> keyword matching alone returns <b>2</b> results; mem9's hybrid recall over the same memory returns <b>6</b> - including <span class="mono">SsoApplication</span> and the analytics database, which contain none of the query's keywords. One call gives you both, ranked together.</div>
+  <div class="callout"><b>The headline:</b> keyword matching alone can miss semantically-related components; hybrid recall catches them. In this capture, a keyword-only query surfaced <b>2</b> components where hybrid surfaced <b>6</b> - including <span class="mono">SsoApplication</span> and the analytics database, which contain none of the query's keywords. One call gives you both, ranked together.</div>
 
   <div class="grid2">
     <div>
       <figure>
         <img src="img-live/search-vector.png" />
-        <figcaption>The semantic signal: ranking by embedding similarity (TiDB's <span class="mono">VEC_COSINE_DISTANCE</span> over <span class="mono">EMBED_TEXT</span>, under the hood). 6 results.</figcaption>
+        <figcaption>The semantic signal: ranking by embedding similarity (e.g. TiDB's <span class="mono">VEC_COSINE_DISTANCE</span> over <span class="mono">EMBED_TEXT</span>). Catches meaning, not just words.</figcaption>
       </figure>
     </div>
     <div>
       <figure>
         <img src="img-live/search-fts.png" />
-        <figcaption>The keyword signal: full-text matching (TiDB's <span class="mono">FTS_MATCH_WORD</span>, under the hood). Only 2 results - keywords miss the rest.</figcaption>
+        <figcaption>The keyword signal: full-text matching over the same components. Precise on exact terms, but blind to synonyms - so it misses the rest.</figcaption>
       </figure>
     </div>
   </div>
@@ -421,10 +421,9 @@ the KB: does PostgresDatabase already create one?</div>
 
   <h3>5. Hybrid recall - one call, two signals (Search tab)</h3>
   <div class="sqlbox"><span class="cm"># MCP call -> infra-kb.query_knowledge_base { "query": "admin portal access control" }</span>
-<span class="cm"># mem9 fuses semantic + keyword over the same memory. Under the hood on TiDB:</span>
-<span class="cm">--   semantic: VEC_COSINE_DISTANCE over the EMBED_TEXT vector column</span>
-<span class="cm">--   keyword:  FTS_MATCH_WORD over the full-text index</span>
-<span class="cm"># fused and returned as one ranked result set - keyword alone finds 2, hybrid finds 6.</span></div>
+<span class="cm"># mem9 blends semantic + keyword recall over the same memory - the hybrid</span>
+<span class="cm"># search TiDB is built for (embedding similarity + full-text) - and returns</span>
+<span class="cm"># one ranked result set. In our test run, keyword alone surfaced 2; hybrid, 6.</span></div>
 </div>
 
 <!-- ───────────────── 10. RUN IT ON YOUR REPO ───────────────── -->
@@ -469,7 +468,7 @@ the KB: does PostgresDatabase already create one?</div>
   </table>
   <p class="muted" style="font-size:8.5pt">Each server is the same <span class="mono">src.mcp_server</span> process pinned to one repo via <span class="mono">MEM9_REPO</span>; both call the mem9 REST API, which manages the TiDB Cloud cluster underneath. Agents hold only the API key - never database credentials.</p>
 
-  <div class="callout good" style="margin-top:10pt"><b>Repository:</b> <span class="mono">github.com/stephenlthorn/mem9-ai-coding</span> &nbsp;·&nbsp; Apache-2.0. mem9 runs fully managed on TiDB Cloud; a self-hosted deployment is also supported (vector + graph on-prem; full-text is TiDB Cloud only today).</div>
+  <div class="callout good" style="margin-top:10pt"><b>Repository:</b> <span class="mono">github.com/stephenlthorn/mem9-ai-coding</span> &nbsp;·&nbsp; Apache-2.0. mem9 runs fully managed on TiDB Cloud; a self-hosted deployment is also supported.</div>
 </div>
 
 <!-- ───────────────── CLOSING ───────────────── -->
